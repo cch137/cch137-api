@@ -11,7 +11,7 @@ app.get('/ip', (req, res) => {
     || req.headers['x-forwarded-for'] 
     || req?.connection?.remoteAddress
     || req.socket.remoteAddress;
-  res.send(ip || '');
+  res.send({ ip });
 });
 
 app.post('/wakeup', (req, res) => {
