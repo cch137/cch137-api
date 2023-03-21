@@ -1,5 +1,6 @@
 const { app } = require(".");
 
+
 app.get('/', (req, res) => {
   res.send(Date.now().toString());
 });
@@ -11,4 +12,8 @@ app.get('/ip', (req, res) => {
     || req?.connection?.remoteAddress
     || req.socket.remoteAddress;
   res.send(ip || '');
+});
+
+app.post('/wakeup', (req, res) => {
+  res.send('OK');
 });
