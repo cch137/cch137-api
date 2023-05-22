@@ -4,7 +4,7 @@
   "description": "cch137's website",
   "main": "index.js",
   "scripts": {
-    "test": "nodemon ./index.js",
+    "test": "nodemon .",
     "build": "npm i",
     "start": "node ."
   },
@@ -19,8 +19,10 @@
   "author": "cch137",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.4.0",
     "body-parser": "^1.20.2",
     "dotenv": "^16.0.3",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "googlethis": "^1.7.1"
   }
 }

@@ -11,7 +11,6 @@ app.set('trust proxy', true);
 require('dotenv').config();
 
 // app.set('view engine', 'pug');
-// app.engine('ejs', require('ejs').renderFile);
 // app.locals.pretty = false;
 
 module.exports = {
