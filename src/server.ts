@@ -2,6 +2,8 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import http from 'http';
 import { config } from 'dotenv';
+import ipManager from './services/ips';
+import getIp from './utils/getIp';
 
 config();
 
@@ -17,6 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   req.on('end', () => {
     console.log(req.method, res.statusCode, req.originalUrl)
+    ipManager.getIpLocation(getIp(req))
   })
   next();
 });

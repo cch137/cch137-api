@@ -1,6 +1,3 @@
-# FOR CCH137/IX
-server/dist/
-
 # TEST FILES
 test/
 
@@ -95,7 +92,7 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# dist
 
 # Gatsby files
 .cache/

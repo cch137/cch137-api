@@ -2,13 +2,13 @@
   "name": "cch137-api",
   "version": "1.0.0",
   "description": "cch137's website",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "devbuild": "tsc -w",
     "devstart": "nodemon ./dist/index.js",
     "test": "npm-run-all --parallel devbuild devstart",
     "build": "npm i",
-    "start": "node ."
+    "start": "node ./dist/index.js"
   },
   "repository": {
     "type": "git",
