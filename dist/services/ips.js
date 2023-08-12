@@ -16,9 +16,6 @@ const iplocation_1 = __importDefault(require("iplocation"));
 const mongoose_1 = require("./mongoose");
 /** 1 day */
 const maxAge = 24 * 60 * 60 * 1000;
-function _trimIp(ip) {
-    return ip.split(',')[0].trim();
-}
 function _saveIpLocSum(ipLocSum) {
     return __awaiter(this, void 0, void 0, function* () {
         if (ipLocSum.risk === undefined) {
@@ -33,7 +30,6 @@ function _saveIpLocSum(ipLocSum) {
 /** 具有 save 功能 */
 function getIpLocation(ip, latest = false, waitForSave = false) {
     return __awaiter(this, void 0, void 0, function* () {
-        ip = _trimIp(ip);
         if (!latest) {
             const recorded = yield mongoose_1.ipCollection.findOne({ ip }, { _id: 0 });
             if (recorded !== null) {

@@ -50,10 +50,6 @@ interface IpLocation {
 /** 1 day */
 const maxAge = 24 * 60 * 60 * 1000
 
-function _trimIp (ip: string): string {
-  return ip.split(',')[0].trim()
-}
-
 async function _saveIpLocSum (ipLocSum: IpLocation) {
   if (ipLocSum.risk === undefined) {
     delete ipLocSum.risk
@@ -70,7 +66,6 @@ async function _saveIpLocSum (ipLocSum: IpLocation) {
 
 /** 具有 save 功能 */
 async function getIpLocation (ip: string, latest = false, waitForSave = false): Promise<IpLocation> {
-  ip = _trimIp(ip)
   if (!latest) {
     const recorded = await ipCollection.findOne({ ip }, { _id: 0 })
     if (recorded !== null) {
