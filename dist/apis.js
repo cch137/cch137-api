@@ -20,6 +20,7 @@ const getIp_js_1 = __importDefault(require("./utils/getIp.js"));
 const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
 const ips_1 = __importDefault(require("./services/ips"));
+// import lockerManager from './services/lockers';
 const index_js_1 = __importDefault(require("./services/discord/index.js"));
 server_js_1.app.use('/', express_1.default.static('public/'));
 server_js_1.app.get('/', (req, res) => {

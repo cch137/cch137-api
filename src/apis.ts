@@ -6,7 +6,7 @@ import getIp from './utils/getIp.js';
 import adaptParseBody from './utils/adaptParseBody';
 import translate from '@saipulanuar/google-translate-api'
 import ipManager from './services/ips';
-import lockerManager from './services/lockers';
+// import lockerManager from './services/lockers';
 import dcBot from './services/discord/index.js';
 
 app.use('/', express.static('public/'));
