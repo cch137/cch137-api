@@ -1,3 +1,4 @@
+import path from 'path';
 import express, { Request, Response } from 'express';
 import googlethis from 'googlethis';
 import { app } from './server.js';
@@ -6,11 +7,39 @@ import adaptParseBody from './utils/adaptParseBody';
 import translate from '@saipulanuar/google-translate-api'
 import ipManager from './services/ips';
 import lockerManager from './services/lockers';
+import dcBot from './services/dc-bot/index';
 
 app.use('/', express.static('public/'));
 
 app.get('/', (req, res) => {
   res.send({ t: Date.now() });
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../pages/dashboard.html'));
+});
+
+app.post('/config', (req, res) => {
+  const { passwd, name, value } = adaptParseBody(req);
+  if (passwd !== process.env.ADMIN_PASSWORD) {
+    res.send('Incorrect password')
+    return
+  }
+  switch (name) {
+    case 'dc-bot':
+      if (typeof value !== 'boolean') {
+        res.send('Invalid value')
+        return
+      }
+      if (value) {
+        dcBot.connect()
+      } else {
+        dcBot.disconnect()
+      }
+      res.send('OK')
+      return
+  }
+  res.send('Unknown Action')
 });
 
 app.get('/ip', (req, res) => {

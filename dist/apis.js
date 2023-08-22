@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const path_1 = __importDefault(require("path"));
 const express_1 = __importDefault(require("express"));
 const googlethis_1 = __importDefault(require("googlethis"));
 const server_js_1 = require("./server.js");
@@ -19,9 +20,36 @@ const getIp_js_1 = __importDefault(require("./utils/getIp.js"));
 const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
 const ips_1 = __importDefault(require("./services/ips"));
+const index_1 = __importDefault(require("./services/dc-bot/index"));
 server_js_1.app.use('/', express_1.default.static('public/'));
 server_js_1.app.get('/', (req, res) => {
     res.send({ t: Date.now() });
+});
+server_js_1.app.get('/dashboard', (req, res) => {
+    res.sendFile(path_1.default.resolve(__dirname, '../pages/dashboard.html'));
+});
+server_js_1.app.post('/config', (req, res) => {
+    const { passwd, name, value } = (0, adaptParseBody_1.default)(req);
+    if (passwd !== process.env.ADMIN_PASSWORD) {
+        res.send('Incorrect password');
+        return;
+    }
+    switch (name) {
+        case 'dc-bot':
+            if (typeof value !== 'boolean') {
+                res.send('Invalid value');
+                return;
+            }
+            if (value) {
+                index_1.default.connect();
+            }
+            else {
+                index_1.default.disconnect();
+            }
+            res.send('OK');
+            return;
+    }
+    res.send('Unknown Action');
 });
 server_js_1.app.get('/ip', (req, res) => {
     res.send({ ip: (0, getIp_js_1.default)(req) });

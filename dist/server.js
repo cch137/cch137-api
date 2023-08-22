@@ -4,10 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.server = exports.app = void 0;
+const dotenv_1 = require("dotenv");
 const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const http_1 = __importDefault(require("http"));
-const dotenv_1 = require("dotenv");
 // import ipManager from './services/ips';
 // import getIp from './utils/getIp';
 (0, dotenv_1.config)();

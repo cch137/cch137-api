@@ -1,11 +1,11 @@
+import { config as dotenvConfig } from 'dotenv'
 import express from 'express';
 import bodyParser from 'body-parser';
 import http from 'http';
-import { config } from 'dotenv';
 // import ipManager from './services/ips';
 // import getIp from './utils/getIp';
 
-config();
+dotenvConfig()
 
 const app = express();
 const server = http.createServer(app);
