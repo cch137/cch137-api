@@ -20,7 +20,7 @@ const getIp_js_1 = __importDefault(require("./utils/getIp.js"));
 const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
 const ips_1 = __importDefault(require("./services/ips"));
-const dc_bot_1 = __importDefault(require("./services/dc-bot"));
+const discord_1 = __importDefault(require("./services/discord"));
 server_js_1.app.use('/', express_1.default.static('public/'));
 server_js_1.app.get('/', (req, res) => {
     res.send({ t: Date.now() });
@@ -41,10 +41,10 @@ server_js_1.app.post('/config', (req, res) => {
                 return;
             }
             if (value) {
-                dc_bot_1.default.connect();
+                discord_1.default.connect();
             }
             else {
-                dc_bot_1.default.disconnect();
+                discord_1.default.disconnect();
             }
             res.send('OK');
             return;
