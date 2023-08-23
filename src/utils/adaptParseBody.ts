@@ -1,12 +1,5 @@
-import { Request } from "express"
-
-const tryParseJSON = (obj: any) => {
-  try {
-    return JSON.parse(obj)
-  } catch {
-    return obj
-  }
-}
+import type { Request } from 'express'
+import tryParseJSON from './tryParseJSON'
 
 const adaptParseBody = (req: Request): Record<string, any> => {
   const _body: Record<string, any> = {}

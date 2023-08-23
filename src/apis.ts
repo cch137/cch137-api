@@ -7,7 +7,8 @@ import adaptParseBody from './utils/adaptParseBody';
 import translate from '@saipulanuar/google-translate-api'
 import ipManager from './services/ips';
 // import lockerManager from './services/lockers';
-import dcBot from './services/dc-bot/index.js';
+import dcBot from './services/dc-bot';
+import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from './services/search';
 
 app.use('/', express.static('public/'));
 
@@ -69,26 +70,37 @@ app.use('/translate', async (req, res) => {
 });
 
 app.use('/googlethis', async (req, res) => {
-  const { query, pretty } = adaptParseBody(req)
-  if (!query) {
-    return res.status(400).send({ error: 'Invalid body' })
-  }
-  const result = await googlethis.search(query)
-  res.type('application/json')
-  res.send(pretty ? JSON.stringify(result, null, 4) : result)
+  res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search\'' })
 });
 
 app.use('/googleresult', async (req, res) => {
-  const { query, showUrl } = adaptParseBody(req)
-  if (!query) {
-    return res.status(400).send({ error: 'Invalid body' })
-  }
-  const searched = await googlethis.search(query)
-  const results = [...searched.results, ...searched.top_stories] as { title?: string, description: string, url: string }[]
+  res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search-summary\'' })
+});
+
+app.use('/google-search', async (req, res) => {
+  const { query } = adaptParseBody(req)
+  if (!query) return res.status(400).send({ error: 'Invalid body' })
+  res.send(await googleSearch(query))
+});
+
+app.use('/ddg-search', async (req, res) => {
+  const { query } = adaptParseBody(req)
+  if (!query) return res.status(400).send({ error: 'Invalid body' })
+  res.send(await ddgSearch(query))
+});
+
+app.use('/google-search-summary', async (req, res) => {
+  const { query, showUrl = true } = adaptParseBody(req)
+  if (!query) return res.status(400).send({ error: 'Invalid body' })
   res.type('text/plain')
-  res.send([...new Set(results
-    .map((r) => `${showUrl ? r.url : ''}\n${r.title ? r.title : ''}\n${r.description}`))
-  ].join('\n\n'))
+  res.send(await googleSearchSummary(showUrl, query))
+});
+
+app.use('/ddg-search-summary', async (req, res) => {
+  const { query, showUrl = true } = adaptParseBody(req)
+  if (!query) return res.status(400).send({ error: 'Invalid body' })
+  res.type('text/plain')
+  res.send(await ddgSearchSummary(showUrl, query))
 });
 
 app.post('/wakeup', (req, res) => {

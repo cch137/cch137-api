@@ -1,7 +1,10 @@
-import type { TextBasedChannel } from 'discord.js'
-import { Client, IntentsBitField } from 'discord.js'
+import type { Message, TextBasedChannel } from 'discord.js'
+import { Client, IntentsBitField, codeBlock } from 'discord.js'
 import CH4GuildCache from './CH4GuildCache'
 import Mexp from 'math-expression-evaluator'
+import tryParseJSON from '../../utils/tryParseJSON'
+import random from '../../utils/random'
+import { ddgSearchSummary, googleSearchSummary } from '../search'
 
 let client: Client<boolean> | null = null
 
@@ -16,6 +19,20 @@ class ContiniouesTyping {
   }
   stop () {
     clearInterval(this.#interval)
+  }
+}
+
+function toCodeBlocks(input: string, maxLength = 1980) {
+  const result: string[] = []
+  for (let i = 0; i < input.length; i += maxLength) {
+    result.push(codeBlock(input.substring(i, i + maxLength)))
+  }
+  return result;
+}
+
+async function replyWithCodeBlocks(message: Message<boolean>, input: any) {
+  for (const chunk of toCodeBlocks(`${input}`)) {
+    await message.reply(chunk)
   }
 }
 
@@ -143,19 +160,81 @@ async function connect () {
       // NOT A USER
       return
     }
+
     // VERIFY USER
     ch4Guild.addRoleToUser(user, ch4Guild.roles.verified.id)
+
     // CALCULATE EXPRESSION
     if (content.startsWith('=')) {
       const expression = content.substring(1).trim()
-      new Promise((resolve, reject) => {
-        try {
-          // @ts-ignore
-          resolve(new Mexp().eval(expression))
-        } catch { reject() }
-      })
-        .then(async (solution) => message.reply(`\`\`\`${solution}\`\`\``))
-        .catch(() => {})
+      // @ts-ignore
+      const solution = new Mexp().eval(expression)
+      replyWithCodeBlocks(message, solution)
+      return
+    }
+
+    // HANDLE COMMANDS
+    if (content.at(0) === '_') {
+      const [command, ...rawArgs] = content.split(' ').filter(i => i)
+      const args = rawArgs.map(i => tryParseJSON(i))
+      switch (command) {
+        case '_say':
+          if (rawArgs.length > 1) {
+            const channelId = rawArgs.shift() as string
+            const channel = await client!.channels.fetch(channelId);
+            if (channel && channel.isTextBased()) {
+              channel.send(rawArgs.join(''))
+            }
+          }
+          break
+        case '_reply':
+          if (rawArgs.length > 1) {
+            const channelId = rawArgs.shift() as string
+            const messageId = rawArgs.shift() as string
+            const channel = await client!.channels.fetch(channelId);
+            if (channel && channel.isTextBased()) {
+              const message = await channel.messages.fetch(messageId);
+              message.reply(rawArgs.join(''))
+            }
+          }
+          break
+        case '_google':
+          if (args.length) {
+            replyWithCodeBlocks(message, await googleSearchSummary(true, args.join(' ')))
+          }
+          break
+        case '_ddg':
+        case '_duckduckgo':
+          if (args.length) {
+            replyWithCodeBlocks(message, await ddgSearchSummary(true, args.join(' ')))
+          }
+          break
+        case '_rand':
+        case '_random':
+          if (!(
+            ['number', 'undefined'].includes(typeof args[1]) &&
+            ['number', 'undefined'].includes(typeof args[2])
+          )) {
+            break
+          }
+          switch ((args[0] || '').toLowerCase()) {
+            case 'base64':
+              replyWithCodeBlocks(message, random.base64(args[1] || 32))
+              break
+            case 'base16':
+              replyWithCodeBlocks(message, random.base16(args[1] || 32))
+              break
+            case 'base10':
+              replyWithCodeBlocks(message, random.base10(args[1] || 6))
+              break
+            case 'int':
+              replyWithCodeBlocks(message, random.randInt(args[1] || 0, args[2] || 1000))
+              break
+            default:
+              replyWithCodeBlocks(message, random.rand())
+          }
+          break
+      }
     }
   })
 

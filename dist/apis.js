@@ -14,14 +14,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
 const express_1 = __importDefault(require("express"));
-const googlethis_1 = __importDefault(require("googlethis"));
 const server_js_1 = require("./server.js");
 const getIp_js_1 = __importDefault(require("./utils/getIp.js"));
 const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
 const ips_1 = __importDefault(require("./services/ips"));
 // import lockerManager from './services/lockers';
-const index_js_1 = __importDefault(require("./services/dc-bot/index.js"));
+const dc_bot_1 = __importDefault(require("./services/dc-bot"));
+const search_1 = require("./services/search");
 server_js_1.app.use('/', express_1.default.static('public/'));
 server_js_1.app.get('/', (req, res) => {
     res.send({ t: Date.now() });
@@ -42,10 +42,10 @@ server_js_1.app.post('/config', (req, res) => {
                 return;
             }
             if (value) {
-                index_js_1.default.connect();
+                dc_bot_1.default.connect();
             }
             else {
-                index_js_1.default.disconnect();
+                dc_bot_1.default.disconnect();
             }
             res.send('OK');
             return;
@@ -78,25 +78,36 @@ server_js_1.app.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0
     }
 }));
 server_js_1.app.use('/googlethis', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { query, pretty } = (0, adaptParseBody_1.default)(req);
-    if (!query) {
-        return res.status(400).send({ error: 'Invalid body' });
-    }
-    const result = yield googlethis_1.default.search(query);
-    res.type('application/json');
-    res.send(pretty ? JSON.stringify(result, null, 4) : result);
+    res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search\'' });
 }));
 server_js_1.app.use('/googleresult', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { query, showUrl } = (0, adaptParseBody_1.default)(req);
-    if (!query) {
+    res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search-summary\'' });
+}));
+server_js_1.app.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { query } = (0, adaptParseBody_1.default)(req);
+    if (!query)
         return res.status(400).send({ error: 'Invalid body' });
-    }
-    const searched = yield googlethis_1.default.search(query);
-    const results = [...searched.results, ...searched.top_stories];
+    res.send(yield (0, search_1.googleSearch)(query));
+}));
+server_js_1.app.use('/ddg-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { query } = (0, adaptParseBody_1.default)(req);
+    if (!query)
+        return res.status(400).send({ error: 'Invalid body' });
+    res.send(yield (0, search_1.ddgSearch)(query));
+}));
+server_js_1.app.use('/google-search-summary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { query, showUrl = true } = (0, adaptParseBody_1.default)(req);
+    if (!query)
+        return res.status(400).send({ error: 'Invalid body' });
     res.type('text/plain');
-    res.send([...new Set(results
-            .map((r) => `${showUrl ? r.url : ''}\n${r.title ? r.title : ''}\n${r.description}`))
-    ].join('\n\n'));
+    res.send(yield (0, search_1.googleSearchSummary)(showUrl, query));
+}));
+server_js_1.app.use('/ddg-search-summary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { query, showUrl = true } = (0, adaptParseBody_1.default)(req);
+    if (!query)
+        return res.status(400).send({ error: 'Invalid body' });
+    res.type('text/plain');
+    res.send(yield (0, search_1.ddgSearchSummary)(showUrl, query));
 }));
 server_js_1.app.post('/wakeup', (req, res) => {
     res.send('OK');

@@ -27,6 +27,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const discord_js_1 = require("discord.js");
 const CH4GuildCache_1 = __importDefault(require("./CH4GuildCache"));
 const math_expression_evaluator_1 = __importDefault(require("math-expression-evaluator"));
+const tryParseJSON_1 = __importDefault(require("../../utils/tryParseJSON"));
+const random_1 = __importDefault(require("../../utils/random"));
+const search_1 = require("../search");
 let client = null;
 class ContiniouesTyping {
     constructor(channel) {
@@ -41,6 +44,20 @@ class ContiniouesTyping {
     }
 }
 _ContiniouesTyping_interval = new WeakMap();
+function toCodeBlocks(input, maxLength = 1980) {
+    const result = [];
+    for (let i = 0; i < input.length; i += maxLength) {
+        result.push((0, discord_js_1.codeBlock)(input.substring(i, i + maxLength)));
+    }
+    return result;
+}
+function replyWithCodeBlocks(message, input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        for (const chunk of toCodeBlocks(`${input}`)) {
+            yield message.reply(chunk);
+        }
+    });
+}
 function disconnect() {
     return __awaiter(this, void 0, void 0, function* () {
         const t0 = Date.now();
@@ -172,17 +189,71 @@ function connect() {
             // CALCULATE EXPRESSION
             if (content.startsWith('=')) {
                 const expression = content.substring(1).trim();
-                new Promise((resolve, reject) => {
-                    try {
-                        // @ts-ignore
-                        resolve(new math_expression_evaluator_1.default().eval(expression));
-                    }
-                    catch (_a) {
-                        reject();
-                    }
-                })
-                    .then((solution) => __awaiter(this, void 0, void 0, function* () { return message.reply(`\`\`\`${solution}\`\`\``); }))
-                    .catch(() => { });
+                // @ts-ignore
+                const solution = new math_expression_evaluator_1.default().eval(expression);
+                replyWithCodeBlocks(message, solution);
+                return;
+            }
+            // HANDLE COMMANDS
+            if (content.at(0) === '_') {
+                const [command, ...rawArgs] = content.split(' ').filter(i => i);
+                const args = rawArgs.map(i => (0, tryParseJSON_1.default)(i));
+                switch (command) {
+                    case '_say':
+                        if (rawArgs.length > 1) {
+                            const channelId = rawArgs.shift();
+                            const channel = yield client.channels.fetch(channelId);
+                            if (channel && channel.isTextBased()) {
+                                channel.send(rawArgs.join(''));
+                            }
+                        }
+                        break;
+                    case '_reply':
+                        if (rawArgs.length > 1) {
+                            const channelId = rawArgs.shift();
+                            const messageId = rawArgs.shift();
+                            const channel = yield client.channels.fetch(channelId);
+                            if (channel && channel.isTextBased()) {
+                                const message = yield channel.messages.fetch(messageId);
+                                message.reply(rawArgs.join(''));
+                            }
+                        }
+                        break;
+                    case '_google':
+                        if (args.length) {
+                            replyWithCodeBlocks(message, yield (0, search_1.googleSearchSummary)(true, args.join(' ')));
+                        }
+                        break;
+                    case '_ddg':
+                    case '_duckduckgo':
+                        if (args.length) {
+                            replyWithCodeBlocks(message, yield (0, search_1.ddgSearchSummary)(true, args.join(' ')));
+                        }
+                        break;
+                    case '_rand':
+                    case '_random':
+                        if (!(['number', 'undefined'].includes(typeof args[1]) &&
+                            ['number', 'undefined'].includes(typeof args[2]))) {
+                            break;
+                        }
+                        switch ((args[0] || '').toLowerCase()) {
+                            case 'base64':
+                                replyWithCodeBlocks(message, random_1.default.base64(args[1] || 32));
+                                break;
+                            case 'base16':
+                                replyWithCodeBlocks(message, random_1.default.base16(args[1] || 32));
+                                break;
+                            case 'base10':
+                                replyWithCodeBlocks(message, random_1.default.base10(args[1] || 6));
+                                break;
+                            case 'int':
+                                replyWithCodeBlocks(message, random_1.default.randInt(args[1] || 0, args[2] || 1000));
+                                break;
+                            default:
+                                replyWithCodeBlocks(message, random_1.default.rand());
+                        }
+                        break;
+                }
             }
         }));
         yield new Promise((resolve) => {

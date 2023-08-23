@@ -8,7 +8,7 @@ const server_js_1 = require("./server.js");
 const apis_js_1 = __importDefault(require("./apis.js"));
 (0, dotenv_1.config)();
 (0, apis_js_1.default)();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 server_js_1.server.listen(port, () => {
     console.log(`Server is listening to http://localhost:${port}`);
 });
