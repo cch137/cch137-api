@@ -8,13 +8,39 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _ContiniouesTyping_interval;
 Object.defineProperty(exports, "__esModule", { value: true });
 const discord_js_1 = require("discord.js");
 const CH4GuildCache_1 = __importDefault(require("./CH4GuildCache"));
+const math_expression_evaluator_1 = __importDefault(require("math-expression-evaluator"));
 let client = null;
+class ContiniouesTyping {
+    constructor(channel) {
+        _ContiniouesTyping_interval.set(this, void 0);
+        channel.sendTyping();
+        __classPrivateFieldSet(this, _ContiniouesTyping_interval, setInterval(() => {
+            this.typing = channel.sendTyping();
+        }, 1000), "f");
+    }
+    stop() {
+        clearInterval(__classPrivateFieldGet(this, _ContiniouesTyping_interval, "f"));
+    }
+}
+_ContiniouesTyping_interval = new WeakMap();
 function disconnect() {
     return __awaiter(this, void 0, void 0, function* () {
         const t0 = Date.now();
@@ -135,15 +161,28 @@ function connect() {
             if (!ch4Guild.isOwnMessage(message)) {
                 return;
             }
-            const { content = '' } = message;
+            const content = (message.content || '').trim();
             const user = (_b = message.member) === null || _b === void 0 ? void 0 : _b.user;
-            if (!user) {
+            if (!user || !content) {
                 // NOT A USER
                 return;
             }
             // VERIFY USER
-            if (content.trim()) {
-                ch4Guild.addRoleToUser(user, ch4Guild.roles.verified.id);
+            ch4Guild.addRoleToUser(user, ch4Guild.roles.verified.id);
+            // CALCULATE EXPRESSION
+            if (content.startsWith('=')) {
+                const expression = content.substring(1).trim();
+                new Promise((resolve, reject) => {
+                    try {
+                        // @ts-ignore
+                        resolve(new math_expression_evaluator_1.default().eval(expression));
+                    }
+                    catch (_a) {
+                        reject();
+                    }
+                })
+                    .then((solution) => __awaiter(this, void 0, void 0, function* () { return message.reply(`\`\`\`${solution}\`\`\``); }))
+                    .catch(() => { });
             }
         }));
         yield new Promise((resolve) => {

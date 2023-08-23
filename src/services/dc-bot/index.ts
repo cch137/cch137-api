@@ -1,8 +1,23 @@
 import type { TextBasedChannel } from 'discord.js'
 import { Client, IntentsBitField } from 'discord.js'
 import CH4GuildCache from './CH4GuildCache'
+import Mexp from 'math-expression-evaluator'
 
 let client: Client<boolean> | null = null
+
+class ContiniouesTyping {
+  #interval: NodeJS.Timeout
+  typing?: Promise<void>
+  constructor (channel: TextBasedChannel) {
+    channel.sendTyping()
+    this.#interval = setInterval(() => {
+      this.typing = channel.sendTyping()
+    }, 1000)
+  }
+  stop () {
+    clearInterval(this.#interval)
+  }
+}
 
 async function disconnect () {
   const t0 = Date.now()
@@ -122,15 +137,25 @@ async function connect () {
     if (!ch4Guild.isOwnMessage(message)) {
       return
     }
-    const { content = '' } = message
+    const content = (message.content || '').trim()
     const user = message.member?.user
-    if (!user) {
+    if (!user || !content) {
       // NOT A USER
       return
     }
     // VERIFY USER
-    if (content.trim()) {
-      ch4Guild.addRoleToUser(user, ch4Guild.roles.verified.id)
+    ch4Guild.addRoleToUser(user, ch4Guild.roles.verified.id)
+    // CALCULATE EXPRESSION
+    if (content.startsWith('=')) {
+      const expression = content.substring(1).trim()
+      new Promise((resolve, reject) => {
+        try {
+          // @ts-ignore
+          resolve(new Mexp().eval(expression))
+        } catch { reject() }
+      })
+        .then(async (solution) => message.reply(`\`\`\`${solution}\`\`\``))
+        .catch(() => {})
     }
   })
 
