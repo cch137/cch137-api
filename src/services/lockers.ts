@@ -2,10 +2,6 @@ import random from "../utils/random";
 
 const defaultAge = 5 * 60 * 1000;
 
-interface AddedLocker {
-  key: string;
-}
-
 interface LockerOptions {
   privateKey?: string;
   maxTries?: number;
@@ -48,7 +44,7 @@ function toOptions (options: LockerOptions): OptLockerOptions {
 }
 
 class Locker {
-  readonly #id: string
+  readonly id: string
   readonly createdAt: number
   #privateKey: any
   #item: any
@@ -56,18 +52,18 @@ class Locker {
   #maxTries: number
 
   constructor (item: any, options: LockerOptions = {}) {
-    this.#id = generateLockerId();
+    this.id = generateLockerId();
     this.createdAt = Date.now();
     const { privateKey, age, expired, maxTries } = toOptions(options);
     this.#item = item;
     this.#privateKey = privateKey;
     this.#expiredAt = calcExpired(this.createdAt, age, expired);
     this.#maxTries = maxTries;
-    lockers.set(this.#id, this)
+    lockers.set(this.id, this)
   }
 
   get isExpired (): boolean {
-    return this.#expiredAt >= Date.now()
+    return this.#expiredAt < Date.now()
   }
 
   #checkIsExpired () {
@@ -105,7 +101,7 @@ class Locker {
   }
 
   destroy () {
-    return lockers.delete(this.#id)
+    return lockers.delete(this.id)
   }
 
   expire () {
@@ -119,15 +115,33 @@ class Locker {
   }
 }
 
-const locker = new Locker({})
-
 const lockerManager = {
-  addItem (item: any, privteKey?: string): AddedLocker {
-    return { key: generateLockerId() }
+  addItem (item: any, options?: LockerOptions) {
+    const { id } = new Locker(item, options)
+    return { id }
   },
-  getItem (item: any, privteKey?: string) {
+  getItem (id: string, privateKey?: string) {
+    const locker = lockers.get(id)
+    return locker === undefined
+      ? undefined
+      : locker.get(privateKey)
+  },
+  putItem (id: string, newItem: any, privateKey?: string) {
+    const locker = lockers.get(id)
+    return locker === undefined
+      ? undefined
+      : locker.put(newItem, privateKey)
+  },
+  destroyItem (id: string) {
+    const locker = lockers.get(id)
+    return locker === undefined
+      ? false
+      : locker.destroy()
+  },
+}
 
-  }
+export type {
+  LockerOptions
 }
 
 export default lockerManager

@@ -13,7 +13,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _Locker_instances, _Locker_id, _Locker_privateKey, _Locker_item, _Locker_expiredAt, _Locker_maxTries, _Locker_checkIsExpired, _Locker_validPrivateKey;
+var _Locker_instances, _Locker_privateKey, _Locker_item, _Locker_expiredAt, _Locker_maxTries, _Locker_checkIsExpired, _Locker_validPrivateKey;
 Object.defineProperty(exports, "__esModule", { value: true });
 const random_1 = __importDefault(require("../utils/random"));
 const defaultAge = 5 * 60 * 1000;
@@ -46,22 +46,21 @@ function toOptions(options) {
 class Locker {
     constructor(item, options = {}) {
         _Locker_instances.add(this);
-        _Locker_id.set(this, void 0);
         _Locker_privateKey.set(this, void 0);
         _Locker_item.set(this, void 0);
         _Locker_expiredAt.set(this, void 0);
         _Locker_maxTries.set(this, void 0);
-        __classPrivateFieldSet(this, _Locker_id, generateLockerId(), "f");
+        this.id = generateLockerId();
         this.createdAt = Date.now();
         const { privateKey, age, expired, maxTries } = toOptions(options);
         __classPrivateFieldSet(this, _Locker_item, item, "f");
         __classPrivateFieldSet(this, _Locker_privateKey, privateKey, "f");
         __classPrivateFieldSet(this, _Locker_expiredAt, calcExpired(this.createdAt, age, expired), "f");
         __classPrivateFieldSet(this, _Locker_maxTries, maxTries, "f");
-        lockers.set(__classPrivateFieldGet(this, _Locker_id, "f"), this);
+        lockers.set(this.id, this);
     }
     get isExpired() {
-        return __classPrivateFieldGet(this, _Locker_expiredAt, "f") >= Date.now();
+        return __classPrivateFieldGet(this, _Locker_expiredAt, "f") < Date.now();
     }
     get(privateKey) {
         __classPrivateFieldGet(this, _Locker_instances, "m", _Locker_checkIsExpired).call(this);
@@ -79,7 +78,7 @@ class Locker {
         return this.put(undefined, privateKey);
     }
     destroy() {
-        return lockers.delete(__classPrivateFieldGet(this, _Locker_id, "f"));
+        return lockers.delete(this.id);
     }
     expire() {
         __classPrivateFieldSet(this, _Locker_expiredAt, Date.now(), "f");
@@ -90,7 +89,7 @@ class Locker {
         return this;
     }
 }
-_Locker_id = new WeakMap(), _Locker_privateKey = new WeakMap(), _Locker_item = new WeakMap(), _Locker_expiredAt = new WeakMap(), _Locker_maxTries = new WeakMap(), _Locker_instances = new WeakSet(), _Locker_checkIsExpired = function _Locker_checkIsExpired() {
+_Locker_privateKey = new WeakMap(), _Locker_item = new WeakMap(), _Locker_expiredAt = new WeakMap(), _Locker_maxTries = new WeakMap(), _Locker_instances = new WeakSet(), _Locker_checkIsExpired = function _Locker_checkIsExpired() {
     if (this.isExpired) {
         throw new Error('Locker has expired');
     }
@@ -104,12 +103,28 @@ _Locker_id = new WeakMap(), _Locker_privateKey = new WeakMap(), _Locker_item = n
         throw new Error('Invalid private key');
     }
 };
-const locker = new Locker({});
 const lockerManager = {
-    addItem(item, privteKey) {
-        return { key: generateLockerId() };
+    addItem(item, options) {
+        const { id } = new Locker(item, options);
+        return { id };
     },
-    getItem(item, privteKey) {
-    }
+    getItem(id, privateKey) {
+        const locker = lockers.get(id);
+        return locker === undefined
+            ? undefined
+            : locker.get(privateKey);
+    },
+    putItem(id, newItem, privateKey) {
+        const locker = lockers.get(id);
+        return locker === undefined
+            ? undefined
+            : locker.put(newItem, privateKey);
+    },
+    destroyItem(id) {
+        const locker = lockers.get(id);
+        return locker === undefined
+            ? false
+            : locker.destroy();
+    },
 };
 exports.default = lockerManager;

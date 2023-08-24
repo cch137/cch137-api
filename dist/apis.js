@@ -19,7 +19,7 @@ const getIp_js_1 = __importDefault(require("./utils/getIp.js"));
 const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
 const ips_1 = __importDefault(require("./services/ips"));
-// import lockerManager from './services/lockers';
+const lockers_1 = __importDefault(require("./services/lockers"));
 const dc_bot_1 = __importDefault(require("./services/dc-bot"));
 const search_1 = require("./services/search");
 server_js_1.app.use('/', express_1.default.static('public/'));
@@ -109,6 +109,41 @@ server_js_1.app.use('/ddg-search-summary', (req, res) => __awaiter(void 0, void 
     res.type('text/plain');
     res.send(yield (0, search_1.ddgSearchSummary)(showUrl, query));
 }));
+server_js_1.app.put('/lockers', (req, res) => {
+    const { id, item, options = {} } = (0, adaptParseBody_1.default)(req);
+    res.type('application/json');
+    try {
+        if (typeof id === 'string') {
+            res.send(lockers_1.default.putItem(id, item, options === null || options === void 0 ? void 0 : options.privateKey));
+        }
+        else {
+            res.send(lockers_1.default.addItem(item, options));
+        }
+    }
+    catch (err) {
+        res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
+    }
+});
+server_js_1.app.post('/lockers', (req, res) => {
+    const { id, options = {} } = (0, adaptParseBody_1.default)(req);
+    res.type('application/json');
+    try {
+        res.send(lockers_1.default.getItem(id, options === null || options === void 0 ? void 0 : options.privateKey));
+    }
+    catch (err) {
+        res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
+    }
+});
+server_js_1.app.delete('/lockers', (req, res) => {
+    const { id } = (0, adaptParseBody_1.default)(req);
+    res.type('application/json');
+    try {
+        res.send(lockers_1.default.destroyItem(id));
+    }
+    catch (err) {
+        res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
+    }
+});
 server_js_1.app.post('/wakeup', (req, res) => {
     res.send('OK');
 });

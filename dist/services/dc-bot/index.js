@@ -157,18 +157,18 @@ function connect() {
                 }
                 ch4Guild.removeUserRole(user, ch4Guild.roles.explorer.id);
             }));
-            // 创建一个反应收集器
-            const collector = getRoleMessage.createReactionCollector({
-                filter: (reaction, user) => reaction.emoji.name === reactionEmoji,
-            });
-            // 监听 'collect' 事件
-            collector.on('collect', (reaction, user) => {
-                console.log(`${user.tag} 添加了反应 ${reaction.emoji.name}`);
-            });
-            // 监听 'end' 事件
-            collector.on('end', collected => {
-                console.log(`添加反应 ${reactionEmoji} 的总人数：${collected.size}`);
-            });
+            // // 创建一个反应收集器
+            // const collector = getRoleMessage.createReactionCollector({
+            //   filter: (reaction, user) => reaction.emoji.name === reactionEmoji,
+            // });
+            // // 监听 'collect' 事件
+            // collector.on('collect', (reaction, user) => {
+            //   console.log(`${user.tag} 添加了反应 ${reaction.emoji.name}`);
+            // });
+            // // 监听 'end' 事件
+            // collector.on('end', collected => {
+            //   console.log(`添加反应 ${reactionEmoji} 的总人数：${collected.size}`);
+            // });
         }))();
         client.on('messageCreate', (message) => __awaiter(this, void 0, void 0, function* () {
             var _b;

@@ -6,7 +6,8 @@ import getIp from './utils/getIp.js';
 import adaptParseBody from './utils/adaptParseBody';
 import translate from '@saipulanuar/google-translate-api'
 import ipManager from './services/ips';
-// import lockerManager from './services/lockers';
+import type { LockerOptions } from './services/lockers';
+import lockerManager from './services/lockers';
 import dcBot from './services/dc-bot';
 import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from './services/search';
 
@@ -101,6 +102,40 @@ app.use('/ddg-search-summary', async (req, res) => {
   if (!query) return res.status(400).send({ error: 'Invalid body' })
   res.type('text/plain')
   res.send(await ddgSearchSummary(showUrl, query))
+});
+
+app.put('/lockers', (req, res) => {
+  const { id, item, options = {} } = adaptParseBody(req) as { id?: string, item: any, options: LockerOptions }
+  res.type('application/json')
+  try {
+    if (typeof id === 'string') {
+      res.send(lockerManager.putItem(id, item, options?.privateKey))
+    } else {
+      res.send(lockerManager.addItem(item, options))
+    }
+  } catch (err) {
+    res.status(400).send({ name: (err as Error)?.name, message: (err as Error)?.message })
+  }
+});
+
+app.post('/lockers', (req, res) => {
+  const { id, options = {} } = adaptParseBody(req) as { id: string, options: LockerOptions }
+  res.type('application/json')
+  try {
+    res.send(lockerManager.getItem(id, options?.privateKey))
+  } catch (err) {
+    res.status(400).send({ name: (err as Error)?.name, message: (err as Error)?.message })
+  }
+});
+
+app.delete('/lockers', (req, res) => {
+  const { id } = adaptParseBody(req) as { id: string }
+  res.type('application/json')
+  try {
+    res.send(lockerManager.destroyItem(id))
+  } catch (err) {
+    res.status(400).send({ name: (err as Error)?.name, message: (err as Error)?.message })
+  }
 });
 
 app.post('/wakeup', (req, res) => {
