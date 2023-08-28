@@ -2,6 +2,7 @@ import { config as dotenvConfig } from 'dotenv'
 import express from 'express';
 import bodyParser from 'body-parser';
 import http from 'http';
+import cors from 'cors';
 // import ipManager from './services/ips';
 // import getIp from './utils/getIp';
 
@@ -9,6 +10,8 @@ dotenvConfig()
 
 const app = express();
 const server = http.createServer(app);
+
+app.use(cors());
 
 app.set('trust proxy', true);
 app.disable('x-powered-by');
