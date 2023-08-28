@@ -1,6 +1,9 @@
 import { config as dotenvConfig } from 'dotenv'
 import { app, server } from './server.js';
 import router from './apis.js';
+import cors from 'cors';
+
+app.use(cors());
 
 dotenvConfig()
 
