@@ -30,6 +30,8 @@ const math_expression_evaluator_1 = __importDefault(require("math-expression-eva
 const tryParseJSON_1 = __importDefault(require("../../utils/tryParseJSON"));
 const random_1 = __importDefault(require("../../utils/random"));
 const search_1 = require("../search");
+const axios_1 = __importDefault(require("axios"));
+const formatBytes_1 = __importDefault(require("../../utils/formatBytes"));
 let client = null;
 class ContiniouesTyping {
     constructor(channel) {
@@ -58,6 +60,7 @@ function replyWithCodeBlocks(message, input) {
         }
     });
 }
+const intervalTasks = [];
 function disconnect() {
     return __awaiter(this, void 0, void 0, function* () {
         const t0 = Date.now();
@@ -68,6 +71,9 @@ function disconnect() {
                 yield oldClient.destroy();
             }
             catch (_a) { }
+        }
+        while (intervalTasks.length) {
+            clearInterval(intervalTasks.shift());
         }
         console.log(`DC BOT disconneted in ${Date.now() - t0} ms`);
     });
@@ -112,6 +118,28 @@ function connect() {
             client.on('guildMemberAdd', () => ch4UpdateMemberCount());
             client.on('guildMemberRemove', () => ch4UpdateMemberCount());
         }))();
+        setTimeout(() => __awaiter(this, void 0, void 0, function* () {
+            const statusChannel = yield client.channels.fetch('1146130467553296486');
+            function getStatusEmoji(value) {
+                if (value >= 0.93)
+                    return '🟢';
+                if (value >= 0.66)
+                    return '🟡';
+                return '🔴';
+            }
+            function logStatus() {
+                return __awaiter(this, void 0, void 0, function* () {
+                    const result = (yield axios_1.default.get('https://cch137.link/api/status')).data;
+                    statusChannel.send({
+                        embeds: [
+                            new discord_js_1.EmbedBuilder().setFields({ name: 'Models:', value: result.models.map(m => `${getStatusEmoji(m[1])} ${m[0]} (${Math.round(m[1] * 100)}%)`).join('\n') }, { name: 'Database:', value: [`Total Messages: ${result.totalMessages}`, `Total Users: ${result.totalUser}`, `Total Size: ${(0, formatBytes_1.default)(result.dataSize)}`].join('\n') })
+                        ]
+                    });
+                });
+            }
+            logStatus();
+            intervalTasks.push(setInterval(() => logStatus(), 5 * 60 * 1000));
+        }), 10000);
         try {
             (_a = client.user) === null || _a === void 0 ? void 0 : _a.setActivity({
                 name: 'Welcome to CH4!',

@@ -1,10 +1,12 @@
-import type { Message, TextBasedChannel } from 'discord.js'
-import { Client, IntentsBitField, codeBlock } from 'discord.js'
+import type { Message, TextBasedChannel, TextChannel } from 'discord.js'
+import { Client, EmbedBuilder, IntentsBitField, codeBlock } from 'discord.js'
 import CH4GuildCache from './CH4GuildCache'
 import Mexp from 'math-expression-evaluator'
 import tryParseJSON from '../../utils/tryParseJSON'
 import random from '../../utils/random'
 import { ddgSearchSummary, googleSearchSummary } from '../search'
+import axios from 'axios'
+import formatBytes from '../../utils/formatBytes'
 
 let client: Client<boolean> | null = null
 
@@ -36,6 +38,8 @@ async function replyWithCodeBlocks(message: Message<boolean>, input: any) {
   }
 }
 
+const intervalTasks: NodeJS.Timeout[] = []
+
 async function disconnect () {
   const t0 = Date.now()
   if (client !== null) {
@@ -44,6 +48,9 @@ async function disconnect () {
     try {
       await oldClient.destroy()
     } catch {}
+  }
+  while (intervalTasks.length) {
+    clearInterval(intervalTasks.shift())
   }
   console.log(`DC BOT disconneted in ${Date.now() - t0} ms`)
 }
@@ -88,6 +95,28 @@ async function connect () {
     client.on('guildMemberAdd', () => ch4UpdateMemberCount())
     client.on('guildMemberRemove', () => ch4UpdateMemberCount())
   })();
+
+  setTimeout(async () => {
+    const statusChannel = await client!.channels.fetch('1146130467553296486') as TextChannel
+    function getStatusEmoji(value: number) {
+      if (value >= 0.93) return '🟢';
+      if (value >= 0.66) return '🟡';
+      return '🔴';
+    }
+    async function logStatus() {
+      const result = (await axios.get('https://cch137.link/api/status')).data as { models: [string,number][], totalMessages: number, totalUser: number, dataSize: number }
+      statusChannel.send({
+        embeds: [
+          new EmbedBuilder().setFields(
+            { name: 'Models:', value: result.models.map(m => `${getStatusEmoji(m[1])} ${m[0]} (${Math.round(m[1] * 100)}%)`).join('\n') },
+            { name: 'Database:', value: [`Total Messages: ${result.totalMessages}`, `Total Users: ${result.totalUser}`, `Total Size: ${formatBytes(result.dataSize)}`].join('\n') },
+          )
+        ]
+      })
+    }
+    logStatus()
+    intervalTasks.push(setInterval(() => logStatus(), 5 * 60 * 1000))
+  }, 10000);
 
   try {
     client.user?.setActivity({
