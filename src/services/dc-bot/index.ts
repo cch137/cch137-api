@@ -104,12 +104,12 @@ async function connect () {
       return '🔴';
     }
     async function logStatus() {
-      const result = (await axios.get('https://cch137.link/api/status')).data as { models: [string,number][], totalMessages: number, totalUser: number, dataSize: number }
+      const result = (await axios.get('https://cch137.link/api/status')).data as { models: [string,number][], totalMessages: number, totalUsers: number, dataSize: number }
       statusChannel.send({
         embeds: [
           new EmbedBuilder().setFields(
             { name: 'Models:', value: result.models.map(m => `${getStatusEmoji(m[1])} ${m[0]} (${Math.round(m[1] * 100)}%)`).join('\n') },
-            { name: 'Database:', value: [`Total Messages: ${result.totalMessages}`, `Total Users: ${result.totalUser}`, `Total Size: ${formatBytes(result.dataSize)}`].join('\n') },
+            { name: 'Database:', value: [`Total Messages: ${result.totalMessages}`, `Total Users: ${result.totalUsers}`, `Total Size: ${formatBytes(result.dataSize)}`].join('\n') },
           )
         ]
       })

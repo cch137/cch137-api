@@ -132,7 +132,7 @@ function connect() {
                     const result = (yield axios_1.default.get('https://cch137.link/api/status')).data;
                     statusChannel.send({
                         embeds: [
-                            new discord_js_1.EmbedBuilder().setFields({ name: 'Models:', value: result.models.map(m => `${getStatusEmoji(m[1])} ${m[0]} (${Math.round(m[1] * 100)}%)`).join('\n') }, { name: 'Database:', value: [`Total Messages: ${result.totalMessages}`, `Total Users: ${result.totalUser}`, `Total Size: ${(0, formatBytes_1.default)(result.dataSize)}`].join('\n') })
+                            new discord_js_1.EmbedBuilder().setFields({ name: 'Models:', value: result.models.map(m => `${getStatusEmoji(m[1])} ${m[0]} (${Math.round(m[1] * 100)}%)`).join('\n') }, { name: 'Database:', value: [`Total Messages: ${result.totalMessages}`, `Total Users: ${result.totalUsers}`, `Total Size: ${(0, formatBytes_1.default)(result.dataSize)}`].join('\n') })
                         ]
                     });
                 });
