@@ -97,15 +97,22 @@ async function connect () {
   })();
 
   setTimeout(async () => {
-    const statusChannel = await client!.channels.fetch('1146130467553296486') as TextChannel
+    const statusChannel = await client!.channels.fetch('1146482763214635148') as TextChannel
+
     function getStatusEmoji(value: number) {
       if (value >= 0.93) return '🟢';
       if (value >= 0.66) return '🟡';
       return '🔴';
     }
+
     async function logStatus() {
       const result = (await axios.get('https://cch137.link/api/status')).data as { models: [string,number][], totalMessages: number, totalUsers: number, dataSize: number }
-      statusChannel.send({
+      const lastMessageInChannel = [...await statusChannel.messages.fetch({ limit: 1 })][0] || []
+      const targetMessage = lastMessageInChannel[1]?.author?.id === client?.user?.id
+        ? lastMessageInChannel[1]
+        : await statusChannel.send('Loading...')
+      targetMessage.edit({
+        content: '',
         embeds: [
           new EmbedBuilder().setFields(
             { name: 'Models:', value: result.models.map(m => `${getStatusEmoji(m[1])} ${m[0]} (${Math.round(m[1] * 100)}%)`).join('\n') },
@@ -114,8 +121,10 @@ async function connect () {
         ]
       })
     }
+
     logStatus()
     intervalTasks.push(setInterval(() => logStatus(), 5 * 60 * 1000))
+
   }, 10000);
 
   try {

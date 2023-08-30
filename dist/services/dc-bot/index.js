@@ -119,7 +119,7 @@ function connect() {
             client.on('guildMemberRemove', () => ch4UpdateMemberCount());
         }))();
         setTimeout(() => __awaiter(this, void 0, void 0, function* () {
-            const statusChannel = yield client.channels.fetch('1146130467553296486');
+            const statusChannel = yield client.channels.fetch('1146482763214635148');
             function getStatusEmoji(value) {
                 if (value >= 0.93)
                     return '🟢';
@@ -128,9 +128,15 @@ function connect() {
                 return '🔴';
             }
             function logStatus() {
+                var _a, _b, _c;
                 return __awaiter(this, void 0, void 0, function* () {
                     const result = (yield axios_1.default.get('https://cch137.link/api/status')).data;
-                    statusChannel.send({
+                    const lastMessageInChannel = [...yield statusChannel.messages.fetch({ limit: 1 })][0] || [];
+                    const targetMessage = ((_b = (_a = lastMessageInChannel[1]) === null || _a === void 0 ? void 0 : _a.author) === null || _b === void 0 ? void 0 : _b.id) === ((_c = client === null || client === void 0 ? void 0 : client.user) === null || _c === void 0 ? void 0 : _c.id)
+                        ? lastMessageInChannel[1]
+                        : yield statusChannel.send('Loading...');
+                    targetMessage.edit({
+                        content: '',
                         embeds: [
                             new discord_js_1.EmbedBuilder().setFields({ name: 'Models:', value: result.models.map(m => `${getStatusEmoji(m[1])} ${m[0]} (${Math.round(m[1] * 100)}%)`).join('\n') }, { name: 'Database:', value: [`Total Messages: ${result.totalMessages}`, `Total Users: ${result.totalUsers}`, `Total Size: ${(0, formatBytes_1.default)(result.dataSize)}`].join('\n') })
                         ]
