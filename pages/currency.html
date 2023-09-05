@@ -76,14 +76,14 @@
       fromValueEl.addEventListener('keyup', () => calcToValue())
       toValueEl.addEventListener('change', () => calcFromValue(true))
       toValueEl.addEventListener('keyup', () => calcFromValue())
-      setTimeout(async () => {
+      ;(async () => {
         const urlParams = new URLSearchParams(location.search)
         const fromCurrency = urlParams.get('from') || 'TWD'
         const toCurrency = urlParams.get('to') || 'MYR'
         fromCurrencyEl.value = fromCurrency
         toCurrencyEl.value = toCurrency
         calcToValue()
-      }, 0)
+      })();
     })()
   </script>
   <style>
