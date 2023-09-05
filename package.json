@@ -24,6 +24,7 @@
     "@saipulanuar/google-translate-api": "^8.0.0",
     "axios": "^1.4.0",
     "body-parser": "^1.20.2",
+    "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "crypto-js": "^4.1.1",
     "discord.js": "^14.13.0",

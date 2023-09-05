@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Currency</title>
+</head>
+<body>
+  <input id="from-value" class="input-box" value="" contenteditable autofocus />
+  <div class="currencies-select">
+    <select id="from-currency">
+      <option value="TWD" selected>TWD</option>
+      <option value="MYR">MYR</option>
+      <option value="CNY">SGD</option>
+      <option value="CNY">CNY</option>
+    </select>
+    <select id="to-currency">
+      <option value="TWD">TWD</option>
+      <option value="MYR" selected>MYR</option>
+      <option value="CNY">SGD</option>
+      <option value="CNY">CNY</option>
+    </select>
+  </div>
+  <input id="to-value" class="input-box" value="1" contenteditable />
+  <script>
+    (async () => {
+      const doc = document, $ = (selector) => doc.querySelector(selector);
+      const fromCurrencyEl = $('#from-currency'), toCurrencyEl = $('#to-currency')
+      const fromValueEl = $('#from-value'), toValueEl = $('#to-value')
+      async function fetchCurrency() {
+        const fromCurrency = fromCurrencyEl.value
+        const toCurrency = toCurrencyEl.value
+        if (fromCurrency === toCurrency) return 1
+        const res = await fetch(`/currency?from=${fromCurrency}&to=${toCurrency}`, { method: 'POST' })
+        const fxRate = (await res.json())?.rate || 0
+        return fxRate
+      }
+      const getFxRate = (() => {
+        let fxRate = 1
+        let lastFetchFromCurrency = ''
+        let lastFetchToCurrency = ''
+        return async () => {
+        const fromCurrency = fromCurrencyEl.value
+        const toCurrency = toCurrencyEl.value
+          if (
+            lastFetchFromCurrency !== fromCurrency ||
+            lastFetchToCurrency !== toCurrency
+          ) {
+            fxRate = await fetchCurrency()
+            lastFetchFromCurrency = fromCurrency
+            lastFetchToCurrency = toCurrency
+            const urlParams = new URLSearchParams(location.search)
+            urlParams.set('from', fromCurrency)
+            urlParams.set('to', toCurrency)
+            history.replaceState(0, 0, `${location.pathname}?${urlParams.toString()}`)
+          }
+          return fxRate
+        }
+      })()
+      function roundTo2Digits(amount) {
+        return Math.round(amount * 100) / 100
+      }
+      async function calcToValue(selfUpdate=false) {
+        toValueEl.value = roundTo2Digits(fromValueEl.value * await getFxRate())
+        if (selfUpdate) fromValueEl.value = roundTo2Digits(fromValueEl.value)
+      }
+      async function calcFromValue(selfUpdate=false) {
+        if (selfUpdate) toValueEl.value = roundTo2Digits(toValueEl.value)
+        fromValueEl.value = roundTo2Digits(toValueEl.value / await getFxRate())
+      }
+      fromCurrencyEl.addEventListener('change', () => calcToValue())
+      toCurrencyEl.addEventListener('change', () => calcToValue())
+      fromValueEl.addEventListener('change', () => calcToValue(true))
+      fromValueEl.addEventListener('keyup', () => calcToValue())
+      toValueEl.addEventListener('change', () => calcFromValue(true))
+      toValueEl.addEventListener('keyup', () => calcFromValue())
+      calcToValue()
+    })()
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background: #111;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      margin: 0;
+      padding: 10px;
+      padding-bottom: 20vh;
+      flex-direction: column;
+    }
+    .input-box {
+      font-size: 4rem;
+      background: transparent;
+      color: inherit;
+      padding: 32px;
+      border-radius: 8px;
+      width: 100%;
+      outline: none;
+      border: 1px grey solid;
+    }
+    .currencies-select {
+      margin: 1rem 0;
+      gap: 1em;
+    }
+    body, .currencies-select {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</body>
+</html>

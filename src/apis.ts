@@ -10,11 +10,25 @@ import type { LockerOptions } from './services/lockers';
 import lockerManager from './services/lockers';
 import dcBot from './services/dc-bot';
 import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from './services/search';
+import { init as currencyInit, convertCurrency } from './services/currency'
+
+currencyInit()
 
 app.use('/', express.static('public/'));
 
 app.get('/', (req, res) => {
   res.send({ t: Date.now() });
+});
+
+app.get('/currency', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../pages/currency.html'));
+});
+
+app.post('/currency', async (req, res) => {
+  const { from, to } = adaptParseBody(req);
+  res.send({
+    rate: await convertCurrency(from, to)
+  });
 });
 
 app.get('/dashboard', (req, res) => {
