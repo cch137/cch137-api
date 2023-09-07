@@ -84,7 +84,7 @@ function init() {
 exports.init = init;
 function getCurrencyList() {
     return __awaiter(this, void 0, void 0, function* () {
-        return [...new Set((yield getCurrencyTable()).map(r => r[0]))];
+        return [...new Set((yield getCurrencyTable()).map(r => r[0]).filter(c => c))];
     });
 }
 exports.getCurrencyList = getCurrencyList;

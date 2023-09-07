@@ -69,7 +69,7 @@ async function init() {
 }
 
 async function getCurrencyList() {
-  return [...new Set((await getCurrencyTable()).map(r => r[0]))]
+  return [...new Set((await getCurrencyTable()).map(r => r[0]).filter(c => c))]
 }
 
 export {
