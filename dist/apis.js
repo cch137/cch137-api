@@ -28,14 +28,9 @@ server_js_1.app.use('/', express_1.default.static('public/'));
 server_js_1.app.get('/', (req, res) => {
     res.send({ t: Date.now() });
 });
-server_js_1.app.get('/currency', (req, res) => {
-    res.sendFile(path_1.default.resolve(__dirname, '../pages/currency.html'));
-});
-server_js_1.app.post('/currency', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/currency', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { from, to } = (0, adaptParseBody_1.default)(req);
-    res.send({
-        rate: yield (0, currency_1.convertCurrency)(from, to)
-    });
+    res.send({ rate: yield (0, currency_1.convertCurrency)(from, to) });
 }));
 server_js_1.app.get('/dashboard', (req, res) => {
     res.sendFile(path_1.default.resolve(__dirname, '../pages/dashboard.html'));
