@@ -32,6 +32,9 @@ server_js_1.app.use('/currency', (req, res) => __awaiter(void 0, void 0, void 0,
     const { from, to } = (0, adaptParseBody_1.default)(req);
     res.send({ rate: yield (0, currency_1.convertCurrency)(from, to) });
 }));
+server_js_1.app.use('/currency-list', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.send(yield (0, currency_1.getCurrencyList)());
+}));
 server_js_1.app.get('/dashboard', (req, res) => {
     res.sendFile(path_1.default.resolve(__dirname, '../pages/dashboard.html'));
 });

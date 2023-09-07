@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertCurrency = exports.init = void 0;
+exports.getCurrencyList = exports.convertCurrency = exports.init = void 0;
 const axios_1 = __importDefault(require("axios"));
 const cheerio_1 = require("cheerio");
 const url = 'https://docs.google.com/spreadsheets/d/1VjdmK8-PBoOt6sRCvZ40G5qmYyxpLzHl5RCSQWejxYk/preview/sheet?gid=1360697588';
@@ -34,7 +34,7 @@ function parseTableTo2DArray(html) {
 let isFetching = false;
 let lastFetched = 0;
 let cacheTable;
-function fetchCurrency() {
+function fetchCurrencies() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             isFetching = true;
@@ -52,10 +52,10 @@ function getCurrencyTable() {
     return __awaiter(this, void 0, void 0, function* () {
         if (lastFetched + 5 * 60000 < Date.now()) {
             if (cacheTable === undefined) {
-                yield fetchCurrency();
+                yield fetchCurrencies();
             }
             else {
-                fetchCurrency();
+                fetchCurrencies();
             }
         }
         return cacheTable;
@@ -81,3 +81,9 @@ function init() {
     });
 }
 exports.init = init;
+function getCurrencyList() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return (yield getCurrencyTable()).map(r => r[0]);
+    });
+}
+exports.getCurrencyList = getCurrencyList;

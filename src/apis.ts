@@ -10,7 +10,7 @@ import type { LockerOptions } from './services/lockers';
 import lockerManager from './services/lockers';
 import dcBot from './services/dc-bot';
 import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from './services/search';
-import { init as currencyInit, convertCurrency } from './services/currency'
+import { init as currencyInit, convertCurrency, getCurrencyList } from './services/currency'
 
 currencyInit()
 
@@ -23,6 +23,10 @@ app.get('/', (req, res) => {
 app.use('/currency', async (req, res) => {
   const { from, to } = adaptParseBody(req);
   res.send({ rate: await convertCurrency(from, to) });
+});
+
+app.use('/currency-list', async (req, res) => {
+  res.send(await getCurrencyList());
 });
 
 app.get('/dashboard', (req, res) => {

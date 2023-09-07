@@ -28,7 +28,7 @@ let isFetching = false;
 let lastFetched = 0
 let cacheTable: string[][] | undefined
 
-async function fetchCurrency() {
+async function fetchCurrencies() {
   try {
     isFetching = true
     const res = await axios.get(url)
@@ -43,9 +43,9 @@ async function fetchCurrency() {
 async function getCurrencyTable() {
   if (lastFetched + 5 * 60000 < Date.now()) {
     if (cacheTable === undefined) {
-      await fetchCurrency()
+      await fetchCurrencies()
     } else {
-      fetchCurrency()
+      fetchCurrencies()
     }
   }
   return cacheTable as string[][]
@@ -67,7 +67,12 @@ async function init() {
   return
 }
 
+async function getCurrencyList() {
+  return (await getCurrencyTable()).map(r => r[0])
+}
+
 export {
   init,
   convertCurrency,
+  getCurrencyList,
 }
