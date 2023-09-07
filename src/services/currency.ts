@@ -24,35 +24,34 @@ function parseTableTo2DArray(html: string) {
   return result;
 }
 
-let isFetching = false
 let lastFetched = 0
-const cacheMap = new Map<string,number>()
+const currenctList = new Set<string>()
+const currencyMap = new Map<string,number>()
 
 async function fetchCurrencies() {
-  try {
-    isFetching = true
-    const res = await axios.get(url)
-    // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
-    const table = parseTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4))
-    cacheMap.clear()
-    for (const row of table) {
-      cacheMap.set(`${row[0]}${row[1]}`, +row[2])
+  const res = await axios.get(url)
+  // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
+  const table = parseTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4))
+  currencyMap.clear()
+  for (const row of table) {
+    const key = `${row[0]}${row[1]}`
+    if (key) {
+      currencyMap.set(key, +row[2])
+      currenctList.add(row[0])
     }
-    lastFetched = Date.now()
-  } finally {
-    isFetching = false
   }
+  lastFetched = Date.now()
 }
 
 async function getCurrencyMap() {
   if (lastFetched + 5 * 60000 < Date.now()) {
-    if (cacheMap.size === 0) {
+    if (currencyMap.size === 0) {
       await fetchCurrencies()
     } else {
       fetchCurrencies()
     }
   }
-  return cacheMap
+  return currencyMap
 }
 
 async function convertCurrency(fromCurrency: string, toCurrency: string): Promise<number> {
@@ -66,7 +65,7 @@ async function init() {
 }
 
 async function getCurrencyList() {
-  return [...new Set((await getCurrencyMap()).keys())]
+  return [...currenctList]
 }
 
 export {

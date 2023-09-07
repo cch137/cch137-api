@@ -31,52 +31,47 @@ function parseTableTo2DArray(html) {
     });
     return result;
 }
-let isFetching = false;
 let lastFetched = 0;
-let cacheTable;
+const currenctList = new Set();
+const currencyMap = new Map();
 function fetchCurrencies() {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            isFetching = true;
-            const res = yield axios_1.default.get(url);
-            // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
-            const table = parseTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4));
-            cacheTable = table;
-            lastFetched = Date.now();
+        const res = yield axios_1.default.get(url);
+        // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
+        const table = parseTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4));
+        currencyMap.clear();
+        for (const row of table) {
+            const key = `${row[0]}${row[1]}`;
+            if (key) {
+                currencyMap.set(key, +row[2]);
+                currenctList.add(row[0]);
+            }
         }
-        finally {
-            isFetching = false;
-        }
+        lastFetched = Date.now();
     });
 }
-function getCurrencyTable() {
+function getCurrencyMap() {
     return __awaiter(this, void 0, void 0, function* () {
         if (lastFetched + 5 * 60000 < Date.now()) {
-            if (cacheTable === undefined) {
+            if (currencyMap.size === 0) {
                 yield fetchCurrencies();
             }
             else {
                 fetchCurrencies();
             }
         }
-        return cacheTable;
+        return currencyMap;
     });
 }
 function convertCurrency(fromCurrency, toCurrency) {
     return __awaiter(this, void 0, void 0, function* () {
-        const table = yield getCurrencyTable();
-        for (const row of table) {
-            if (row[0] === fromCurrency && row[1] === toCurrency) {
-                return +row[2];
-            }
-        }
-        return 0;
+        return (yield getCurrencyMap()).get(`${fromCurrency}${toCurrency}`) || 0;
     });
 }
 exports.convertCurrency = convertCurrency;
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
-        yield getCurrencyTable();
+        yield getCurrencyMap();
         console.log('Currency table inited.');
         return;
     });
@@ -84,7 +79,7 @@ function init() {
 exports.init = init;
 function getCurrencyList() {
     return __awaiter(this, void 0, void 0, function* () {
-        return [...new Set((yield getCurrencyTable()).map(r => r[0]).filter(c => c))];
+        return [...currenctList];
     });
 }
 exports.getCurrencyList = getCurrencyList;
