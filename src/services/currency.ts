@@ -32,7 +32,8 @@ async function fetchCurrencies() {
   try {
     isFetching = true
     const res = await axios.get(url)
-    const table = parseTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4))
+    // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
+    const table = parseTableTo2DArray(res.data).slice(2).map(r => r.slice(1, 4))
     cacheTable = table
     lastFetched = Date.now()
   } finally {
@@ -68,7 +69,7 @@ async function init() {
 }
 
 async function getCurrencyList() {
-  return (await getCurrencyTable()).map(r => r[0])
+  return [...new Set((await getCurrencyTable()).map(r => r[0]))]
 }
 
 export {

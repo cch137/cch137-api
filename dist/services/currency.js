@@ -39,7 +39,8 @@ function fetchCurrencies() {
         try {
             isFetching = true;
             const res = yield axios_1.default.get(url);
-            const table = parseTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4));
+            // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
+            const table = parseTableTo2DArray(res.data).slice(2).map(r => r.slice(1, 4));
             cacheTable = table;
             lastFetched = Date.now();
         }
@@ -83,7 +84,7 @@ function init() {
 exports.init = init;
 function getCurrencyList() {
     return __awaiter(this, void 0, void 0, function* () {
-        return (yield getCurrencyTable()).map(r => r[0]);
+        return [...new Set((yield getCurrencyTable()).map(r => r[0]))];
     });
 }
 exports.getCurrencyList = getCurrencyList;
