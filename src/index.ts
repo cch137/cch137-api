@@ -1,6 +1,5 @@
 import { config as dotenvConfig } from 'dotenv'
 import { app, server } from './server';
-import adminApis from './admin-apis';
 import apis from './apis';
 import pineRouter from './pine';
 
@@ -8,7 +7,6 @@ dotenvConfig()
 
 app.use('/', apis)
 app.use('/pine/', pineRouter)
-app.use('/', adminApis)
 app.use('*', (req, res) => res.status(404).end())
 
 const port = process.env.PORT || 3000;
