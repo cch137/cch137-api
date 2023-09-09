@@ -1,7 +1,7 @@
 import { config as dotenvConfig } from 'dotenv'
 import { app, server } from './server';
-import apis from './apis';
-import pineRouter from './pine';
+import apis from './routers/apis';
+import pineRouter from './routers/pine';
 
 dotenvConfig()
 

@@ -9,8 +9,6 @@ const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const http_1 = __importDefault(require("http"));
 const cors_1 = __importDefault(require("cors"));
-// import ipManager from './services/ips';
-// import getIp from './utils/getIp';
 (0, dotenv_1.config)();
 const app = (0, express_1.default)();
 exports.app = app;
@@ -25,7 +23,6 @@ app.use(body_parser_1.default.urlencoded({ extended: true }));
 app.use((req, res, next) => {
     req.on('end', () => {
         console.log(req.method, res.statusCode, req.originalUrl);
-        // ipManager.getIpLocation(getIp(req))
     });
     next();
 });

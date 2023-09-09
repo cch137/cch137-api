@@ -1,6 +1,5 @@
 import { ObjectId } from 'mongodb'
 import mongoose from 'mongoose'
-import ipCollection from './models/ip'
 // import { writeFileSync } from 'fs'
 
 void mongoose.connect(process.env.MONGODB_URI as string)
@@ -17,5 +16,4 @@ export default mongoose
 
 export {
   ObjectId,
-  ipCollection
 }

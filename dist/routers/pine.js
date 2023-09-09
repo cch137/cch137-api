@@ -13,8 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const pine_1 = require("./services/pine");
-const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
+const pine_1 = require("../services/pine");
+const adaptParseBody_1 = __importDefault(require("../utils/adaptParseBody"));
 const pineRouter = express_1.default.Router();
 pineRouter.use('/course-detail', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = (0, adaptParseBody_1.default)(req);

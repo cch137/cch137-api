@@ -1,6 +1,6 @@
 import express from "express";
-import { getCourseDetail } from "./services/pine";
-import adaptParseBody from "./utils/adaptParseBody";
+import { getCourseDetail } from "../services/pine";
+import adaptParseBody from "../utils/adaptParseBody";
 
 const pineRouter = express.Router();
 

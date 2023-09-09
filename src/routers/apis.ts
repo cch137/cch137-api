@@ -1,14 +1,11 @@
 import path from 'path';
 import express from 'express';
-import googlethis from 'googlethis';
-import getIp from './utils/getIp.js';
-import adaptParseBody from './utils/adaptParseBody';
-import translate from '@saipulanuar/google-translate-api'
-import ipManager from './services/ips';
-import type { LockerOptions } from './services/lockers';
-import lockerManager from './services/lockers';
-import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from './services/search';
-import { convertCurrency, getCurrencyList } from './services/currency'
+import translate from '@saipulanuar/google-translate-api';
+import adaptParseBody from '../utils/adaptParseBody';
+import type { LockerOptions } from '../services/lockers';
+import lockerManager from '../services/lockers';
+import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from '../services/search';
+import { convertCurrency, getCurrencyList } from '../services/currency'
 
 const apisRouter = express.Router();
 
@@ -29,19 +26,6 @@ apisRouter.use('/currency-list', async (req, res) => {
 
 apisRouter.get('/dashboard', (req, res) => {
   res.sendFile(path.resolve(__dirname, '../pages/dashboard.html'));
-});
-
-apisRouter.get('/ip', (req, res) => {
-  res.send({ ip: getIp(req) });
-});
-
-apisRouter.use('/ip-loc', async (req, res) => {
-  const { ip, latest } = adaptParseBody(req);
-  try {
-    res.send(await ipManager.getIpLocation(ip || getIp(req), latest));
-  } catch (error) {
-    res.send({ error: 1 });
-  }
 });
 
 apisRouter.use('/translate', async (req, res) => {

@@ -14,13 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
 const express_1 = __importDefault(require("express"));
-const getIp_js_1 = __importDefault(require("./utils/getIp.js"));
-const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
-const ips_1 = __importDefault(require("./services/ips"));
-const lockers_1 = __importDefault(require("./services/lockers"));
-const search_1 = require("./services/search");
-const currency_1 = require("./services/currency");
+const adaptParseBody_1 = __importDefault(require("../utils/adaptParseBody"));
+const lockers_1 = __importDefault(require("../services/lockers"));
+const search_1 = require("../services/search");
+const currency_1 = require("../services/currency");
 const apisRouter = express_1.default.Router();
 apisRouter.use('/', express_1.default.static('public/'));
 apisRouter.get('/', (req, res) => {
@@ -36,18 +34,6 @@ apisRouter.use('/currency-list', (req, res) => __awaiter(void 0, void 0, void 0,
 apisRouter.get('/dashboard', (req, res) => {
     res.sendFile(path_1.default.resolve(__dirname, '../pages/dashboard.html'));
 });
-apisRouter.get('/ip', (req, res) => {
-    res.send({ ip: (0, getIp_js_1.default)(req) });
-});
-apisRouter.use('/ip-loc', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { ip, latest } = (0, adaptParseBody_1.default)(req);
-    try {
-        res.send(yield ips_1.default.getIpLocation(ip || (0, getIp_js_1.default)(req), latest));
-    }
-    catch (error) {
-        res.send({ error: 1 });
-    }
-}));
 apisRouter.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { text, from, to } = (0, adaptParseBody_1.default)(req);
     res.type('application/json');
