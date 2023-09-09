@@ -16,8 +16,9 @@ exports.getCourseDetail = void 0;
 const axios_1 = __importDefault(require("axios"));
 const htmlTableTo2DArray_1 = __importDefault(require("./utils/htmlTableTo2DArray"));
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76';
-const origin = ['ci', 's.', 'nc', 'u.', 'du', '.t', 'w'].join('-').replace(/-/g, '');
-const pathname = ['/Cour', 'se/ma', 'in/su', 'pport', '/cour', 'seDet', 'ail.h', 'ml?cr', 's='].join('-').replace(/-/g, '');
+const origin = ['ci', 's.', 'nc', 'u.', 'ed', 'u.', 'tw'].join('-').replace(/-/g, '');
+const pathname = ['/Cour', 'se/ma', 'in/su', 'pport', '/cour', 'seDet', 'ail.h', 'tml?c', 'rs='].join('-').replace(/-/g, '');
+console.log(origin, pathname);
 function getCourseDetail(id) {
     return __awaiter(this, void 0, void 0, function* () {
         const res = (yield axios_1.default.get(`https://${origin}${pathname}${id}`, {
