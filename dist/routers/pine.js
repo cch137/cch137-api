@@ -15,9 +15,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const pine_1 = require("../services/pine");
 const adaptParseBody_1 = __importDefault(require("../utils/adaptParseBody"));
+const PineCourse_1 = __importDefault(require("../services/mongoose/models/PineCourse"));
 const pineRouter = express_1.default.Router();
+const courseSerialNumberKey = '流水號 / 課號';
 pineRouter.use('/course-detail', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = (0, adaptParseBody_1.default)(req);
-    res.send(yield (0, pine_1.getCourseDetail)(id));
+    const { id: _id } = (0, adaptParseBody_1.default)(req);
+    const id = (_id || '').toString().padStart(5, '0');
+    const courseDetailFromDatabase = yield PineCourse_1.default.find({ [courseSerialNumberKey]: new RegExp(`^${id}`) });
+    if (courseDetailFromDatabase) {
+        console.log('FOUND');
+        return courseDetailFromDatabase;
+    }
+    const courseDetail = yield (0, pine_1.getCourseDetail)(id);
+    const courseSerialNumber = courseDetail[courseSerialNumberKey];
+    const courseIsExists = !courseSerialNumber || courseSerialNumber.toString().startsWith('/');
+    if (courseIsExists) {
+        PineCourse_1.default.updateOne({ [courseSerialNumberKey]: courseSerialNumber }, { $set: courseDetail }, { upsert: true });
+    }
+    res.send(courseDetail);
 }));
 exports.default = pineRouter;
