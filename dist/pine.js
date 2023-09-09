@@ -13,11 +13,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const ncu_1 = require("./services/ncu");
+const pine_1 = require("./services/pine");
 const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
-const ncuRouter = express_1.default.Router();
-ncuRouter.use('/course-detail', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const pineRouter = express_1.default.Router();
+pineRouter.use('/course-detail', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = (0, adaptParseBody_1.default)(req);
-    res.send(yield (0, ncu_1.getCourseDetail)(id));
+    res.send(yield (0, pine_1.getCourseDetail)(id));
 }));
-exports.default = ncuRouter;
+exports.default = pineRouter;
