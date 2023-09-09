@@ -4,12 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = require("dotenv");
-const server_js_1 = require("./server.js");
-const apis_js_1 = __importDefault(require("./apis.js"));
+const server_1 = require("./server");
+const admin_apis_1 = __importDefault(require("./admin-apis"));
+const apis_1 = __importDefault(require("./apis"));
 (0, dotenv_1.config)();
-(0, apis_js_1.default)();
 const port = process.env.PORT || 3000;
-server_js_1.server.listen(port, () => {
+server_1.server.listen(port, () => {
     console.log(`Server is listening to http://localhost:${port}`);
 });
-server_js_1.app.use('*', (req, res) => res.status(404).end());
+server_1.app.use('/', apis_1.default);
+server_1.app.use('/', admin_apis_1.default);
+server_1.app.use('*', (req, res) => res.status(404).end());

@@ -14,35 +14,59 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
 const express_1 = __importDefault(require("express"));
+const server_js_1 = require("./server.js");
 const getIp_js_1 = __importDefault(require("./utils/getIp.js"));
 const adaptParseBody_1 = __importDefault(require("./utils/adaptParseBody"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
 const ips_1 = __importDefault(require("./services/ips"));
 const lockers_1 = __importDefault(require("./services/lockers"));
+const dc_bot_1 = __importDefault(require("./services/dc-bot"));
 const search_1 = require("./services/search");
 const currency_1 = require("./services/currency");
-const apisRouter = express_1.default.Router();
-apisRouter.use('/', express_1.default.static('public/'));
-apisRouter.get('/', (req, res) => {
+(0, currency_1.init)();
+server_js_1.app.use('/', express_1.default.static('public/'));
+server_js_1.app.get('/', (req, res) => {
     res.send({ t: Date.now() });
 });
-(0, currency_1.init)();
-apisRouter.use('/currency', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/currency', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { from, to } = (0, adaptParseBody_1.default)(req);
     res.send({ rate: yield (0, currency_1.convertCurrency)(from, to) });
 }));
-apisRouter.use('/currency-list', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/currency-list', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.send(yield (0, currency_1.getCurrencyList)());
 }));
-apisRouter.get('/dashboard', (req, res) => {
+server_js_1.app.get('/dashboard', (req, res) => {
     res.sendFile(path_1.default.resolve(__dirname, '../pages/dashboard.html'));
 });
-apisRouter.get('/ip', (req, res) => {
+server_js_1.app.post('/config', (req, res) => {
+    const { passwd, name, value } = (0, adaptParseBody_1.default)(req);
+    if (passwd !== process.env.ADMIN_PASSWORD) {
+        res.send('Incorrect password');
+        return;
+    }
+    switch (name) {
+        case 'dc-bot':
+            if (typeof value !== 'boolean') {
+                res.send('Invalid value');
+                return;
+            }
+            if (value) {
+                dc_bot_1.default.connect();
+            }
+            else {
+                dc_bot_1.default.disconnect();
+            }
+            res.send('OK');
+            return;
+    }
+    res.send('Unknown Action');
+});
+server_js_1.app.get('/ip', (req, res) => {
     res.send({ ip: (0, getIp_js_1.default)(req) });
 });
 ((handle) => {
-    apisRouter.use('/ip-location', handle);
-    apisRouter.use('/ip-loc', handle);
+    server_js_1.app.use('/ip-location', handle);
+    server_js_1.app.use('/ip-loc', handle);
 })((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ip, latest } = (0, adaptParseBody_1.default)(req);
     try {
@@ -52,7 +76,7 @@ apisRouter.get('/ip', (req, res) => {
         res.send({ error: 1 });
     }
 }));
-apisRouter.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { text, from, to } = (0, adaptParseBody_1.default)(req);
     res.type('application/json');
     try {
@@ -62,39 +86,39 @@ apisRouter.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.send({ err });
     }
 }));
-apisRouter.use('/googlethis', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/googlethis', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search\'' });
 }));
-apisRouter.use('/googleresult', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/googleresult', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search-summary\'' });
 }));
-apisRouter.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query } = (0, adaptParseBody_1.default)(req);
     if (!query)
         return res.status(400).send({ error: 'Invalid body' });
     res.send(yield (0, search_1.googleSearch)(query));
 }));
-apisRouter.use('/ddg-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/ddg-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query } = (0, adaptParseBody_1.default)(req);
     if (!query)
         return res.status(400).send({ error: 'Invalid body' });
     res.send(yield (0, search_1.ddgSearch)(query));
 }));
-apisRouter.use('/google-search-summary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/google-search-summary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query, showUrl = true } = (0, adaptParseBody_1.default)(req);
     if (!query)
         return res.status(400).send({ error: 'Invalid body' });
     res.type('text/plain');
     res.send(yield (0, search_1.googleSearchSummary)(showUrl, query));
 }));
-apisRouter.use('/ddg-search-summary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+server_js_1.app.use('/ddg-search-summary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query, showUrl = true } = (0, adaptParseBody_1.default)(req);
     if (!query)
         return res.status(400).send({ error: 'Invalid body' });
     res.type('text/plain');
     res.send(yield (0, search_1.ddgSearchSummary)(showUrl, query));
 }));
-apisRouter.put('/lockers', (req, res) => {
+server_js_1.app.put('/lockers', (req, res) => {
     const { id, item, options = {} } = (0, adaptParseBody_1.default)(req);
     res.type('application/json');
     try {
@@ -109,7 +133,7 @@ apisRouter.put('/lockers', (req, res) => {
         res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
     }
 });
-apisRouter.post('/lockers', (req, res) => {
+server_js_1.app.post('/lockers', (req, res) => {
     const { id, options = {} } = (0, adaptParseBody_1.default)(req);
     res.type('application/json');
     try {
@@ -119,7 +143,7 @@ apisRouter.post('/lockers', (req, res) => {
         res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
     }
 });
-apisRouter.delete('/lockers', (req, res) => {
+server_js_1.app.delete('/lockers', (req, res) => {
     const { id } = (0, adaptParseBody_1.default)(req);
     res.type('application/json');
     try {
@@ -129,11 +153,11 @@ apisRouter.delete('/lockers', (req, res) => {
         res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
     }
 });
-apisRouter.post('/wakeup', (req, res) => {
+server_js_1.app.post('/wakeup', (req, res) => {
     res.send('OK');
 });
 const started = Date.now();
-apisRouter.get('/started', (req, res) => {
+server_js_1.app.get('/started', (req, res) => {
     res.send({ t: started });
 });
-exports.default = apisRouter;
+exports.default = () => true;
