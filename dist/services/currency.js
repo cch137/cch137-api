@@ -14,23 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCurrencyList = exports.convertCurrency = exports.init = void 0;
 const axios_1 = __importDefault(require("axios"));
-const cheerio_1 = require("cheerio");
+const htmlTableTo2DArray_1 = __importDefault(require("./utils/htmlTableTo2DArray"));
 const url = 'https://docs.google.com/spreadsheets/d/1VjdmK8-PBoOt6sRCvZ40G5qmYyxpLzHl5RCSQWejxYk/preview/sheet?gid=1360697588';
-function parseTableTo2DArray(html) {
-    const $ = (0, cheerio_1.load)(html);
-    const table = $('table'); // 選擇HTML中的表格元素
-    const result = [];
-    // 遍歷每一個表格行（tr）
-    table.find('tr').each((rowIndex, rowElement) => {
-        const row = [];
-        // 遍歷行中的每一個單元格（td或th）
-        $(rowElement).find('td, th').each((cellIndex, cellElement) => {
-            row.push($(cellElement).text().trim()); // 將單元格文本添加到行中
-        });
-        result.push(row); // 添加行到結果中
-    });
-    return result;
-}
 let lastFetched = 0;
 const currenctList = new Set();
 const currencyMap = new Map();
@@ -38,7 +23,7 @@ function fetchCurrencies() {
     return __awaiter(this, void 0, void 0, function* () {
         const res = yield axios_1.default.get(url);
         // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
-        const table = parseTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4));
+        const table = (0, htmlTableTo2DArray_1.default)(res.data).slice(1).map(r => r.slice(1, 4));
         currencyMap.clear();
         for (const row of table) {
             const key = `${row[0]}${row[1]}`;
@@ -83,3 +68,4 @@ function getCurrencyList() {
     });
 }
 exports.getCurrencyList = getCurrencyList;
+init();

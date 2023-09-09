@@ -2,6 +2,7 @@ import { config as dotenvConfig } from 'dotenv'
 import { app, server } from './server';
 import adminApis from './admin-apis';
 import apis from './apis';
+import ncuRouter from './ncu';
 
 dotenvConfig()
 
@@ -11,5 +12,6 @@ server.listen(port, () => {
 });
 
 app.use('/', apis)
+app.use('/ncu/', ncuRouter)
 app.use('/', adminApis)
 app.use('*', (req, res) => res.status(404).end())

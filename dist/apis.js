@@ -26,7 +26,6 @@ apisRouter.use('/', express_1.default.static('public/'));
 apisRouter.get('/', (req, res) => {
     res.send({ t: Date.now() });
 });
-(0, currency_1.init)();
 apisRouter.use('/currency', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { from, to } = (0, adaptParseBody_1.default)(req);
     res.send({ rate: yield (0, currency_1.convertCurrency)(from, to) });
@@ -40,10 +39,7 @@ apisRouter.get('/dashboard', (req, res) => {
 apisRouter.get('/ip', (req, res) => {
     res.send({ ip: (0, getIp_js_1.default)(req) });
 });
-((handle) => {
-    apisRouter.use('/ip-location', handle);
-    apisRouter.use('/ip-loc', handle);
-})((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apisRouter.use('/ip-loc', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { ip, latest } = (0, adaptParseBody_1.default)(req);
     try {
         res.send(yield ips_1.default.getIpLocation(ip || (0, getIp_js_1.default)(req), latest));
@@ -58,15 +54,9 @@ apisRouter.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0, fun
     try {
         res.status(200).send(yield (0, google_translate_api_1.default)(text, { from, to }));
     }
-    catch (err) {
-        res.send({ err });
+    catch (error) {
+        res.send({ err: error });
     }
-}));
-apisRouter.use('/googlethis', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search\'' });
-}));
-apisRouter.use('/googleresult', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.status(404).send({ error: 'This path has been deprecated. Please use: \'/google-search-summary\'' });
 }));
 apisRouter.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query } = (0, adaptParseBody_1.default)(req);
@@ -98,12 +88,10 @@ apisRouter.put('/lockers', (req, res) => {
     const { id, item, options = {} } = (0, adaptParseBody_1.default)(req);
     res.type('application/json');
     try {
-        if (typeof id === 'string') {
+        if (typeof id === 'string')
             res.send(lockers_1.default.putItem(id, item, options === null || options === void 0 ? void 0 : options.privateKey));
-        }
-        else {
+        else
             res.send(lockers_1.default.addItem(item, options));
-        }
     }
     catch (err) {
         res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
