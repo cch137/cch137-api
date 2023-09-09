@@ -21,7 +21,7 @@ const courseSerialNumberKey = '流水號 / 課號';
 pineRouter.use('/course-detail', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id: _id } = (0, adaptParseBody_1.default)(req);
     const id = (_id || '').toString().padStart(5, '0');
-    const courseDetailFromDatabase = yield PineCourse_1.default.find({ [courseSerialNumberKey]: new RegExp(`^${id}`) });
+    const courseDetailFromDatabase = yield PineCourse_1.default.find({ [courseSerialNumberKey]: { $regex: new RegExp(`^${id}`) } });
     if (courseDetailFromDatabase) {
         console.log('FOUND');
         return courseDetailFromDatabase;

@@ -32,4 +32,4 @@ exports.default = (0, mongoose_1.model)('PineCourse', new mongoose_1.Schema({
     mtime: { type: Number },
 }, {
     versionKey: false
-}), 'pine-course');
+}), 'PineCourse');

@@ -10,7 +10,7 @@ const courseSerialNumberKey = '流水號 / 課號';
 pineRouter.use('/course-detail', async (req, res) => {
   const { id: _id } = adaptParseBody(req);
   const id = ((_id as undefined | string | number) || '').toString().padStart(5, '0');
-  const courseDetailFromDatabase = await PineCourse.find({ [courseSerialNumberKey]: new RegExp(`^${id}`) })
+  const courseDetailFromDatabase = await PineCourse.find({ [courseSerialNumberKey]: { $regex: new RegExp(`^${id}`) } })
   if (courseDetailFromDatabase) {
     console.log('FOUND');
     return courseDetailFromDatabase;

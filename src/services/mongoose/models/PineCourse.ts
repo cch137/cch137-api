@@ -31,4 +31,4 @@ export default model('PineCourse', new Schema({
   mtime: { type: Number },
 }, {
   versionKey: false
-}), 'pine-course')
+}), 'PineCourse')
