@@ -15,7 +15,7 @@ async function fetchCurrencies() {
     const key = `${row[0]}${row[1]}`
     if (key) {
       currencyMap.set(key, +row[2])
-      currenctList.add(row[0])
+      currenctList.add(row[0] as string)
     }
   }
   lastFetched = Date.now()
@@ -37,16 +37,16 @@ async function convertCurrency(fromCurrency: string, toCurrency: string): Promis
 }
 
 async function init() {
-  await getCurrencyMap()
-  console.log('Currency table inited.')
-  return
+  await getCurrencyMap();
+  console.log('Currency table inited.');
+  return;
 }
 
 async function getCurrencyList() {
   return [...currenctList]
 }
 
-init()
+// init()
 
 export {
   init,

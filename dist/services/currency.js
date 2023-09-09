@@ -68,4 +68,3 @@ function getCurrencyList() {
     });
 }
 exports.getCurrencyList = getCurrencyList;
-init();

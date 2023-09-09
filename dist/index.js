@@ -9,11 +9,11 @@ const admin_apis_1 = __importDefault(require("./admin-apis"));
 const apis_1 = __importDefault(require("./apis"));
 const ncu_1 = __importDefault(require("./ncu"));
 (0, dotenv_1.config)();
-const port = process.env.PORT || 3000;
-server_1.server.listen(port, () => {
-    console.log(`Server is listening to http://localhost:${port}`);
-});
 server_1.app.use('/', apis_1.default);
 server_1.app.use('/ncu/', ncu_1.default);
 server_1.app.use('/', admin_apis_1.default);
 server_1.app.use('*', (req, res) => res.status(404).end());
+const port = process.env.PORT || 3000;
+server_1.server.listen(port, () => {
+    console.log(`Server is listening to http://localhost:${port}`);
+});
