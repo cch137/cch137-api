@@ -12,38 +12,46 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrencyList = exports.convertCurrency = exports.init = void 0;
+exports.getCurrencyList = exports.convertCurrency = void 0;
 const axios_1 = __importDefault(require("axios"));
 const htmlTableTo2DArray_1 = __importDefault(require("./utils/htmlTableTo2DArray"));
 const url = 'https://docs.google.com/spreadsheets/d/1VjdmK8-PBoOt6sRCvZ40G5qmYyxpLzHl5RCSQWejxYk/preview/sheet?gid=1360697588';
 let lastFetched = 0;
-const currenctList = new Set();
+let fetching = null;
+const currenctSet = new Set();
 const currencyMap = new Map();
-function fetchCurrencies() {
+function _fetchCurrencies() {
     return __awaiter(this, void 0, void 0, function* () {
-        const res = yield axios_1.default.get(url);
-        // SLICE 2 是因為第一行是空的，第二行是 "From"（table head）
-        const table = (0, htmlTableTo2DArray_1.default)(res.data).slice(1).map(r => r.slice(1, 4));
-        currencyMap.clear();
-        for (const row of table) {
-            const key = `${row[0]}${row[1]}`;
-            if (key) {
-                currencyMap.set(key, +row[2]);
-                currenctList.add(row[0]);
-            }
+        if (fetching === null) {
+            fetching = (() => __awaiter(this, void 0, void 0, function* () {
+                const res = yield axios_1.default.get(url);
+                // SLICE 1 是因為第一行是空的，第二行是 "From"（table head）
+                const table = (0, htmlTableTo2DArray_1.default)(res.data).slice(1).map(r => r.slice(1, 4));
+                currencyMap.clear();
+                currenctSet.clear();
+                for (const row of table) {
+                    const key = `${row[0]}${row[1]}`;
+                    if (key) {
+                        currencyMap.set(key, +row[2]);
+                        currenctSet.add(row[0]);
+                    }
+                }
+                fetching = null;
+            }))();
         }
-        lastFetched = Date.now();
+        return yield fetching;
     });
 }
 function getCurrencyMap() {
     return __awaiter(this, void 0, void 0, function* () {
         if (lastFetched + 5 * 60000 < Date.now()) {
             if (currencyMap.size === 0) {
-                yield fetchCurrencies();
+                yield _fetchCurrencies();
             }
             else {
-                fetchCurrencies();
+                _fetchCurrencies();
             }
+            lastFetched = Date.now();
         }
         return currencyMap;
     });
@@ -54,17 +62,12 @@ function convertCurrency(fromCurrency, toCurrency) {
     });
 }
 exports.convertCurrency = convertCurrency;
-function init() {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield getCurrencyMap();
-        console.log('Currency table inited.');
-        return;
-    });
-}
-exports.init = init;
 function getCurrencyList() {
     return __awaiter(this, void 0, void 0, function* () {
-        return [...currenctList];
+        if (currencyMap.size === 0) {
+            yield getCurrencyMap();
+        }
+        return [...currenctSet];
     });
 }
 exports.getCurrencyList = getCurrencyList;
