@@ -23,7 +23,8 @@ function toCourseId(id) {
     return (+(id || 0)).toString().padStart(5, '0');
 }
 exports.toCourseId = toCourseId;
-const courseSerialNumberKey = '流水號 / 課號';
+const courseAge = 86400000;
+const courseSerialNumberKey = '號課 / 號水流'.split('').reverse().join('');
 exports.courseSerialNumberKey = courseSerialNumberKey;
 const courseFetching = new Map();
 function _fetchCourseDetail(id) {
@@ -38,7 +39,7 @@ function _fetchCourseDetail(id) {
                     }
                 })).data;
                 const data = (0, htmlTableTo2DArray_1.default)(res);
-                const courseDetail = {};
+                const courseDetail = { mtime: Date.now() };
                 const namelist = [data.pop().flat(), data.pop()[0]].reverse();
                 const conditions = [data.pop().flat(), data.pop()[0]].reverse();
                 const competencies = [data.pop().flat(3), data.pop()[0]].reverse();
@@ -49,8 +50,9 @@ function _fetchCourseDetail(id) {
                 const courseSerialNumber = courseDetail[courseSerialNumberKey];
                 const courseIsExists = !(!courseSerialNumber || courseSerialNumber.toString().startsWith('/'));
                 if (courseIsExists) {
-                    console.log('Saving course:', courseSerialNumber);
-                    yield PineCourse_1.default.create(Object.assign(Object.assign({}, courseDetail), { mtime: Date.now() }));
+                    yield PineCourse_1.default.deleteMany({ [courseSerialNumberKey]: courseSerialNumber });
+                    yield PineCourse_1.default.create(courseDetail);
+                    console.log(`Saved course: ${courseSerialNumber}`);
                 }
                 return courseDetail;
             }))());
@@ -62,7 +64,7 @@ function getCourseDetail(id) {
     return __awaiter(this, void 0, void 0, function* () {
         id = toCourseId(id);
         const courseDetailFromDatabase = yield PineCourse_1.default.findOne({ [courseSerialNumberKey]: { $regex: new RegExp(`^${id}`) } }, { _id: 0 });
-        return courseDetailFromDatabase && (courseDetailFromDatabase.mtime || 0) + 86400000 < Date.now()
+        return courseDetailFromDatabase && (courseDetailFromDatabase.mtime || 0) + courseAge > Date.now()
             ? courseDetailFromDatabase
             : yield _fetchCourseDetail(id);
     });

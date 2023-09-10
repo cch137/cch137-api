@@ -11,9 +11,10 @@ function toCourseId(id: number | string): string {
   return (+((id as undefined | string | number) || 0)).toString().padStart(5, '0');
 }
 
-const courseSerialNumberKey = '流水號 / 課號';
+const courseAge = 86_400_000;
+const courseSerialNumberKey = '號課 / 號水流'.split('').reverse().join('');
 
-type CourseDetail = Record<string,string|string[][]>
+type CourseDetail = Record<string,number|string|string[][]>
 
 const courseFetching = new Map<string, Promise<CourseDetail>>();
 
@@ -31,7 +32,7 @@ async function _fetchCourseDetail(id: string | number) {
         }
       )).data;
       const data = htmlTableTo2DArray(res)
-      const courseDetail: CourseDetail = {}
+      const courseDetail: CourseDetail = { mtime: Date.now() }
       const namelist = [(data.pop() as ParsedTable).flat() as string[], (data.pop() as string[])[0]].reverse();
       const conditions = [(data.pop() as ParsedTable).flat() as string[], (data.pop() as string[])[0]].reverse();
       const competencies = [(data.pop() as ParsedTable).flat(3) as string[], (data.pop() as string[])[0]].reverse();
@@ -42,8 +43,9 @@ async function _fetchCourseDetail(id: string | number) {
       const courseSerialNumber = courseDetail[courseSerialNumberKey] as string;
       const courseIsExists = !(!courseSerialNumber || courseSerialNumber.toString().startsWith('/'));
       if (courseIsExists) {
-        console.log('Saving course:', courseSerialNumber);
-        await PineCourse.create({ ...courseDetail, mtime: Date.now() });
+        await PineCourse.deleteMany({ [courseSerialNumberKey]: courseSerialNumber });
+        await PineCourse.create(courseDetail);
+        console.log(`Saved course: ${courseSerialNumber}`);
       }
       return courseDetail;
     })())
@@ -57,7 +59,7 @@ async function getCourseDetail(id: string | number) {
     { [courseSerialNumberKey]: { $regex: new RegExp(`^${id}`) } },
     { _id: 0 }
   );
-  return courseDetailFromDatabase && (courseDetailFromDatabase!.mtime || 0) + 86_400_000 < Date.now()
+  return courseDetailFromDatabase && (courseDetailFromDatabase!.mtime || 0) + courseAge > Date.now()
     ? courseDetailFromDatabase
     : await _fetchCourseDetail(id);
 }
