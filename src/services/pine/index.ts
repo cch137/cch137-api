@@ -1,6 +1,22 @@
-import axios from "axios";
-import htmlTableTo2DArray, { ParsedTable } from "./utils/htmlTableTo2DArray";
-import PineCourse from "../services/mongoose/models/PineCourse";
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import he from 'he';
+import htmlTableTo2DArray, { ParsedTable } from '../utils/htmlTableTo2DArray';
+import PineCourse from '../mongoose/models/PineCourse';
+
+// const SignOpenForData = JSON.parse(fs.readFileSync(path.resolve(__dirname + '../../../../data/SignOpenForData.json'), 'utf8'));
+
+// for (const key of Object.keys(SignOpenForData)) {
+//   const item = SignOpenForData[key];
+//   if (key.startsWith('cofuZdept')) {
+//     delete SignOpenForData[key];
+//   }
+//   if ('text' in item) {
+//     item.text = he.decode(item.text)
+//   }
+// }
+// console.log(SignOpenForData);
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76';
 

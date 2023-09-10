@@ -25,11 +25,12 @@ function _fetchCurrencies() {
         if (fetching === null) {
             fetching = (() => __awaiter(this, void 0, void 0, function* () {
                 const res = yield axios_1.default.get(url);
-                // SLICE 1 是因為第一行是空的，第二行是 "From"（table head）
-                const table = (0, htmlTableTo2DArray_1.default)(res.data).slice(1).map(r => r.slice(1, 4));
+                const table = (0, htmlTableTo2DArray_1.default)(res.data).map(r => r.slice(1, 4));
                 currencyMap.clear();
                 currenctSet.clear();
                 for (const row of table) {
+                    if (!(row[0] && row[1]))
+                        continue;
                     const key = `${row[0]}${row[1]}`;
                     if (key) {
                         currencyMap.set(key, +row[2]);

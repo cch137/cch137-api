@@ -11,11 +11,11 @@ async function _fetchCurrencies() {
   if (fetching === null) {
     fetching = (async () => {
       const res = await axios.get(url)
-      // SLICE 1 是因為第一行是空的，第二行是 "From"（table head）
-      const table = htmlTableTo2DArray(res.data).slice(1).map(r => r.slice(1, 4)) as string[][]
+      const table = htmlTableTo2DArray(res.data).map(r => r.slice(1, 4)) as string[][]
       currencyMap.clear()
       currenctSet.clear()
       for (const row of table) {
+        if (!(row[0] && row[1])) continue;
         const key = `${row[0]}${row[1]}`
         if (key) {
           currencyMap.set(key, +row[2])

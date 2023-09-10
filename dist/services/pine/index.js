@@ -14,8 +14,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCourseDetail = exports.toCourseId = exports.courseSerialNumberKey = void 0;
 const axios_1 = __importDefault(require("axios"));
-const htmlTableTo2DArray_1 = __importDefault(require("./utils/htmlTableTo2DArray"));
-const PineCourse_1 = __importDefault(require("../services/mongoose/models/PineCourse"));
+const htmlTableTo2DArray_1 = __importDefault(require("../utils/htmlTableTo2DArray"));
+const PineCourse_1 = __importDefault(require("../mongoose/models/PineCourse"));
+// const SignOpenForData = JSON.parse(fs.readFileSync(path.resolve(__dirname + '../../../../data/SignOpenForData.json'), 'utf8'));
+// for (const key of Object.keys(SignOpenForData)) {
+//   const item = SignOpenForData[key];
+//   if (key.startsWith('cofuZdept')) {
+//     delete SignOpenForData[key];
+//   }
+//   if ('text' in item) {
+//     item.text = he.decode(item.text)
+//   }
+// }
+// console.log(SignOpenForData);
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76';
 const origin = ['ci', 's.', 'nc', 'u.', 'ed', 'u.', 'tw'].join('-').replace(/-/g, '');
 const pathname = ['/Cour', 'se/ma', 'in/su', 'pport', '/cour', 'seDet', 'ail.h', 'tml?c', 'rs='].join('-').replace(/-/g, '');
