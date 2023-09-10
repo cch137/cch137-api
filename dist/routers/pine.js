@@ -18,22 +18,8 @@ const adaptParseBody_1 = __importDefault(require("../utils/adaptParseBody"));
 const PineCourse_1 = __importDefault(require("../services/mongoose/models/PineCourse"));
 PineCourse_1.default.schema.set('validateBeforeSave', false);
 const pineRouter = express_1.default.Router();
-const courseSerialNumberKey = '流水號 / 課號';
 pineRouter.use('/course-detail', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id: _id } = (0, adaptParseBody_1.default)(req);
-    const id = (_id || '').toString().padStart(5, '0');
-    const courseDetailFromDatabase = yield PineCourse_1.default.findOne({ [courseSerialNumberKey]: { $regex: new RegExp(`^${id}`) } });
-    if (courseDetailFromDatabase) {
-        console.log('FOUND', courseDetailFromDatabase);
-        res.send(courseDetailFromDatabase);
-        return;
-    }
-    const courseDetail = yield (0, pine_1.getCourseDetail)(id);
-    const courseSerialNumber = courseDetail[courseSerialNumberKey];
-    const courseIsExists = !(!courseSerialNumber || courseSerialNumber.toString().startsWith('/'));
-    if (courseIsExists) {
-        PineCourse_1.default.create(Object.assign(Object.assign({}, courseDetail), { mtime: Date.now() }));
-    }
-    res.send(courseDetail);
+    const { id } = (0, adaptParseBody_1.default)(req);
+    res.send(yield (0, pine_1.getCourseDetail)(id));
 }));
 exports.default = pineRouter;
