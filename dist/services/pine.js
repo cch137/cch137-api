@@ -24,7 +24,7 @@ function toCourseId(id) {
 }
 exports.toCourseId = toCourseId;
 const courseAge = 86400000;
-const courseSerialNumberKey = '號課 / 號水流'.split('').reverse().join('');
+const courseSerialNumberKey = '\u6D41\u6C34\u865F / \u8AB2\u865F';
 exports.courseSerialNumberKey = courseSerialNumberKey;
 const courseFetching = new Map();
 function _fetchCourseDetail(id) {

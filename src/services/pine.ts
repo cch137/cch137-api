@@ -12,7 +12,7 @@ function toCourseId(id: number | string): string {
 }
 
 const courseAge = 86_400_000;
-const courseSerialNumberKey = '號課 / 號水流'.split('').reverse().join('');
+const courseSerialNumberKey = '\u6D41\u6C34\u865F / \u8AB2\u865F';
 
 type CourseDetail = Record<string,number|string|string[][]>
 
