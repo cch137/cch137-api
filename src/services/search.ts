@@ -1,5 +1,7 @@
-import googlethis from 'googlethis'
 import axios from 'axios'
+import { load as cheerioLoad } from 'cheerio'
+import fs from 'fs'
+import qs from 'qs'
 
 interface SearcherResultItem {
   title?: string;
@@ -22,15 +24,27 @@ const ddgSearch = async (...queries: string[]) => {
   }))).flat()
 }
 
+async function _googleSearch(query: string): Promise<SearcherResultItem[]> {
+  // old version use 'googlethis' package
+  const res = await axios.get(`https://www.google.com/search?q=${query}`)
+  const $ = cheerioLoad(res.data)
+  const items = [...$('#main').children('div')]
+  items.shift()
+  while (items[0].children.length == 0) {
+    items.shift()
+  }
+  return items.map((item) => {
+    const a = $(item).find('a').first()
+    const url = qs.parse((a.attr('href') || '').split('?').at(-1) || '')?.q as string || ''
+    const title = a.find('h3').first().text() || undefined
+    const description = $(item).children().last().children().last().text().replace(/�/g, '') || undefined
+    if (!(/^https?:/).test(url)) return null
+    return { url, title, description }
+  }).filter(i => i) as SearcherResultItem[]
+}
+
 const googleSearch = async (...queries: string[]) => {
-  return (await Promise.all(queries.map(async (query) => {
-    try {
-      const searching = await googlethis.search(query)
-      return [...searching.results, ...searching.top_stories] as SearcherResultItem[]
-    } catch {
-      return []
-    }
-  }))).flat()
+  return (await Promise.all(queries.map(q => _googleSearch(q)))).flat()
 }
 
 const summary = (items: SearcherResultItem[], showUrl: boolean = true) => {

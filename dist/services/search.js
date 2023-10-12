@@ -13,8 +13,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ddgSearchSummary = exports.googleSearchSummary = exports.ddgSearch = exports.googleSearch = void 0;
-const googlethis_1 = __importDefault(require("googlethis"));
 const axios_1 = __importDefault(require("axios"));
+const cheerio_1 = require("cheerio");
+const qs_1 = __importDefault(require("qs"));
 const ddgSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* () {
     return (yield Promise.all(queries.map((query) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -31,16 +32,30 @@ const ddgSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* ()
     })))).flat();
 });
 exports.ddgSearch = ddgSearch;
+function _googleSearch(query) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // old version use 'googlethis' package
+        const res = yield axios_1.default.get(`https://www.google.com/search?q=${query}`);
+        const $ = (0, cheerio_1.load)(res.data);
+        const items = [...$('#main').children('div')];
+        items.shift();
+        while (items[0].children.length == 0) {
+            items.shift();
+        }
+        return items.map((item) => {
+            var _a;
+            const a = $(item).find('a').first();
+            const url = ((_a = qs_1.default.parse((a.attr('href') || '').split('?').at(-1) || '')) === null || _a === void 0 ? void 0 : _a.q) || '';
+            const title = a.find('h3').first().text() || undefined;
+            const description = $(item).children().last().children().last().text().replace(/�/g, '') || undefined;
+            if (!(/^https?:/).test(url))
+                return null;
+            return { url, title, description };
+        }).filter(i => i);
+    });
+}
 const googleSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* () {
-    return (yield Promise.all(queries.map((query) => __awaiter(void 0, void 0, void 0, function* () {
-        try {
-            const searching = yield googlethis_1.default.search(query);
-            return [...searching.results, ...searching.top_stories];
-        }
-        catch (_b) {
-            return [];
-        }
-    })))).flat();
+    return (yield Promise.all(queries.map(q => _googleSearch(q)))).flat();
 });
 exports.googleSearch = googleSearch;
 const summary = (items, showUrl = true) => {
