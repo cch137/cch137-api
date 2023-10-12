@@ -16,26 +16,62 @@ exports.ddgSearchSummary = exports.googleSearchSummary = exports.ddgSearch = exp
 const axios_1 = __importDefault(require("axios"));
 const cheerio_1 = require("cheerio");
 const qs_1 = __importDefault(require("qs"));
-const ddgSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* () {
-    return (yield Promise.all(queries.map((query) => __awaiter(void 0, void 0, void 0, function* () {
-        try {
-            const searching = (yield axios_1.default.get(`https://ddg-api.herokuapp.com/search?query=${query}`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50'
-                }
-            })).data;
-            return searching.map((p) => ({ title: p.title || '', url: p.link || '', description: p.snippet || '' }));
-        }
-        catch (_a) {
-            return [];
-        }
-    })))).flat();
-});
-exports.ddgSearch = ddgSearch;
+const random_1 = __importDefault(require("../utils/random"));
+const userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+];
+function urlTest(url) {
+    return (/^https?:/).test(url);
+}
+function createHeader() {
+    return {
+        'User-Agent': random_1.default.choice(userAgents),
+    };
+}
+function _ddgSearch(query) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const region = 'wt-wt';
+        const timelimit = undefined;
+        const safesearch = 'off';
+        const headers = createHeader();
+        const res1 = yield axios_1.default.get(`https://duckduckgo.com/?${qs_1.default.stringify({
+            q: query,
+            kl: region,
+            p: ({ on: 1, moderate: -1, off: -2 })[safesearch],
+            df: timelimit
+        })}`, { headers });
+        const $1 = (0, cheerio_1.load)(res1.data);
+        const href1 = $1('#deep_preload_link').attr('href') || '';
+        const href2 = $1('#deep_preload_script').attr('src') || '';
+        const vqd = (_a = (qs_1.default.parse(href1.split('?').at(-1) || '') || qs_1.default.parse(href2.split('?').at(-1) || ''))) === null || _a === void 0 ? void 0 : _a.vqd;
+        const ddgSeaerchUrl = `https://links.duckduckgo.com/d.js?${qs_1.default.stringify({
+            q: query,
+            kl: region,
+            l: region,
+            bing_market: `${region.split('-')[0]}-${(region.split('-').at(-1) || '').toUpperCase()}`,
+            s: 0,
+            df: timelimit,
+            vqd: vqd,
+            o: 'json',
+            sp: 0,
+        })}`;
+        return (yield axios_1.default.get(ddgSeaerchUrl, { headers })).data.results
+            .map(r => ({
+            title: r.t || '',
+            description: (0, cheerio_1.load)(r.a || '').text(),
+            url: r.u || ''
+        }))
+            .filter(r => urlTest(r.url));
+    });
+}
 function _googleSearch(query) {
     return __awaiter(this, void 0, void 0, function* () {
         // old version use 'googlethis' package
-        const res = yield axios_1.default.get(`https://www.google.com/search?q=${query}`);
+        const res = yield axios_1.default.get(`https://www.google.com/search?q=${query}`, { headers: createHeader() });
         const $ = (0, cheerio_1.load)(res.data);
         const items = [...$('#main').children('div')];
         items.shift();
@@ -48,12 +84,16 @@ function _googleSearch(query) {
             const url = ((_a = qs_1.default.parse((a.attr('href') || '').split('?').at(-1) || '')) === null || _a === void 0 ? void 0 : _a.q) || '';
             const title = a.find('h3').first().text() || undefined;
             const description = $(item).children().last().children().last().text().replace(/�/g, '') || undefined;
-            if (!(/^https?:/).test(url))
+            if (!urlTest(url))
                 return null;
             return { url, title, description };
         }).filter(i => i);
     });
 }
+const ddgSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* () {
+    return (yield Promise.all(queries.map(q => _ddgSearch(q)))).flat();
+});
+exports.ddgSearch = ddgSearch;
 const googleSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* () {
     return (yield Promise.all(queries.map(q => _googleSearch(q)))).flat();
 });
