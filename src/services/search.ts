@@ -85,11 +85,25 @@ async function _googleSearch(query: string): Promise<SearcherResultItem[]> {
 }
 
 const ddgSearch = async (...queries: string[]) => {
-  return (await Promise.all(queries.map(q => _ddgSearch(q)))).flat()
+  for (let i = 0; i < 3; i++) {
+    try {
+      return (await Promise.all(queries.map(q => _ddgSearch(q)))).flat()
+    } catch (err) {
+      console.log(err)
+    }
+  }
+  return []
 }
 
 const googleSearch = async (...queries: string[]) => {
-  return (await Promise.all(queries.map(q => _googleSearch(q)))).flat()
+  for (let i = 0; i < 3; i++) {
+    try {
+      return (await Promise.all(queries.map(q => _googleSearch(q)))).flat()
+    } catch (err) {
+      console.log(err)
+    }
+  }
+  return []
 }
 
 const summary = (items: SearcherResultItem[], showUrl: boolean = true) => {

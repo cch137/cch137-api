@@ -91,11 +91,27 @@ function _googleSearch(query) {
     });
 }
 const ddgSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* () {
-    return (yield Promise.all(queries.map(q => _ddgSearch(q)))).flat();
+    for (let i = 0; i < 3; i++) {
+        try {
+            return (yield Promise.all(queries.map(q => _ddgSearch(q)))).flat();
+        }
+        catch (err) {
+            console.log(err);
+        }
+    }
+    return [];
 });
 exports.ddgSearch = ddgSearch;
 const googleSearch = (...queries) => __awaiter(void 0, void 0, void 0, function* () {
-    return (yield Promise.all(queries.map(q => _googleSearch(q)))).flat();
+    for (let i = 0; i < 3; i++) {
+        try {
+            return (yield Promise.all(queries.map(q => _googleSearch(q)))).flat();
+        }
+        catch (err) {
+            console.log(err);
+        }
+    }
+    return [];
 });
 exports.googleSearch = googleSearch;
 const summary = (items, showUrl = true) => {
