@@ -71,7 +71,7 @@ function _ddgSearch(query) {
 function _googleSearch(query) {
     return __awaiter(this, void 0, void 0, function* () {
         // old version use 'googlethis' package
-        const res = yield axios_1.default.get(`https://www.google.com/search?q=${query}`, { headers: createHeader() });
+        const res = yield axios_1.default.get(`https://www.google.com/search?q=${query}`);
         const $ = (0, cheerio_1.load)(res.data);
         const items = [...$('#main').children('div')];
         items.shift();

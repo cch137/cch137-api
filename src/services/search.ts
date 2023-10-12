@@ -67,7 +67,7 @@ async function _ddgSearch(query: string) {
 
 async function _googleSearch(query: string): Promise<SearcherResultItem[]> {
   // old version use 'googlethis' package
-  const res = await axios.get(`https://www.google.com/search?q=${query}`, { headers: createHeader() })
+  const res = await axios.get(`https://www.google.com/search?q=${query}`)
   const $ = cheerioLoad(res.data)
   const items = [...$('#main').children('div')]
   items.shift()
