@@ -6,6 +6,7 @@ import type { LockerOptions } from '../services/lockers';
 import lockerManager from '../services/lockers';
 import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from '../services/search';
 import { convertCurrency, getCurrencyList } from '../services/currency'
+import ls from '../services/ls';
 
 const apisRouter = express.Router();
 
@@ -92,6 +93,24 @@ apisRouter.delete('/lockers', (req, res) => {
     res.send(lockerManager.destroyItem(id));
   } catch (err) {
     res.status(400).send({ name: (err as Error)?.name, message: (err as Error)?.message });
+  }
+});
+
+apisRouter.get('/ls/list', (req, res) => {
+  res.type('application/json');
+  try {
+    res.send(ls.list);
+  } catch (err) {
+    res.status(500).send(`${err}`);
+  }
+});
+
+apisRouter.get('/ls/:fn', (req, res) => {
+  res.type('application/json');
+  try {
+    res.send(ls.get(req.params.fn));
+  } catch (err) {
+    res.status(404).send(`Not Found`);
   }
 });
 

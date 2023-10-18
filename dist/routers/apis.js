@@ -19,6 +19,7 @@ const adaptParseBody_1 = __importDefault(require("../utils/adaptParseBody"));
 const lockers_1 = __importDefault(require("../services/lockers"));
 const search_1 = require("../services/search");
 const currency_1 = require("../services/currency");
+const ls_1 = __importDefault(require("../services/ls"));
 const apisRouter = express_1.default.Router();
 apisRouter.use('/', express_1.default.static('public/'));
 apisRouter.get('/', (req, res) => {
@@ -101,6 +102,24 @@ apisRouter.delete('/lockers', (req, res) => {
     }
     catch (err) {
         res.status(400).send({ name: err === null || err === void 0 ? void 0 : err.name, message: err === null || err === void 0 ? void 0 : err.message });
+    }
+});
+apisRouter.get('/ls/list', (req, res) => {
+    res.type('application/json');
+    try {
+        res.send(ls_1.default.list);
+    }
+    catch (err) {
+        res.status(500).send(`${err}`);
+    }
+});
+apisRouter.get('/ls/:fn', (req, res) => {
+    res.type('application/json');
+    try {
+        res.send(ls_1.default.get(req.params.fn));
+    }
+    catch (err) {
+        res.status(404).send(`Not Found`);
     }
 });
 apisRouter.post('/wakeup', (req, res) => {
