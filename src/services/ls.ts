@@ -9,6 +9,8 @@ export default {
     if (filename.includes('./') || filename.includes('.\\')) {
       throw 'cannot read directory'
     }
-    return fs.readFileSync(path.resolve(__dirname + `../../../data/ls/${filename}`), 'utf8').toString();
+    return JSON.parse(
+      fs.readFileSync(path.resolve(__dirname + `../../../data/ls/${filename}`), 'utf8')
+    )
   }
 }

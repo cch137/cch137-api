@@ -12,6 +12,6 @@ exports.default = {
         if (filename.includes('./') || filename.includes('.\\')) {
             throw 'cannot read directory';
         }
-        return fs_1.default.readFileSync(path_1.default.resolve(__dirname + `../../../data/ls/${filename}`), 'utf8').toString();
+        return JSON.parse(fs_1.default.readFileSync(path_1.default.resolve(__dirname + `../../../data/ls/${filename}`), 'utf8'));
     }
 };
