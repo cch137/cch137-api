@@ -13,15 +13,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
+const qs_1 = __importDefault(require("qs"));
 function preview(url) {
     return __awaiter(this, void 0, void 0, function* () {
         const metadataUrl = `https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=${url}`;
         const resourceUrl = (yield axios_1.default.get(metadataUrl)).data.href;
+        const { content_type: type, filename } = qs_1.default.parse(resourceUrl.split('?').at(-1));
         const res = (yield axios_1.default.get(resourceUrl, { responseType: 'stream' }));
         return {
             res,
             data: res.data,
-            type: res.headers['content-type'] || res.headers['Content-Type'],
+            type: type || res.headers['content-type'] || res.headers['Content-Type'],
+            filename
         };
     });
 }

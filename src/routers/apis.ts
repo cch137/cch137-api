@@ -118,8 +118,10 @@ apisRouter.get('/ls/:fn', (req, res) => {
 apisRouter.get('/ls/i/:id', async (req, res) => {
   try {
     const id = req.params.id;
+    const download = (req.query.download || req.query.dl || 0).toString() != '0';
     if (!id) throw 'NOT FOUND';
     const resource = await yadisk.preview(`https://yadi.sk/i/${id}`);
+    res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${resource.filename}"`);
     res.type(resource.type);
     resource.data.pipe(res);
   } catch (err) {
