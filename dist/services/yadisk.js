@@ -14,18 +14,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const qs_1 = __importDefault(require("qs"));
+const caches = [];
+function get_cache(key) {
+    for (const cache of caches) {
+        if (cache[0] === key)
+            return cache[1];
+    }
+    return null;
+}
+function set_cache(key, value) {
+    caches.unshift([key, value]);
+    while (caches.length > 256)
+        caches.pop();
+    return value;
+}
 function preview(url) {
     return __awaiter(this, void 0, void 0, function* () {
+        const cache = get_cache(url);
+        if (cache !== null)
+            return cache;
         const metadataUrl = `https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=${url}`;
         const resourceUrl = (yield axios_1.default.get(metadataUrl)).data.href;
         const { content_type: type, filename } = qs_1.default.parse(resourceUrl.split('?').at(-1));
-        const res = (yield axios_1.default.get(resourceUrl, { responseType: 'stream' }));
-        return {
+        const res = yield axios_1.default.get(resourceUrl, { responseType: 'stream' });
+        return set_cache(url, {
             res,
             data: res.data,
             type: type || res.headers['content-type'] || res.headers['Content-Type'],
             filename
-        };
+        });
     });
 }
 exports.default = {
