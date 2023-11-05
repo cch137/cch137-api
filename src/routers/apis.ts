@@ -115,11 +115,11 @@ apisRouter.get('/ls/:fn', (req, res) => {
   }
 });
 
-apisRouter.get('/yadisk/preview', async (req, res) => {
+apisRouter.get('/ls/i/:id', async (req, res) => {
   try {
-    const url = req.query?.url;
-    if (typeof url !== 'string') throw 'NOT FOUND';
-    const resource = await yadisk.preview(url);
+    const id = req.params.id;
+    if (!id) throw 'NOT FOUND';
+    const resource = await yadisk.preview(`https://yadi.sk/i/${id}`);
     res.type(resource.type);
     resource.data.pipe(res);
   } catch (err) {

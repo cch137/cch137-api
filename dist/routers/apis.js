@@ -123,13 +123,12 @@ apisRouter.get('/ls/:fn', (req, res) => {
         res.status(404).send(`Not Found`);
     }
 });
-apisRouter.get('/yadisk/preview', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+apisRouter.get('/ls/i/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const url = (_a = req.query) === null || _a === void 0 ? void 0 : _a.url;
-        if (typeof url !== 'string')
+        const id = req.params.id;
+        if (!id)
             throw 'NOT FOUND';
-        const resource = yield yadisk_1.default.preview(url);
+        const resource = yield yadisk_1.default.preview(`https://yadi.sk/i/${id}`);
         res.type(resource.type);
         resource.data.pipe(res);
     }
