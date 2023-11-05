@@ -1,5 +1,6 @@
 import axios from "axios"
 import qs from "qs"
+import fs from "fs"
 
 const caches: [string,any][] = [];
 
@@ -22,11 +23,18 @@ async function preview(url: string) {
   const metadataUrl = `https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=${url}`
   const resourceUrl = (await axios.get(metadataUrl)).data.href as string;
   const { content_type: type, filename } = qs.parse(resourceUrl.split('?').at(-1) as string);
-  const res = await axios.get(resourceUrl, { responseType: 'stream' });
+  const resource = await axios.get(resourceUrl, { responseType: 'stream' });
+  let cached = false;
   return set_cache(url, {
-    res,
-    data: res.data,
-    type: type || res.headers['content-type'] || res.headers['Content-Type'],
+    get cached () { return cached },
+    data: new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      resource.data.on('data', (chunk: any) => chunks.push(chunk));
+      resource.data.on('end', () => { resolve(Buffer.concat(chunks)), cached = true });
+      resource.data.on('error', (err: any) => reject(err));
+    }),
+    stream: resource.data,
+    type: type || resource.headers['content-type'] || resource.headers['Content-Type'],
     filename
   });
 }

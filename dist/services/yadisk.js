@@ -36,11 +36,18 @@ function preview(url) {
         const metadataUrl = `https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=${url}`;
         const resourceUrl = (yield axios_1.default.get(metadataUrl)).data.href;
         const { content_type: type, filename } = qs_1.default.parse(resourceUrl.split('?').at(-1));
-        const res = yield axios_1.default.get(resourceUrl, { responseType: 'stream' });
+        const resource = yield axios_1.default.get(resourceUrl, { responseType: 'stream' });
+        let cached = false;
         return set_cache(url, {
-            res,
-            data: res.data,
-            type: type || res.headers['content-type'] || res.headers['Content-Type'],
+            get cached() { return cached; },
+            data: new Promise((resolve, reject) => {
+                const chunks = [];
+                resource.data.on('data', (chunk) => chunks.push(chunk));
+                resource.data.on('end', () => { resolve(Buffer.concat(chunks)), cached = true; });
+                resource.data.on('error', (err) => reject(err));
+            }),
+            stream: resource.data,
+            type: type || resource.headers['content-type'] || resource.headers['Content-Type'],
             filename
         });
     });

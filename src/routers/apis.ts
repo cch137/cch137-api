@@ -123,7 +123,8 @@ apisRouter.get('/ls/i/:id', async (req, res) => {
     const resource = await yadisk.preview(`https://yadi.sk/i/${id}`);
     res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${resource.filename}"`);
     res.type(resource.type);
-    resource.data.pipe(res);
+    if (resource.cached) res.send(await resource.data);
+    else resource.stream.pipe(res);
   } catch (err) {
     res.status(404).send(`Not Found`);
   }
