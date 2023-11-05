@@ -16,9 +16,13 @@ const axios_1 = __importDefault(require("axios"));
 const qs_1 = __importDefault(require("qs"));
 const caches = [];
 function get_cache(key) {
-    for (const cache of caches) {
-        if (cache[0] === key)
+    for (let i = 0; i < caches.length; i++) {
+        const cache = caches[i];
+        if (cache[0] === key) {
+            caches.splice(i, 1);
+            caches.unshift(cache);
             return cache[1];
+        }
     }
     return null;
 }
@@ -28,7 +32,7 @@ function set_cache(key, value) {
         caches.pop();
     return value;
 }
-function preview(url) {
+function _preview(url) {
     return __awaiter(this, void 0, void 0, function* () {
         const cache = get_cache(url);
         if (cache !== null)
@@ -37,19 +41,37 @@ function preview(url) {
         const resourceUrl = (yield axios_1.default.get(metadataUrl)).data.href;
         const { content_type: type, filename } = qs_1.default.parse(resourceUrl.split('?').at(-1));
         const resource = yield axios_1.default.get(resourceUrl, { responseType: 'stream' });
-        let cached = false;
-        return set_cache(url, {
-            get cached() { return cached; },
+        let started = false;
+        const _cache = set_cache(url, {
+            get started() { return started; },
             data: new Promise((resolve, reject) => {
                 const chunks = [];
-                resource.data.on('data', (chunk) => chunks.push(chunk));
-                resource.data.on('end', () => { resolve(Buffer.concat(chunks)), cached = true; });
+                resource.data.on('data', (chunk) => { chunks.push(chunk), started = true; });
+                resource.data.on('end', () => {
+                    _cache.data = Buffer.concat(chunks), resolve(_cache.data);
+                    delete _cache.stream;
+                });
                 resource.data.on('error', (err) => reject(err));
             }),
             stream: resource.data,
             type: type || resource.headers['content-type'] || resource.headers['Content-Type'],
             filename
         });
+        return _cache;
+    });
+}
+function preview(url) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let i = 0;
+        while (i++ < 3) {
+            try {
+                return yield _preview(url);
+            }
+            catch (err) {
+                console.log(err);
+            }
+        }
+        throw 'too many retries';
     });
 }
 exports.default = {
