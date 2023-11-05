@@ -20,6 +20,7 @@ const lockers_1 = __importDefault(require("../services/lockers"));
 const search_1 = require("../services/search");
 const currency_1 = require("../services/currency");
 const ls_1 = __importDefault(require("../services/ls"));
+const yadisk_1 = __importDefault(require("../services/yadisk"));
 const apisRouter = express_1.default.Router();
 apisRouter.use('/', express_1.default.static('public/'));
 apisRouter.get('/', (req, res) => {
@@ -122,6 +123,20 @@ apisRouter.get('/ls/:fn', (req, res) => {
         res.status(404).send(`Not Found`);
     }
 });
+apisRouter.get('/yadisk/preview', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const url = (_a = req.query) === null || _a === void 0 ? void 0 : _a.url;
+        if (typeof url !== 'string')
+            throw 'NOT FOUND';
+        const resource = yield yadisk_1.default.preview(url);
+        res.type(resource.type);
+        resource.data.pipe(res);
+    }
+    catch (err) {
+        res.status(404).send(`Not Found`);
+    }
+}));
 apisRouter.post('/wakeup', (req, res) => {
     res.send('OK');
 });

@@ -7,6 +7,7 @@ import lockerManager from '../services/lockers';
 import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from '../services/search';
 import { convertCurrency, getCurrencyList } from '../services/currency'
 import ls from '../services/ls';
+import yadisk from '../services/yadisk';
 
 const apisRouter = express.Router();
 
@@ -109,6 +110,18 @@ apisRouter.get('/ls/:fn', (req, res) => {
   res.type('application/json');
   try {
     res.send(ls.get(req.params.fn));
+  } catch (err) {
+    res.status(404).send(`Not Found`);
+  }
+});
+
+apisRouter.get('/yadisk/preview', async (req, res) => {
+  try {
+    const url = req.query?.url;
+    if (typeof url !== 'string') throw 'NOT FOUND';
+    const resource = await yadisk.preview(url);
+    res.type(resource.type);
+    resource.data.pipe(res);
   } catch (err) {
     res.status(404).send(`Not Found`);
   }
