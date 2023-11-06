@@ -4,7 +4,7 @@ import translate from '@saipulanuar/google-translate-api';
 import adaptParseBody from '../utils/adaptParseBody';
 import type { LockerOptions } from '../services/lockers';
 import lockerManager from '../services/lockers';
-import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary } from '../services/search';
+import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary, googleSearchSummaryV2 } from '../services/search';
 import { convertCurrency, getCurrencyList } from '../services/currency'
 import ls from '../services/ls';
 import yadisk from '../services/yadisk';
@@ -53,10 +53,18 @@ apisRouter.use('/ddg-search', async (req, res) => {
 });
 
 apisRouter.use('/google-search-summary', async (req, res) => {
-  const { query, showUrl = true } = adaptParseBody(req);
+  const { query, showUrl = true, v } = adaptParseBody(req);
+  if (v == 2) return res.redirect(`/google-search-summary-v2?query=${query}`)
   if (!query) return res.status(400).send({ error: 'Invalid body' });
   res.type('text/plain');
   res.send(await googleSearchSummary(showUrl, query));
+});
+
+apisRouter.use('/google-search-summary-v2', async (req, res) => {
+  const { query, showUrl = true } = adaptParseBody(req);
+  if (!query) return res.status(400).send({ error: 'Invalid body' });
+  res.type('text/plain');
+  res.send(await googleSearchSummaryV2(showUrl, query));
 });
 
 apisRouter.use('/ddg-search-summary', async (req, res) => {

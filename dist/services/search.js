@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ddgSearchSummary = exports.googleSearchSummary = exports.ddgSearch = exports.googleSearch = void 0;
+exports.ddgSearchSummary = exports.googleSearchSummaryV2 = exports.googleSearchSummary = exports.ddgSearch = exports.googleSearch = void 0;
 const axios_1 = __importDefault(require("axios"));
 const cheerio_1 = require("cheerio");
 const qs_1 = __importDefault(require("qs"));
@@ -130,3 +130,37 @@ const googleSearchSummary = (showUrl = true, ...queries) => __awaiter(void 0, vo
     return summary(yield googleSearch(...queries), showUrl);
 });
 exports.googleSearchSummary = googleSearchSummary;
+function googleExtractText($, el, isRoot = false, showUrl = true) {
+    try {
+        const children = $(el).children('*');
+        let href = $(el).prop('href') || undefined;
+        if (href && href.startsWith('/search'))
+            throw 'no need';
+        let text = (children.length == 0
+            ? $(el).text()
+            : [...children].map(c => googleExtractText($, c, false, showUrl)).join('\n')).trim();
+        if (href === null || href === void 0 ? void 0 : href.startsWith('/url'))
+            href = (qs_1.default.parse(href.split('?')[1]) || {}).q || '';
+        else
+            href = undefined;
+        return `${showUrl && href ? href + '\n' : ''}${text}`;
+    }
+    catch (e) {
+        if (isRoot)
+            return '';
+        else
+            throw e;
+    }
+}
+const _googleSearchSummaryV2 = (query, showUrl = true) => __awaiter(void 0, void 0, void 0, function* () {
+    const res = yield axios_1.default.get(`https://www.google.com/search?q=${query}`);
+    const $ = (0, cheerio_1.load)(res.data);
+    const items = [...$('#main').children('div')];
+    const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
+        .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '');
+    return text;
+});
+const googleSearchSummaryV2 = (showUrl = true, ...queries) => __awaiter(void 0, void 0, void 0, function* () {
+    return (yield Promise.all(queries.map((query) => _googleSearchSummaryV2(query, showUrl)))).join('\n\n---\n\n');
+});
+exports.googleSearchSummaryV2 = googleSearchSummaryV2;

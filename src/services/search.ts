@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { load as cheerioLoad } from 'cheerio'
+import type { CheerioAPI, Element } from 'cheerio'
 import qs from 'qs'
 import random from '../utils/random'
 
@@ -123,9 +124,40 @@ const googleSearchSummary = async (showUrl=true, ...queries: string[]) => {
   return summary(await googleSearch(...queries), showUrl)
 }
 
+function googleExtractText($: CheerioAPI, el: Element, isRoot: boolean = false, showUrl: boolean = true): string {
+  try {
+    const children = $(el).children('*')
+    let href = $(el).prop('href') || undefined
+    if (href && href.startsWith('/search')) throw 'no need'
+    let text = (children.length == 0
+      ? $(el).text()
+      : [...children].map(c => googleExtractText($, c, false, showUrl)).join('\n')).trim()
+    if (href?.startsWith('/url')) href = (qs.parse(href.split('?')[1]) || {}).q as string || ''
+    else href = undefined
+    return `${showUrl && href ? href + '\n' : ''}${text}`
+  } catch (e) {
+    if (isRoot) return ''
+    else throw e
+  }
+}
+
+const _googleSearchSummaryV2 = async (query: string, showUrl: boolean = true) => {
+  const res = await axios.get(`https://www.google.com/search?q=${query}`)
+  const $ = cheerioLoad(res.data)
+  const items = [...$('#main').children('div')]
+  const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
+    .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '')
+  return text
+}
+
+const googleSearchSummaryV2 = async (showUrl=true, ...queries: string[]) => {
+  return (await Promise.all(queries.map((query) => _googleSearchSummaryV2(query, showUrl)))).join('\n\n---\n\n')
+}
+
 export {
   googleSearch,
   ddgSearch,
   googleSearchSummary,
+  googleSearchSummaryV2,
   ddgSearchSummary
 }
