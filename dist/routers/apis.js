@@ -68,13 +68,6 @@ apisRouter.use('/google-search-summary', (req, res) => __awaiter(void 0, void 0,
     else
         res.send(yield (0, search_1.googleSearchSummary)(showUrl, query));
 }));
-apisRouter.use('/google-search-summary-v2', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { query, showUrl = true } = (0, adaptParseBody_1.default)(req);
-    if (!query)
-        return res.status(400).send({ error: 'Invalid body' });
-    res.type('text/plain; charset=utf-8');
-    res.send(yield (0, search_1.googleSearchSummaryV2)(showUrl, query));
-}));
 apisRouter.use('/ddg-search-summary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query, showUrl = true } = (0, adaptParseBody_1.default)(req);
     if (!query)
