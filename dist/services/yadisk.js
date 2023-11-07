@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const qs_1 = __importDefault(require("qs"));
+const sum_1 = __importDefault(require("../utils/sum"));
 const caches = [];
 function get_cache(key) {
     for (let i = 0; i < caches.length; i++) {
@@ -28,8 +29,12 @@ function get_cache(key) {
 }
 function set_cache(key, value) {
     caches.unshift([key, value]);
-    while (caches.length > 256)
-        caches.pop();
+    (() => __awaiter(this, void 0, void 0, function* () {
+        yield value.data;
+        // max cache size = 64MB
+        while ((0, sum_1.default)(...(yield Promise.all(caches.map((c) => __awaiter(this, void 0, void 0, function* () { return (yield c[1].data).length; }))))) > 64000000)
+            caches.pop();
+    }))();
     return value;
 }
 function _preview(url) {
@@ -46,16 +51,13 @@ function _preview(url) {
             get started() { return started; },
             data: new Promise((resolve, reject) => {
                 const chunks = [];
-                resource.data.on('data', (chunk) => { chunks.push(chunk), started = true; });
-                resource.data.on('end', () => {
-                    _cache.data = Buffer.concat(chunks), resolve(_cache.data);
-                    delete _cache.stream;
-                });
+                resource.data.on('data', (chunk) => { chunks.push(chunk instanceof Buffer ? chunk : Buffer.from(chunk)), started = true; });
+                resource.data.on('end', () => { _cache.data = Buffer.concat(chunks), resolve(_cache.data); delete _cache.stream; });
                 resource.data.on('error', (err) => reject(err));
             }),
             stream: resource.data,
             type: type || resource.headers['content-type'] || resource.headers['Content-Type'],
-            filename
+            filename: (filename || '').toString(),
         });
         return _cache;
     });

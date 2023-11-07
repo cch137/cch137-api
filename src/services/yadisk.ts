@@ -1,7 +1,16 @@
 import axios from "axios"
 import qs from "qs"
+import sum from "../utils/sum";
 
-const caches: [string,any][] = [];
+interface Cache {
+  started: boolean
+  data: Promise<Buffer> | Buffer
+  stream?: any
+  type: string
+  filename: string
+}
+
+const caches: [string,Cache][] = [];
 
 function get_cache(key: string) {
   for (let i = 0; i < caches.length; i++) {
@@ -15,9 +24,13 @@ function get_cache(key: string) {
   return null;
 }
 
-function set_cache<T>(key: string, value: T) {
+function set_cache(key: string, value: Cache) {
   caches.unshift([key, value]);
-  while (caches.length > 256) caches.pop();
+  (async () => {
+    await value.data;
+    // max cache size = 64MB
+    while (sum(...(await Promise.all(caches.map(async c => (await c[1].data).length)))) > 64_000_000) caches.pop();
+  })();
   return value;
 }
 
@@ -30,17 +43,16 @@ async function _preview(url: string) {
   const resource = await axios.get(resourceUrl, { responseType: 'stream' });
   let started = false;
   const _cache = set_cache(url, {
-    get started () { return started },
+    get started() { return started },
     data: new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
-      resource.data.on('data', (chunk: any) => { chunks.push(chunk), started = true });
-      resource.data.on('end', () => { // @ts-ignore
-        _cache.data = Buffer.concat(chunks), resolve(_cache.data); delete _cache.stream });
+      resource.data.on('data', (chunk: any) => { chunks.push(chunk instanceof Buffer ? chunk : Buffer.from(chunk)), started = true });
+      resource.data.on('end', () => { _cache.data = Buffer.concat(chunks), resolve(_cache.data); delete _cache.stream });
       resource.data.on('error', (err: any) => reject(err));
     }),
     stream: resource.data,
     type: type || resource.headers['content-type'] || resource.headers['Content-Type'],
-    filename
+    filename: (filename || '').toString(),
   });
   return _cache;
 }
