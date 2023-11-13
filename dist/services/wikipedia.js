@@ -41,9 +41,9 @@ function fetchArticle(searchTerm, apiUrl = defaultApiUrl) {
                 if (keywords.length < 2) {
                     return null;
                 }
-                if (keywords[0].endsWith('refer to:')) {
-                    return yield fetchArticleByPageId(yield getClosestTitlePageId(keywords[1]));
-                }
+                // if (keywords[0].endsWith('refer to:')) {
+                //   return await fetchArticleByPageId(await getClosestTitlePageId(keywords[1]));
+                // }
             }
             return article.trim();
         }
