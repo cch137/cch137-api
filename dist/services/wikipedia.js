@@ -41,7 +41,7 @@ function fetchArticle(searchTerm, apiUrl = defaultApiUrl) {
                 if (keywords.length < 2) {
                     return null;
                 }
-                if (keywords[0].includes('may refer to:')) {
+                if (keywords[0].endsWith('refer to:')) {
                     return yield fetchArticleByPageId(yield getClosestTitlePageId(keywords[1]));
                 }
             }

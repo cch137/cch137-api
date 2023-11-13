@@ -44,7 +44,7 @@ async function fetchArticle(searchTerm: string, apiUrl: string = defaultApiUrl):
       if (keywords.length < 2) {
         return null;
       }
-      if (keywords[0].includes('may refer to:')) {
+      if (keywords[0].endsWith('refer to:')) {
         return await fetchArticleByPageId(await getClosestTitlePageId(keywords[1]));
       }
     }
