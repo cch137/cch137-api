@@ -42,11 +42,12 @@ apisRouter.use('/translate', async (req, res) => {
 });
 
 apisRouter.use('/wikipedia', async (req, res) => {
-  const { query, q, article, a, title, t, page, p } = adaptParseBody(req);
-  const searchTerm = query || q || article || a || title || t || page || p;
+  const { query, q, article, a, title, t, page, p, language, lang, l } = adaptParseBody(req);
+  const searchTerm: string = a || q || p || t || query || article || page || title;
+  const langCode: string | undefined = l || lang || language;
   if (!searchTerm) return res.status(400).send({ error: 'Invalid body' });
   res.type('text/plain; charset=utf-8');
-  res.send(await wikipedia(searchTerm));
+  res.send(await wikipedia(searchTerm, langCode));
 });
 
 apisRouter.use('/google-search', async (req, res) => {

@@ -48,12 +48,13 @@ apisRouter.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 }));
 apisRouter.use('/wikipedia', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { query, q, article, a, title, t, page, p } = (0, adaptParseBody_1.default)(req);
-    const searchTerm = query || q || article || a || title || t || page || p;
+    const { query, q, article, a, title, t, page, p, language, lang, l } = (0, adaptParseBody_1.default)(req);
+    const searchTerm = a || q || p || t || query || article || page || title;
+    const langCode = l || lang || language;
     if (!searchTerm)
         return res.status(400).send({ error: 'Invalid body' });
     res.type('text/plain; charset=utf-8');
-    res.send(yield (0, wikipedia_1.default)(searchTerm));
+    res.send(yield (0, wikipedia_1.default)(searchTerm, langCode));
 }));
 apisRouter.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query } = (0, adaptParseBody_1.default)(req);

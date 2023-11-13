@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const analyzeLanguages_1 = require("../utils/analyzeLanguages");
 const defaultApiUrl = 'https://en.wikipedia.org/w/api.php';
-function decideApiUrl(text) {
-    return `https://${(0, analyzeLanguages_1.analyzeLanguage)(text) || 'en'}.wikipedia.org/w/api.php`;
+function decideApiUrl(text, langCode) {
+    return `https://${langCode || (0, analyzeLanguages_1.analyzeLanguage)(text) || 'en'}.wikipedia.org/w/api.php`;
 }
 function fetchArticle(searchTerm, apiUrl = defaultApiUrl) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -96,10 +96,10 @@ function fetchArticleByPageId(pageId, apiUrl = defaultApiUrl) {
         }
     });
 }
-function queryArticle(searchTerm) {
+function queryArticle(searchTerm, langCode) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const url = decideApiUrl(searchTerm);
+            const url = decideApiUrl(searchTerm, langCode);
             let article = yield fetchArticle(searchTerm, url);
             if (!article) {
                 const closestPageId = yield getClosestTitlePageId(searchTerm, url);

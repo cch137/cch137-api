@@ -3,8 +3,8 @@ import { analyzeLanguage } from "../utils/analyzeLanguages";
 
 const defaultApiUrl: string = 'https://en.wikipedia.org/w/api.php';
 
-function decideApiUrl(text: string) {
-  return `https://${analyzeLanguage(text) || 'en'}.wikipedia.org/w/api.php`
+function decideApiUrl(text: string, langCode?: string) {
+  return `https://${langCode || analyzeLanguage(text) || 'en'}.wikipedia.org/w/api.php`
 }
 
 interface WikipediaSearchParams {
@@ -98,9 +98,9 @@ async function fetchArticleByPageId(pageId: string, apiUrl: string = defaultApiU
   }
 }
 
-async function queryArticle(searchTerm: string) {
+async function queryArticle(searchTerm: string, langCode?: string) {
   try {
-    const url = decideApiUrl(searchTerm);
+    const url = decideApiUrl(searchTerm, langCode);
     let article: string | null = await fetchArticle(searchTerm, url);
     if (!article) {
       const closestPageId: string = await getClosestTitlePageId(searchTerm, url);
