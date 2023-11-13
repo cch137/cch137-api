@@ -6,6 +6,7 @@ import type { LockerOptions } from '../services/lockers';
 import lockerManager from '../services/lockers';
 import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary, googleSearchSummaryV2 } from '../services/search';
 import { convertCurrency, getCurrencyList } from '../services/currency'
+import wikipedia from '../services/wikipedia'
 import ls from '../services/ls';
 import yadisk from '../services/yadisk';
 
@@ -38,6 +39,14 @@ apisRouter.use('/translate', async (req, res) => {
   } catch (error) {
     res.send({ err: error });
   }
+});
+
+apisRouter.use('/wikipedia', async (req, res) => {
+  const { query, q, article, a, title, t, page, p } = adaptParseBody(req);
+  const searchTerm = query || q || article || a || title || t || page || p;
+  if (!searchTerm) return res.status(400).send({ error: 'Invalid body' });
+  res.type('text/plain; charset=utf-8');
+  res.send(await wikipedia(searchTerm));
 });
 
 apisRouter.use('/google-search', async (req, res) => {

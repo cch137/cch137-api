@@ -19,6 +19,7 @@ const adaptParseBody_1 = __importDefault(require("../utils/adaptParseBody"));
 const lockers_1 = __importDefault(require("../services/lockers"));
 const search_1 = require("../services/search");
 const currency_1 = require("../services/currency");
+const wikipedia_1 = __importDefault(require("../services/wikipedia"));
 const ls_1 = __importDefault(require("../services/ls"));
 const yadisk_1 = __importDefault(require("../services/yadisk"));
 const apisRouter = express_1.default.Router();
@@ -45,6 +46,14 @@ apisRouter.use('/translate', (req, res) => __awaiter(void 0, void 0, void 0, fun
     catch (error) {
         res.send({ err: error });
     }
+}));
+apisRouter.use('/wikipedia', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { query, q, article, a, title, t, page, p } = (0, adaptParseBody_1.default)(req);
+    const searchTerm = query || q || article || a || title || t || page || p;
+    if (!searchTerm)
+        return res.status(400).send({ error: 'Invalid body' });
+    res.type('text/plain; charset=utf-8');
+    res.send(yield (0, wikipedia_1.default)(searchTerm));
 }));
 apisRouter.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query } = (0, adaptParseBody_1.default)(req);
