@@ -120,9 +120,4 @@ async function queryArticle(searchTerm: string, langCode?: string) {
   }
 }
 
-(async () => {
-  console.log(await queryArticle('經濟學'));
-})();
-
-
 export default queryArticle;

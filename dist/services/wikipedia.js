@@ -120,7 +120,4 @@ function queryArticle(searchTerm, langCode) {
         }
     });
 }
-(() => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(yield queryArticle('經濟學'));
-}))();
 exports.default = queryArticle;
