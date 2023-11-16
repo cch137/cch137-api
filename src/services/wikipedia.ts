@@ -3,8 +3,12 @@ import { analyzeLanguage } from "../utils/analyzeLanguages";
 
 const defaultApiUrl: string = 'https://en.wikipedia.org/w/api.php';
 
-function decideApiUrl(text: string, langCode?: string) {
-  return `https://${langCode || analyzeLanguage(text) || 'en'}.wikipedia.org/w/api.php`
+function decideApiDomain(text: string, langCode?: string) {
+  const lang = langCode || analyzeLanguage(text) || 'en';
+  return {
+    url: `https://${lang}.wikipedia.org/w/api.php`,
+    lang
+  }
 }
 
 interface WikipediaSearchParams {
@@ -44,8 +48,8 @@ async function fetchArticle(searchTerm: string, apiUrl: string = defaultApiUrl):
       if (keywords.length < 2) {
         return null;
       }
-      // if (keywords[0].endsWith('refer to:')) {
-      //   return await fetchArticleByPageId(await getClosestTitlePageId(keywords[1]));
+      // if (true||keywords[0].endsWith('refer to:')) {
+      //   return await fetchArticleByPageId(await getClosestTitlePageId(keywords[1], apiUrl), apiUrl);
       // }
     }
 
@@ -100,7 +104,10 @@ async function fetchArticleByPageId(pageId: string, apiUrl: string = defaultApiU
 
 async function queryArticle(searchTerm: string, langCode?: string) {
   try {
-    const url = decideApiUrl(searchTerm, langCode);
+    const { url, lang } = decideApiDomain(searchTerm, langCode);
+    if (lang === 'zh') {
+      return await fetchArticleByPageId(await getClosestTitlePageId(searchTerm, url), url);
+    }
     let article: string | null = await fetchArticle(searchTerm, url);
     if (!article) {
       const closestPageId: string = await getClosestTitlePageId(searchTerm, url);
@@ -112,5 +119,10 @@ async function queryArticle(searchTerm: string, langCode?: string) {
     return null;
   }
 }
+
+(async () => {
+  console.log(await queryArticle('經濟學'));
+})();
+
 
 export default queryArticle;

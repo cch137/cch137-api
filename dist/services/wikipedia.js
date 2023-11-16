@@ -15,8 +15,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const analyzeLanguages_1 = require("../utils/analyzeLanguages");
 const defaultApiUrl = 'https://en.wikipedia.org/w/api.php';
-function decideApiUrl(text, langCode) {
-    return `https://${langCode || (0, analyzeLanguages_1.analyzeLanguage)(text) || 'en'}.wikipedia.org/w/api.php`;
+function decideApiDomain(text, langCode) {
+    const lang = langCode || (0, analyzeLanguages_1.analyzeLanguage)(text) || 'en';
+    return {
+        url: `https://${lang}.wikipedia.org/w/api.php`,
+        lang
+    };
 }
 function fetchArticle(searchTerm, apiUrl = defaultApiUrl) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -41,8 +45,8 @@ function fetchArticle(searchTerm, apiUrl = defaultApiUrl) {
                 if (keywords.length < 2) {
                     return null;
                 }
-                // if (keywords[0].endsWith('refer to:')) {
-                //   return await fetchArticleByPageId(await getClosestTitlePageId(keywords[1]));
+                // if (true||keywords[0].endsWith('refer to:')) {
+                //   return await fetchArticleByPageId(await getClosestTitlePageId(keywords[1], apiUrl), apiUrl);
                 // }
             }
             return article.trim();
@@ -99,7 +103,10 @@ function fetchArticleByPageId(pageId, apiUrl = defaultApiUrl) {
 function queryArticle(searchTerm, langCode) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const url = decideApiUrl(searchTerm, langCode);
+            const { url, lang } = decideApiDomain(searchTerm, langCode);
+            if (lang === 'zh') {
+                return yield fetchArticleByPageId(yield getClosestTitlePageId(searchTerm, url), url);
+            }
             let article = yield fetchArticle(searchTerm, url);
             if (!article) {
                 const closestPageId = yield getClosestTitlePageId(searchTerm, url);
@@ -113,4 +120,7 @@ function queryArticle(searchTerm, langCode) {
         }
     });
 }
+(() => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(yield queryArticle('經濟學'));
+}))();
 exports.default = queryArticle;
