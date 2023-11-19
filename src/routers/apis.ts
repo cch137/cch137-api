@@ -127,8 +127,8 @@ apisRouter.get('/ls/:fn', (req, res) => {
 });
 
 apisRouter.get('/ls/i/:id', async (req, res) => {
+  const id = req.query.id || req.params.id;
   try {
-    const id = req.query.id || req.params.id;
     const download = (req.query.download || req.query.dl || 0).toString() != '0';
     if (!id) throw 'NOT FOUND';
     const resource = await yadisk.preview(`https://yadi.sk/i/${id}`);
@@ -137,7 +137,8 @@ apisRouter.get('/ls/i/:id', async (req, res) => {
     if (resource.started) res.send(await resource.data);
     else resource.stream.pipe(res);
   } catch (err) {
-    res.status(404).send(`Not Found`);
+    res.redirect(`https://yadi.sk/i/${id}`);
+    // res.status(404).send(`Not Found`);
   }
 });
 

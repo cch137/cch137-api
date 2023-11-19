@@ -137,8 +137,8 @@ apisRouter.get('/ls/:fn', (req, res) => {
     }
 });
 apisRouter.get('/ls/i/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const id = req.query.id || req.params.id;
     try {
-        const id = req.query.id || req.params.id;
         const download = (req.query.download || req.query.dl || 0).toString() != '0';
         if (!id)
             throw 'NOT FOUND';
@@ -151,7 +151,8 @@ apisRouter.get('/ls/i/:id', (req, res) => __awaiter(void 0, void 0, void 0, func
             resource.stream.pipe(res);
     }
     catch (err) {
-        res.status(404).send(`Not Found`);
+        res.redirect(`https://yadi.sk/i/${id}`);
+        // res.status(404).send(`Not Found`);
     }
 }));
 apisRouter.post('/wakeup', (req, res) => {
