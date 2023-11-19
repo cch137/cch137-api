@@ -151,7 +151,7 @@ apisRouter.get('/ls/i/:id', (req, res) => __awaiter(void 0, void 0, void 0, func
             resource.stream.pipe(res);
     }
     catch (err) {
-        res.redirect(`https://yadi.sk/i/${id}`);
+        res.redirect(`https://disk.yandex.com/i/${id}`);
         // res.status(404).send(`Not Found`);
     }
 }));

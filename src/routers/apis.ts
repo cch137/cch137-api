@@ -137,7 +137,7 @@ apisRouter.get('/ls/i/:id', async (req, res) => {
     if (resource.started) res.send(await resource.data);
     else resource.stream.pipe(res);
   } catch (err) {
-    res.redirect(`https://yadi.sk/i/${id}`);
+    res.redirect(`https://disk.yandex.com/i/${id}`);
     // res.status(404).send(`Not Found`);
   }
 });
