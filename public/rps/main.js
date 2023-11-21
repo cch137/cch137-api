@@ -64,6 +64,7 @@ function getScreenSize() {
 /** @type {HTMLElement[]} */
 const players = [];
 const speed = 2;
+let end = false;
 
 /**
  * @param {HTMLElement} el
@@ -171,9 +172,14 @@ function createPlayer(gameMap, _playerName) {
     } else if (ghost !== null) {
       const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
       return elRunaway(player, x1, y1, x3, y3);
-    } else {
+    } else if (!end) {
+      end = true;
       setTimeout(() => {
-        if (target === null && ghost === null) location.reload();
+        if (target === null && ghost === null) {
+          location.reload();
+        } else {
+          end = false;
+        }
       }, 3000);
     }
   }, 1);
