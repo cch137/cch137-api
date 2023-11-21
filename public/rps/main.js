@@ -88,12 +88,12 @@ function setCoordinate(el, coor) {
  * @param {number} x2
  * @param {number} y2
  */
-function elGoTo(el, x1, y1, x2, y2) {
+function elGoTo(el, x1, y1, x2, y2, speedRate = 1) {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const rx = dx / (Math.abs(dx) + Math.abs(dy));
   const ry = dy / (Math.abs(dx) + Math.abs(dy));
-  setCoordinate(el, { x: x1 + speed * rx, y: y1 + speed * ry });
+  setCoordinate(el, { x: x1 + speedRate * speed * rx, y: y1 + speedRate * speed * ry });
 }
 
 /**
@@ -103,12 +103,12 @@ function elGoTo(el, x1, y1, x2, y2) {
  * @param {number} x2
  * @param {number} y2
  */
-function elRunaway(el, x1, y1, x2, y2) {
+function elRunaway(el, x1, y1, x2, y2, speedRate = 1) {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const rx = dx / (Math.abs(dx) + Math.abs(dy));
   const ry = dy / (Math.abs(dx) + Math.abs(dy));
-  setCoordinate(el, { x: x1 - speed * rx, y: y1 - speed * ry });
+  setCoordinate(el, { x: x1 - speedRate * speed * rx, y: y1 - speedRate * speed * ry });
 }
 
 /**
@@ -119,6 +119,7 @@ function createPlayer(gameMap, _playerName) {
   const player = document.createElement('div');
   player.classList.add('player');
   player.innerText = _playerName;
+  const speedRate = 1 + (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.25);
   gameMap.appendChild(player);
   players.push(player);
   const screenSize = getScreenSize();
@@ -153,7 +154,19 @@ function createPlayer(gameMap, _playerName) {
         if (_ghost === ghost) ghost = null;
       }, 100);
     }
-    if (target === null && ghost === null) return;
+    if (target === null && ghost === null) {
+      if (!end) {
+        end = true;
+        setTimeout(() => {
+          if (target === null && ghost === null) {
+            location.reload();
+          } else {
+            end = false;
+          }
+        }, 3000);
+      }
+      return;
+    }
     for (const p of players) {
       if (p.innerText === targetName && isColide(player, p)) {
         target.innerText = player.innerText;
@@ -166,21 +179,12 @@ function createPlayer(gameMap, _playerName) {
       if (ghost !== null) {
         const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
         const dghost = calculateDistance(x1, y1, x3, y3);
-        if (dghost < (4 * w)) return elRunaway(player, x1, y1, x3, y3);
+        if (dghost < (4 * w)) return elRunaway(player, x1, y1, x3, y3, speedRate);
       }
-      return elGoTo(player, x1, y1, x2, y2);
+      return elGoTo(player, x1, y1, x2, y2, speedRate);
     } else if (ghost !== null) {
       const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
-      return elRunaway(player, x1, y1, x3, y3);
-    } else if (!end) {
-      end = true;
-      setTimeout(() => {
-        if (target === null && ghost === null) {
-          location.reload();
-        } else {
-          end = false;
-        }
-      }, 3000);
+      return elRunaway(player, x1, y1, x3, y3, speedRate);
     }
   }, 1);
 }
@@ -208,7 +212,7 @@ function getClosestPlayer(el, name) {
 
 window.addEventListener('load', () => {
   const gameMap = document.getElementById('rps-map');
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < Math.ceil(window.innerHeight * window.innerWidth / 32000); i++) {
     createPlayer(gameMap, '石');
     createPlayer(gameMap, '刀');
     createPlayer(gameMap, '布');
