@@ -63,8 +63,12 @@ function getScreenSize() {
 
 /** @type {HTMLElement[]} */
 const players = [];
-const speed = 2;
+let speed = 1;
 let end = false;
+
+setInterval(() => {
+  speed += 0.1;
+}, 1000);
 
 /**
  * @param {HTMLElement} el
@@ -140,6 +144,12 @@ function createPlayer(gameMap, _playerName) {
       : playerName === '刀'
         ? '石'
         : '刀';
+    if (!player.classList.contains(playerName)) {
+      for (const c of ['石', '刀', '布']) {
+        if (c === playerName) player.classList.add(c);
+        else player.classList.remove(c);
+      }
+    }
     if (target === null || target.innerText !== targetName) {
       target = getClosestPlayer(player, targetName);
       const _target = target;
@@ -169,17 +179,17 @@ function createPlayer(gameMap, _playerName) {
     }
     for (const p of players) {
       if (p.innerText === targetName && isColide(player, p)) {
-        target.innerText = player.innerText;
+        target.innerText = playerName;
       }
     }
     const { centerx: x1, centery: y1, w } = getBoundingRect(player);
     if (target !== null) {
       const { centerx: x2, centery: y2 } = getBoundingRect(target);
-      // const dtarget = calculateDistance(x1, y1, x2, y2);
+      const dtarget = calculateDistance(x1, y1, x2, y2);
       if (ghost !== null) {
         const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
         const dghost = calculateDistance(x1, y1, x3, y3);
-        if (dghost < (4 * w)) return elRunaway(player, x1, y1, x3, y3, speedRate);
+        if (dghost < (4 * w) || (dtarget > dghost && dghost < (8 * w))) return elRunaway(player, x1, y1, x3, y3, speedRate);
       }
       return elGoTo(player, x1, y1, x2, y2, speedRate);
     } else if (ghost !== null) {
@@ -217,4 +227,4 @@ window.addEventListener('load', () => {
     createPlayer(gameMap, '刀');
     createPlayer(gameMap, '布');
   }
-})
+});
