@@ -123,6 +123,7 @@ function createPlayer(gameMap, _playerName) {
   const player = document.createElement('div');
   player.classList.add('player');
   player.innerText = _playerName;
+  player.classList.add(_playerName);
   const speedRate = 1 + (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.25);
   gameMap.appendChild(player);
   players.push(player);
