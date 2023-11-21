@@ -171,6 +171,10 @@ function createPlayer(gameMap, _playerName) {
     } else if (ghost !== null) {
       const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
       return elRunaway(player, x1, y1, x3, y3);
+    } else {
+      setTimeout(() => {
+        if (target === null && ghost === null) location.reload();
+      }, 3000);
     }
   }, 1);
 }
