@@ -1,231 +1,234 @@
-/**
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- */
-function calculateDistance(x1, y1, x2, y2) {
-  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-}
+(() => {
+  /**
+   * @param {number} x1
+   * @param {number} y1
+   * @param {number} x2
+   * @param {number} y2
+   */
+  function calculateDistance(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  }
 
-/**
- * @param {HTMLElement} el
- */
-function getBoundingRect(el) {
-  const { x, y, width: w, height: h } = el.getBoundingClientRect();
-  return {
-    x,
-    y,
-    centerx: x + w / 2,
-    centery: y + h / 2,
-    w,
-    h,
-  };
-}
+  /**
+   * @param {HTMLElement} el
+   */
+  function getBoundingRect(el) {
+    const { x, y, width: w, height: h } = el.getBoundingClientRect();
+    return {
+      x,
+      y,
+      centerx: x + w / 2,
+      centery: y + h / 2,
+      w,
+      h,
+    };
+  }
 
-/**
- * @param {HTMLElement} el
- */
-function getCorners(el) {
-  const { x, y, w, h } = getBoundingRect(el);
-  return [
-    { x, y },
-    { x: x + w, y },
-    { x, y: y + h },
-    { x: x + w, y: y + h },
-  ]
-}
+  /**
+   * @param {HTMLElement} el
+   */
+  function getCorners(el) {
+    const { x, y, w, h } = getBoundingRect(el);
+    return [
+      { x, y },
+      { x: x + w, y },
+      { x, y: y + h },
+      { x: x + w, y: y + h },
+    ]
+  }
 
-/**
- * @param {HTMLElement} el1
- * @param {HTMLElement} el2
- */
-function isColide(el1, el2) {
-  const [el11, el12, el13, el14] = getCorners(el1);
-  const { x: x0, y: y0 } = el11;
-  const { x: x1, y: y1 } = el14; 
-  const el2corners = getCorners(el2);
-  for (const el2corner of el2corners) {
-    const { x, y } = el2corner;
-    if (x >= x0 && x <= x1 && y >= y0 && y <= y1) {
-      return true;
+  /**
+   * @param {HTMLElement} el1
+   * @param {HTMLElement} el2
+   */
+  function isColide(el1, el2) {
+    const [el11, el12, el13, el14] = getCorners(el1);
+    const { x: x0, y: y0 } = el11;
+    const { x: x1, y: y1 } = el14; 
+    const el2corners = getCorners(el2);
+    for (const el2corner of el2corners) {
+      const { x, y } = el2corner;
+      if (x >= x0 && x <= x1 && y >= y0 && y <= y1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function getScreenSize() {
+    return {
+      w: window.innerWidth,
+      h: window.innerHeight
     }
   }
-  return false;
-}
 
-function getScreenSize() {
-  return {
-    w: window.innerWidth,
-    h: window.innerHeight
-  }
-}
+  /** @type {HTMLElement[]} */
+  const players = [];
+  let speed = 1;
+  let end = false;
 
-/** @type {HTMLElement[]} */
-const players = [];
-let speed = 1;
-let end = false;
-
-setInterval(() => {
-  speed += 0.1;
-}, 1000);
-
-/**
- * @param {HTMLElement} el
- * @param {{x:number,y:number}} coor
- */
-function setCoordinate(el, coor) {
-  let { x, y } = coor;
-  const { w: screenW, h: screenH } = getScreenSize();
-  if (x < 0) x = 0 + speed * Math.random();
-  else if (x > screenW) x = screenW - speed * Math.random();
-  if (y < 0) y = 0 + speed * Math.random();
-  else if (y > screenH) y = screenH - speed * Math.random();
-  el.style.setProperty('--centerx', `${x}px`);
-  el.style.setProperty('--centery', `${y}px`);
-}
-
-/**
- * @param {HTMLElement} el
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- */
-function elGoTo(el, x1, y1, x2, y2, speedRate = 1) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const rx = dx / (Math.abs(dx) + Math.abs(dy));
-  const ry = dy / (Math.abs(dx) + Math.abs(dy));
-  setCoordinate(el, { x: x1 + speedRate * speed * rx, y: y1 + speedRate * speed * ry });
-}
-
-/**
- * @param {HTMLElement} el
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- */
-function elRunaway(el, x1, y1, x2, y2, speedRate = 1) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const rx = dx / (Math.abs(dx) + Math.abs(dy));
-  const ry = dy / (Math.abs(dx) + Math.abs(dy));
-  setCoordinate(el, { x: x1 - speedRate * speed * rx, y: y1 - speedRate * speed * ry });
-}
-
-/**
- * @param {HTMLElement} gameMap
- * @param {string} _playerName
- */
-function createPlayer(gameMap, _playerName) {
-  const player = document.createElement('div');
-  player.classList.add('player');
-  player.innerText = _playerName;
-  player.classList.add(_playerName);
-  const speedRate = 1 + (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.25);
-  gameMap.appendChild(player);
-  players.push(player);
-  const screenSize = getScreenSize();
-  setCoordinate(player, {x: Math.random() * screenSize.w, y: Math.random() * screenSize.h});
-  /** @type {HTMLElement|null} */
-  let target = null;
-  /** @type {HTMLElement|null} */
-  let ghost = null;
   setInterval(() => {
-    const playerName = player.innerText;
-    const targetName = playerName === '石'
-      ? '刀'
-      : playerName === '刀'
+    speed += 0.1;
+  }, 1000);
+
+  /**
+   * @param {HTMLElement} el
+   * @param {{x:number,y:number}} coor
+   */
+  function setCoordinate(el, coor) {
+    let { x, y } = coor;
+    const { w: screenW, h: screenH } = getScreenSize();
+    if (x < 0) x = 0 + speed * Math.random();
+    else if (x > screenW) x = screenW - speed * Math.random();
+    if (y < 0) y = 0 + speed * Math.random();
+    else if (y > screenH) y = screenH - speed * Math.random();
+    el.style.setProperty('--centerx', `${x}px`);
+    el.style.setProperty('--centery', `${y}px`);
+  }
+
+  /**
+   * @param {HTMLElement} el
+   * @param {number} x1
+   * @param {number} y1
+   * @param {number} x2
+   * @param {number} y2
+   */
+  function elGoTo(el, x1, y1, x2, y2, speedRate = 1) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const rx = dx / (Math.abs(dx) + Math.abs(dy));
+    const ry = dy / (Math.abs(dx) + Math.abs(dy));
+    setCoordinate(el, { x: x1 + speedRate * speed * rx, y: y1 + speedRate * speed * ry });
+  }
+
+  /**
+   * @param {HTMLElement} el
+   * @param {number} x1
+   * @param {number} y1
+   * @param {number} x2
+   * @param {number} y2
+   */
+  function elRunaway(el, x1, y1, x2, y2, speedRate = 1) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const rx = dx / (Math.abs(dx) + Math.abs(dy));
+    const ry = dy / (Math.abs(dx) + Math.abs(dy));
+    setCoordinate(el, { x: x1 - speedRate * speed * rx, y: y1 - speedRate * speed * ry });
+  }
+
+  /**
+   * @param {HTMLElement} gameMap
+   * @param {string} _playerName
+   */
+  function createPlayer(gameMap, _playerName) {
+    const player = document.createElement('div');
+    player.classList.add('player');
+    player.innerText = _playerName;
+    player.classList.add(_playerName);
+    const speedRate = 1 + (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.25);
+    gameMap.appendChild(player);
+    players.push(player);
+    const screenSize = getScreenSize();
+    setCoordinate(player, {x: Math.random() * screenSize.w, y: Math.random() * screenSize.h});
+    /** @type {HTMLElement|null} */
+    let target = null;
+    /** @type {HTMLElement|null} */
+    let ghost = null;
+    setInterval(() => {
+      const playerName = player.innerText;
+      const targetName = playerName === '石'
+        ? '刀'
+        : playerName === '刀'
+          ? '布'
+          : '石';
+      const ghostName = playerName === '石'
         ? '布'
-        : '石';
-    const ghostName = playerName === '石'
-      ? '布'
-      : playerName === '刀'
-        ? '石'
-        : '刀';
-    if (!player.classList.contains(playerName)) {
-      for (const c of ['石', '刀', '布']) {
-        if (c === playerName) player.classList.add(c);
-        else player.classList.remove(c);
+        : playerName === '刀'
+          ? '石'
+          : '刀';
+      if (!player.classList.contains(playerName)) {
+        for (const c of ['石', '刀', '布']) {
+          if (c === playerName) player.classList.add(c);
+          else player.classList.remove(c);
+        }
       }
-    }
-    if (target === null || target.innerText !== targetName) {
-      target = getClosestPlayer(player, targetName);
-      const _target = target;
-      setTimeout(() => {
-        if (_target === target) target = null;
-      }, 100);
-    }
-    if (ghost === null || ghost.innerText !== ghostName) {
-      ghost = getClosestPlayer(player, ghostName);
-      const _ghost = ghost;
-      setTimeout(() => {
-        if (_ghost === ghost) ghost = null;
-      }, 100);
-    }
-    if (target === null && ghost === null) {
-      if (!end) {
-        end = true;
+      if (target === null || target.innerText !== targetName) {
+        target = getClosestPlayer(player, targetName);
+        const _target = target;
         setTimeout(() => {
-          if (target === null && ghost === null) {
-            location.reload();
-          } else {
-            end = false;
-          }
-        }, 3000);
+          if (_target === target) target = null;
+        }, 100);
       }
-      return;
-    }
-    for (const p of players) {
-      if (p.innerText === targetName && isColide(player, p)) {
-        target.innerText = playerName;
+      if (ghost === null || ghost.innerText !== ghostName) {
+        ghost = getClosestPlayer(player, ghostName);
+        const _ghost = ghost;
+        setTimeout(() => {
+          if (_ghost === ghost) ghost = null;
+        }, 100);
       }
-    }
-    const { centerx: x1, centery: y1, w } = getBoundingRect(player);
-    if (target !== null) {
-      const { centerx: x2, centery: y2 } = getBoundingRect(target);
-      const dtarget = calculateDistance(x1, y1, x2, y2);
-      if (ghost !== null) {
+      if (target === null && ghost === null) {
+        if (!end) {
+          end = true;
+          setTimeout(() => {
+            if (target === null && ghost === null) {
+              location.reload();
+            } else {
+              end = false;
+            }
+          }, 3000);
+        }
+        return;
+      }
+      for (const p of players) {
+        if (p.innerText === targetName && isColide(player, p)) {
+          target.innerText = playerName;
+        }
+      }
+      const { centerx: x1, centery: y1, w } = getBoundingRect(player);
+      if (target !== null) {
+        const { centerx: x2, centery: y2 } = getBoundingRect(target);
+        const dtarget = calculateDistance(x1, y1, x2, y2);
+        if (ghost !== null) {
+          const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
+          const dghost = calculateDistance(x1, y1, x3, y3);
+          if (dghost < (4 * w) || (dtarget > dghost && dghost < (8 * w))) return elRunaway(player, x1, y1, x3, y3, speedRate);
+        }
+        return elGoTo(player, x1, y1, x2, y2, speedRate);
+      } else if (ghost !== null) {
         const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
-        const dghost = calculateDistance(x1, y1, x3, y3);
-        if (dghost < (4 * w) || (dtarget > dghost && dghost < (8 * w))) return elRunaway(player, x1, y1, x3, y3, speedRate);
+        return elRunaway(player, x1, y1, x3, y3, speedRate);
       }
-      return elGoTo(player, x1, y1, x2, y2, speedRate);
-    } else if (ghost !== null) {
-      const { centerx: x3, centery: y3 } = getBoundingRect(ghost);
-      return elRunaway(player, x1, y1, x3, y3, speedRate);
-    }
-  }, 1);
-}
+    }, 1);
+  }
 
-/**
- * @param {HTMLElement} el
- * @param {string} name
- */
-function getClosestPlayer(el, name) {
-  /** @type {HTMLElement|null} */
-  let closestPlayer = null, closestDistance = Infinity;
-  const { centerx: x1, centery: y1 } = getBoundingRect(el);
-  for (const player of players) {
-    if (player.innerText === name) {
-      const { centerx: x2, centery: y2 } = getBoundingRect(player);
-      const d = calculateDistance(x1, y1, x2, y2);
-      if (d < closestDistance) {
-        closestDistance = d;
-        closestPlayer = player;
+  /**
+   * @param {HTMLElement} el
+   * @param {string} name
+   */
+  function getClosestPlayer(el, name) {
+    /** @type {HTMLElement|null} */
+    let closestPlayer = null, closestDistance = Infinity;
+    const { centerx: x1, centery: y1 } = getBoundingRect(el);
+    for (const player of players) {
+      if (player.innerText === name) {
+        const { centerx: x2, centery: y2 } = getBoundingRect(player);
+        const d = calculateDistance(x1, y1, x2, y2);
+        if (d < closestDistance) {
+          closestDistance = d;
+          closestPlayer = player;
+        }
       }
     }
+    return closestPlayer;
   }
-  return closestPlayer;
-}
 
-window.addEventListener('load', () => {
-  const gameMap = document.getElementById('rps-map');
-  for (let i = 0; i < Math.ceil(window.innerHeight * window.innerWidth / 32000); i++) {
-    createPlayer(gameMap, '石');
-    createPlayer(gameMap, '刀');
-    createPlayer(gameMap, '布');
-  }
-});
+  window.addEventListener('load', () => {
+    const gameMap = document.getElementById('rps-map');
+    for (let i = 0; i < Math.ceil(window.innerHeight * window.innerWidth / 32000); i++) {
+      createPlayer(gameMap, '石');
+      createPlayer(gameMap, '刀');
+      createPlayer(gameMap, '布');
+    }
+  });
+
+})();
