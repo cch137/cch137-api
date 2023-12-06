@@ -142,10 +142,12 @@ function googleExtractText($: CheerioAPI, el: Element, isRoot: boolean = false, 
 }
 
 const _googleSearchSummaryV2 = async (query: string, showUrl: boolean = true) => {
-  // const res = await axios.get(`https://www.google.com/search?q=${query}`)
-  // const $ = cheerioLoad(res.data)
-  const res = await (await fetch(`https://www.google.com/search?q=${query}`)).text()
-  const $ = cheerioLoad(res)
+  const res = await axios.get(`https://www.google.com/search?q=${query}`, {
+    headers: { "User-Agent": "Google" }
+  })
+  const $ = cheerioLoad(res.data)
+  // const res = await (await fetch(`https://www.google.com/search?q=${query}`)).text()
+  // const $ = cheerioLoad(res)
   const items = [...$('#main').children('div')]
   const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
     .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '')
