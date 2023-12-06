@@ -153,8 +153,10 @@ function googleExtractText($, el, isRoot = false, showUrl = true) {
     }
 }
 const _googleSearchSummaryV2 = (query, showUrl = true) => __awaiter(void 0, void 0, void 0, function* () {
-    const res = yield axios_1.default.get(`https://www.google.com/search?q=${query}`);
-    const $ = (0, cheerio_1.load)(res.data);
+    // const res = await axios.get(`https://www.google.com/search?q=${query}`)
+    // const $ = cheerioLoad(res.data)
+    const res = yield (yield fetch(`https://www.google.com/search?q=${query}`)).text();
+    const $ = (0, cheerio_1.load)(res);
     const items = [...$('#main').children('div')];
     const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
         .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '');
