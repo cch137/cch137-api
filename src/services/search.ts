@@ -143,26 +143,26 @@ function googleExtractText($: CheerioAPI, el: Element, isRoot: boolean = false, 
 }
 
 const _googleSearchSummaryV2 = async (query: string, showUrl: boolean = true) => {
-  // const res = await axios.get(`https://www.google.com/search?q=${query}`, {
-  //   headers: { "User-Agent": "Google" }
-  // })
-  // const $ = cheerioLoad(res.data)
+  const res = await axios.get(`https://www.google.com.sg/search?q=${query}`, {
+    headers: { "User-Agent": "Google" }
+  })
+  const $ = cheerioLoad(res.data)
   // const res = await (await fetch(`https://www.google.com/search?q=${query}`)).text()
   // const $ = cheerioLoad(res)
-  const res = new Promise<string>((resolve, reject) => {
-    const req = https.request({
-      hostname: 'www.google.com',
-      path: `/search?q=${query}`,
-      method: 'GET'
-    }, (res) => {
-      let chunks: Buffer[] = [];
-      res.on('data', (chunk) => { chunks.push(chunk) })
-      res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-      res.on('error', (e) => reject(e));
-    })
-    req.end()
-  })
-  const $ = cheerioLoad(await res)
+  // const res = new Promise<string>((resolve, reject) => {
+  //   const req = https.request({
+  //     hostname: 'www.google.com',
+  //     path: `/search?q=${query}`,
+  //     method: 'GET'
+  //   }, (res) => {
+  //     let chunks: Buffer[] = [];
+  //     res.on('data', (chunk) => { chunks.push(chunk) })
+  //     res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+  //     res.on('error', (e) => reject(e));
+  //   })
+  //   req.end()
+  // })
+  // const $ = cheerioLoad(await res)
   const items = [...$('#main').children('div')]
   const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
     .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '')

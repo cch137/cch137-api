@@ -17,7 +17,6 @@ const axios_1 = __importDefault(require("axios"));
 const cheerio_1 = require("cheerio");
 const qs_1 = __importDefault(require("qs"));
 const random_1 = __importDefault(require("../utils/random"));
-const https_1 = __importDefault(require("https"));
 const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
@@ -154,26 +153,26 @@ function googleExtractText($, el, isRoot = false, showUrl = true) {
     }
 }
 const _googleSearchSummaryV2 = (query, showUrl = true) => __awaiter(void 0, void 0, void 0, function* () {
-    // const res = await axios.get(`https://www.google.com/search?q=${query}`, {
-    //   headers: { "User-Agent": "Google" }
-    // })
-    // const $ = cheerioLoad(res.data)
+    const res = yield axios_1.default.get(`https://www.google.com.sg/search?q=${query}`, {
+        headers: { "User-Agent": "Google" }
+    });
+    const $ = (0, cheerio_1.load)(res.data);
     // const res = await (await fetch(`https://www.google.com/search?q=${query}`)).text()
     // const $ = cheerioLoad(res)
-    const res = new Promise((resolve, reject) => {
-        const req = https_1.default.request({
-            hostname: 'www.google.com',
-            path: `/search?q=${query}`,
-            method: 'GET'
-        }, (res) => {
-            let chunks = [];
-            res.on('data', (chunk) => { chunks.push(chunk); });
-            res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-            res.on('error', (e) => reject(e));
-        });
-        req.end();
-    });
-    const $ = (0, cheerio_1.load)(yield res);
+    // const res = new Promise<string>((resolve, reject) => {
+    //   const req = https.request({
+    //     hostname: 'www.google.com',
+    //     path: `/search?q=${query}`,
+    //     method: 'GET'
+    //   }, (res) => {
+    //     let chunks: Buffer[] = [];
+    //     res.on('data', (chunk) => { chunks.push(chunk) })
+    //     res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    //     res.on('error', (e) => reject(e));
+    //   })
+    //   req.end()
+    // })
+    // const $ = cheerioLoad(await res)
     const items = [...$('#main').children('div')];
     const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
         .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '');
