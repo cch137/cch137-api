@@ -6,6 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const lsList = fs_1.default.readdirSync(path_1.default.resolve(__dirname + '../../../data/ls'));
+// (() => {
+//   const id = 'wb6H7eglKyiTuQ';
+//   console.log(id);
+// })();
 exports.default = {
     list: lsList,
     get(filename) {

@@ -3,6 +3,11 @@ import path from 'path';
 
 const lsList = fs.readdirSync(path.resolve(__dirname + '../../../data/ls'));
 
+// (() => {
+//   const id = 'wb6H7eglKyiTuQ';
+//   console.log(id);
+// })();
+
 export default {
   list: lsList,
   get(filename: string) {
