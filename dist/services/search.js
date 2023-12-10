@@ -153,26 +153,8 @@ function googleExtractText($, el, isRoot = false, showUrl = true) {
     }
 }
 const _googleSearchSummaryV2 = (query, showUrl = true) => __awaiter(void 0, void 0, void 0, function* () {
-    const res = yield axios_1.default.get(`https://www.google.com.sg/search?q=${query}`, {
-        headers: { "User-Agent": "Google" }
-    });
+    const res = yield axios_1.default.get(`https://www.google.com.sg/search?q=${query}`);
     const $ = (0, cheerio_1.load)(res.data);
-    // const res = await (await fetch(`https://www.google.com/search?q=${query}`)).text()
-    // const $ = cheerioLoad(res)
-    // const res = new Promise<string>((resolve, reject) => {
-    //   const req = https.request({
-    //     hostname: 'www.google.com',
-    //     path: `/search?q=${query}`,
-    //     method: 'GET'
-    //   }, (res) => {
-    //     let chunks: Buffer[] = [];
-    //     res.on('data', (chunk) => { chunks.push(chunk) })
-    //     res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    //     res.on('error', (e) => reject(e));
-    //   })
-    //   req.end()
-    // })
-    // const $ = cheerioLoad(await res)
     const items = [...$('#main').children('div')];
     const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
         .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '');
