@@ -137,11 +137,12 @@ apisRouter.get('/ls/:fn', (req, res) => {
         res.status(404).send(`Not Found`);
     }
 });
-apisRouter.get('/ls/i/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const filename = req.query.f || req.query.filename;
-    const id = req.query.id || req.params.id;
-    if (typeof filename === 'string') {
-        const isbn = filename.split('_')[0];
+apisRouter.get('/ls/i/:chap_problem', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const chap_problem = req.params.chap_problem;
+    const isbn = req.query.b || req.query.isbn;
+    const id = req.query.id || chap_problem;
+    if (isbn && chap_problem) {
+        const filename = `${isbn}_${chap_problem}.png`;
         const fp = path_1.default.resolve(`./data/ls/files/${isbn}/${filename}`);
         if (fs_1.default.existsSync(fp)) {
             return res.sendFile(fp);
@@ -152,7 +153,7 @@ apisRouter.get('/ls/i/:id', (req, res) => __awaiter(void 0, void 0, void 0, func
         if (!id)
             throw 'NOT FOUND';
         const resource = yield yadisk_1.default.preview(`https://yadi.sk/i/${id}`);
-        res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${filename || resource.filename}"`);
+        res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${resource.filename}"`);
         res.type(resource.type);
         if (resource.started)
             res.send(yield resource.data);
