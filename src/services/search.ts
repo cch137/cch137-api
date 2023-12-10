@@ -1,9 +1,13 @@
 import axios from 'axios'
 import { load as cheerioLoad } from 'cheerio'
-import type { CheerioAPI, Element } from 'cheerio'
+import type { CheerioAPI, Element, AnyNode } from 'cheerio'
 import qs from 'qs'
 import random from '../utils/random'
-import https from 'https'
+import puppeteer from 'puppeteer'
+import TurndownService from 'turndown'
+// @ts-ignore
+import { gfm } from '@joplin/turndown-plugin-gfm'
+import path from 'path'
 
 interface SearcherResultItem {
   title: string;
@@ -143,26 +147,8 @@ function googleExtractText($: CheerioAPI, el: Element, isRoot: boolean = false, 
 }
 
 const _googleSearchSummaryV2 = async (query: string, showUrl: boolean = true) => {
-  const res = await axios.get(`https://www.google.com.sg/search?q=${query}`, {
-    headers: { "User-Agent": "Google" }
-  })
+  const res = await axios.get(`https://www.google.com.sg/search?q=${query}`)
   const $ = cheerioLoad(res.data)
-  // const res = await (await fetch(`https://www.google.com/search?q=${query}`)).text()
-  // const $ = cheerioLoad(res)
-  // const res = new Promise<string>((resolve, reject) => {
-  //   const req = https.request({
-  //     hostname: 'www.google.com',
-  //     path: `/search?q=${query}`,
-  //     method: 'GET'
-  //   }, (res) => {
-  //     let chunks: Buffer[] = [];
-  //     res.on('data', (chunk) => { chunks.push(chunk) })
-  //     res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-  //     res.on('error', (e) => reject(e));
-  //   })
-  //   req.end()
-  // })
-  // const $ = cheerioLoad(await res)
   const items = [...$('#main').children('div')]
   const text = items.map(i => googleExtractText($, i, true)).join('\n\n').trim()
     .replace(/(\n{2,})/g, '\n\n').replace(/�/g, '')
@@ -172,6 +158,76 @@ const _googleSearchSummaryV2 = async (query: string, showUrl: boolean = true) =>
 const googleSearchSummaryV2 = async (showUrl=true, ...queries: string[]) => {
   return (await Promise.all(queries.map((query) => _googleSearchSummaryV2(query, showUrl)))).join('\n\n---\n\n')
 }
+
+// (() => {
+//   function joinURL(baseURL: string, relativeURL: string) {
+//     const urlParts = baseURL.split('/'), relativeParts = relativeURL.split('/');
+//     urlParts.pop();
+//     for (const part of relativeParts) {
+//       if (part === '..') urlParts.pop();
+//       else if (part !== '.') urlParts.push(part);
+//     }
+//     return urlParts.join('/');
+//   }
+
+//   function parseHtml(html: string | AnyNode | AnyNode[] | Buffer, url: string, textOnly = true) {
+//     const $ = cheerioLoad(html)
+//     $('style').remove()
+//     $('script').remove()
+//     if (textOnly) {
+//       $('img').remove()
+//       $('video').remove()
+//       $('audio').remove()
+//       $('canvas').remove()
+//       $('svg').remove()
+//     }
+//     const origin = new URL(url).origin
+//     const links = new Set<string>()
+//     $('a').each((_, el) => {
+//       const href = $(el).attr('href')
+//       if (typeof href === 'string' && !links.has(href)) {
+//         if (href.startsWith('/')) links.add(origin + href)
+//         else if (href.startsWith('#')) links.add(url + href)
+//         else if (href.startsWith('../') || href.startsWith('./')) links.add(joinURL(url, href))
+//         else links.add(href)
+//       }
+//     })
+//     // $('a').replaceWith(function () {
+//     //   return $('<span>').text($(this).prop('innerText') || $(this).text())
+//     // })
+//     const td = new TurndownService()
+//     td.use(gfm)
+//     const markdown = td.turndown($('body').prop('innerHTML') as string)
+//     return {
+//       title: $('title').text() || $('meta[name="title"]').attr()?.content || $('meta[name="og:title"]').attr()?.content,
+//       description: $('meta[name="description"]').attr()?.content || $('meta[name="og:description"]').attr()?.content,
+//       links: [...links],
+//       content: markdown.replace(/<br>/g, '\n').trim(),
+//     }
+//   }
+
+//   async function _fetchHTML(url: string) {
+//     const browser = await puppeteer.launch();
+//     const page = await browser.newPage();
+//     await page.goto(url);
+//     const html = await page.content();
+//     await browser.close();
+//     return parseHtml(html, url);
+//   }
+
+//   async function fetchHTML(url: string) {
+//     return parseHtml((await axios.get(url)).data, url);
+//   }
+
+//   // 這是一個測試用例
+//   const url = 'https://zh.wikipedia.org/zh-tw/%E8%B6%85%E5%A4%A7%E8%A7%84%E6%A8%A1%E9%9B%86%E6%88%90%E7%94%B5%E8%B7%AF'
+//   _fetchHTML(url)
+//     .then(html => console.log(1, html))
+//     .catch(err => console.error('錯誤發生:', err))
+//   fetchHTML(url)
+//     .then(html => console.log(2, html))
+//     .catch(err => console.error('錯誤發生:', err))
+// })();
 
 export {
   googleSearch,
