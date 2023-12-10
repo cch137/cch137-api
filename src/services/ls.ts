@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const lsList = fs.readdirSync(path.resolve(__dirname + '../../../data/ls'));
+const lsList = fs.readdirSync(path.resolve(__dirname + '../../../data/ls/dirs/'));
 
 // (() => {
 //   const id = 'wb6H7eglKyiTuQ';
@@ -15,7 +15,7 @@ export default {
       throw 'cannot read directory'
     }
     return JSON.parse(
-      fs.readFileSync(path.resolve(__dirname + `../../../data/ls/${filename}`), 'utf8')
+      fs.readFileSync(path.resolve(__dirname + `../../../data/ls/dirs/${filename}`), 'utf8')
     )
   }
 }

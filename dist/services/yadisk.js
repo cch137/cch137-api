@@ -80,7 +80,7 @@ function preview(url) {
 // import fs from 'fs';
 // (() => {
 //   interface PageObj {isbn_c_p: string, link: string}
-//   const list: PageObj[] = JSON.parse(fs.readFileSync('./data/ls/Thomas Jr. G.B., Hass J., Heil Ch., Weir M.D. Thomas Calculus 14 ed 2018 9780134438986.json', 'utf8'))
+//   const list: PageObj[] = JSON.parse(fs.readFileSync('./data/ls/dirs/Thomas Jr. G.B., Hass J., Heil Ch., Weir M.D. Thomas Calculus 14 ed 2018 9780134438986.json', 'utf8'))
 //   function fileList() {
 //     return fs.readdirSync('./ls/')
 //   }
