@@ -16,6 +16,15 @@ exports.default = {
         if (filename.includes('./') || filename.includes('.\\')) {
             throw 'cannot read directory';
         }
-        return JSON.parse(fs_1.default.readFileSync(path_1.default.resolve(__dirname + `../../../data/ls/dirs/${filename}`), 'utf8'));
+        if (lsList.includes(filename)) {
+            return JSON.parse(fs_1.default.readFileSync(path_1.default.resolve(__dirname + `../../../data/ls/dirs/${filename}`), 'utf8'));
+        }
+        else {
+            for (const lsFilename of lsList) {
+                if (lsFilename.includes(filename)) {
+                    return JSON.parse(fs_1.default.readFileSync(path_1.default.resolve(__dirname + `../../../data/ls/dirs/${lsFilename}`), 'utf8'));
+                }
+            }
+        }
     }
 };
