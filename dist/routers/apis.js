@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const express_1 = __importDefault(require("express"));
 const google_translate_api_1 = __importDefault(require("@saipulanuar/google-translate-api"));
 const adaptParseBody_1 = __importDefault(require("../utils/adaptParseBody"));
@@ -137,13 +138,21 @@ apisRouter.get('/ls/:fn', (req, res) => {
     }
 });
 apisRouter.get('/ls/i/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const filename = req.query.f || req.query.filename;
     const id = req.query.id || req.params.id;
+    if (typeof filename === 'string') {
+        const isbn = filename.split('_')[0];
+        const fp = path_1.default.resolve(`./data/ls/files/${isbn}/${filename}`);
+        if (fs_1.default.existsSync(fp)) {
+            return res.sendFile(fp);
+        }
+    }
     try {
         const download = (req.query.download || req.query.dl || 0).toString() != '0';
         if (!id)
             throw 'NOT FOUND';
         const resource = yield yadisk_1.default.preview(`https://yadi.sk/i/${id}`);
-        res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${resource.filename}"`);
+        res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${filename || resource.filename}"`);
         res.type(resource.type);
         if (resource.started)
             res.send(yield resource.data);

@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import express from 'express';
 import translate from '@saipulanuar/google-translate-api';
 import adaptParseBody from '../utils/adaptParseBody';
@@ -127,12 +128,20 @@ apisRouter.get('/ls/:fn', (req, res) => {
 });
 
 apisRouter.get('/ls/i/:id', async (req, res) => {
+  const filename = req.query.f || req.query.filename;
   const id = req.query.id || req.params.id;
+  if (typeof filename === 'string') {
+    const isbn = filename.split('_')[0];
+    const fp = path.resolve(`./data/ls/files/${isbn}/${filename}`)
+    if (fs.existsSync(fp)) {
+      return res.sendFile(fp);
+    }
+  }
   try {
     const download = (req.query.download || req.query.dl || 0).toString() != '0';
     if (!id) throw 'NOT FOUND';
     const resource = await yadisk.preview(`https://yadi.sk/i/${id}`);
-    res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${resource.filename}"`);
+    res.setHeader('Content-Disposition', `${download ? 'attachment; ' : ''}filename="${filename || resource.filename}"`);
     res.type(resource.type);
     if (resource.started) res.send(await resource.data);
     else resource.stream.pipe(res);
