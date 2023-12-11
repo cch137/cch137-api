@@ -61,7 +61,7 @@
     const r = parseInt(hexColorCode.substring(1, 3), 16);
     const g = parseInt(hexColorCode.substring(3, 5), 16);
     const b = parseInt(hexColorCode.substring(5, 7), 16);
-    ws.send(new Uint8Array([108, r, g, b]));
+    ws.send(new Uint8Array([102, r, g, b]));
   })
 
   ws.addEventListener('open', (e) => {
@@ -69,31 +69,42 @@
     ws.send(new Uint8Array([100]));
   });
 
+  function getPlayerEl(id) {
+    /** @type {HTMLDivElement} */
+    let p = document.querySelector(`#player-${id}`);
+    if (p === null) {
+      p = document.createElement('div');
+      p.classList.add('player');
+      p.id = `player-${id}`;
+      document.querySelector('.chunk').appendChild(p);
+    }
+    return p;
+  }
+
   ws.addEventListener('message', async (e) => {
     /** @type {Blob} */
     const data = e.data;
     const [cmd, ...items] = [...new Uint8Array(await data.arrayBuffer())];
     switch (cmd) {
-      case 101: // player update
+      case 101: // player update coor
         {
-          const [id, x, y, r, g, b] = items;
-          /** @type {HTMLDivElement} */
-          let p = document.querySelector(`#player-${id}`);
-          if (p === null) {
-            p = document.createElement('div');
-            p.classList.add('player');
-            p.id = `player-${id}`;
-            document.querySelector('.chunk').appendChild(p);
-          }
+          const [id, x, y] = items;
+          const p = getPlayerEl(id);
           p.style.setProperty('--x', x);
           p.style.setProperty('--y', y);
+        }
+        break;
+      case 102: // player update color
+        {
+          const [id, r, g, b] = items;
+          const p = getPlayerEl(id);
           p.style.setProperty('--rgb', `rgb(${r},${g},${b})`);
         }
         break;
       case 104: // player disconnected
         document.querySelector(`#player-${items[0]}`).remove();
         break;
-      case 111: // save color
+      case 112: // save color
         const [r, g, b] = items;
         playerColorSetterEl.value = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         break;

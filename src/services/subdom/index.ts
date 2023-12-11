@@ -30,18 +30,25 @@ class Player {
 
 wss.on('connection', (socket, req) => {
   const player = new Player()
-  socket.on('open', () => {
+  function broadcastUintArray(uintArray: number[]) {
     for (const client of wss.clients) {
-      client.send(Buffer.from([101, ...player.array]))
+      client.send(Buffer.from(uintArray))
     }
+  }
+  socket.on('open', () => {
+    broadcastUintArray([101, player.id, player.x, player.y])
+    broadcastUintArray([102, player.id, ...player.rgb])
   })
   socket.on('message', (data, isBinary) => {
     if (!isBinary) return;
     const [cmd, ...items] = data as Buffer
     switch (cmd) {
       case 100: // init Player
-        socket.send(Buffer.from([111, ...player.rgb]))
-        players.forEach((p) => socket.send(Buffer.from([101, ...p.array])))
+        socket.send(Buffer.from([112, ...player.rgb]))
+        players.forEach((p) => {
+          socket.send(Buffer.from([101, p.id, p.x, p.y]))
+          socket.send(Buffer.from([102, p.id, ...p.rgb]))
+        })
         break
       case 101: // Player Move
         const moveCode = items[0]
@@ -65,14 +72,13 @@ wss.on('connection', (socket, req) => {
         else if (player.x > 255) player.x = 255
         if (player.y < 0) player.y = 0
         else if (player.y > 255) player.y = 255
+        broadcastUintArray([101, player.id, player.x, player.y])
         break
-      case 108: // Player Change Color
+      case 102: // Player Change Color
         const [r, g, b] = items;
         player.rgb = [r, g, b]
+        broadcastUintArray([102, player.id, ...player.rgb])
         break
-    }
-    for (const client of wss.clients) {
-      client.send(Buffer.from([101, ...player.array]))
     }
   })
   socket.on('close', () => {
