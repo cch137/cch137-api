@@ -31,14 +31,13 @@ class Player {
 wss.on('connection', (socket, req) => {
   const player = new Player()
   function broadcastUintArray(uintArray: number[]) {
+    const buffer = Buffer.from(uintArray)
     for (const client of wss.clients) {
-      client.send(Buffer.from(uintArray))
+      client.send(buffer)
     }
   }
-  socket.on('open', () => {
-    broadcastUintArray([101, player.id, player.x, player.y])
-    broadcastUintArray([102, player.id, ...player.rgb])
-  })
+  broadcastUintArray([101, player.id, player.x, player.y])
+  broadcastUintArray([102, player.id, ...player.rgb])
   socket.on('message', (data, isBinary) => {
     if (!isBinary) return;
     const [cmd, ...items] = data as Buffer

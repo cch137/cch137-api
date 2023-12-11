@@ -25,15 +25,24 @@ body {
 .player {
   --x: 0;
   --y: 0;
+  --k: 0;
   --rgb: rgb(255, 255, 255);
+  position: relative;
   left: calc(1px * var(--x) * var(--px-scale));
   top: calc(1px * var(--y) * var(--px-scale));
-  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+}
+
+.player::before {
+  position: absolute;
+  content: ' ';
   width: calc(8px * var(--px-scale));
   height: calc(8px * var(--px-scale));
-  border-radius: 100%;
+  transform: translate(-50%, -50%);
   background: var(--rgb);
-  position: relative;
+  border-radius: 100%;
+  box-shadow: #8888 0 0 calc(16px * var(--px-scale));
 }
 
 .chunk {
