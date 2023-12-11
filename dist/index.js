@@ -9,6 +9,7 @@ const apis_1 = __importDefault(require("./routers/apis"));
 const pine_1 = __importDefault(require("./routers/pine"));
 const pdf_1 = __importDefault(require("./routers/pdf"));
 const mongoose_1 = __importDefault(require("./services/mongoose"));
+const subdom_1 = __importDefault(require("./services/subdom"));
 (0, dotenv_1.config)();
 server_1.app.use('/', apis_1.default);
 server_1.app.use('/pine/', pine_1.default);
@@ -18,4 +19,6 @@ const port = process.env.PORT || 3000;
 server_1.server.listen(port, () => {
     console.log(`Server is listening to http://localhost:${port}`);
     console.log(`Mongoose version: ${mongoose_1.default.version}`);
+    if (subdom_1.default.ready)
+        console.log('Subdom is ready.');
 });

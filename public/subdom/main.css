@@ -1,0 +1,63 @@
+body {
+  background: #000;
+  color: #eee;
+  --px-scale: 1.5;
+  font-family: monospace;
+}
+
+#status {
+  text-align: center;
+}
+
+#view {
+  width: 800px;
+  height: 600px;
+  border: 1px solid rgba(255, 68, 0, 0.5);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player {
+  --x: 0;
+  --y: 0;
+  --rgb: rgb(255, 255, 255);
+  left: calc(1px * var(--x) * var(--px-scale));
+  top: calc(1px * var(--y) * var(--px-scale));
+  transform: translate(-50%, -50%);
+  width: calc(8px * var(--px-scale));
+  height: calc(8px * var(--px-scale));
+  border-radius: 100%;
+  background: var(--rgb);
+  position: relative;
+}
+
+.chunk {
+  width: calc(256px * var(--px-scale));
+  height: calc(256px * var(--px-scale));
+  border: 1px solid grey;
+}
+
+#controller {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+}
+#controller * {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#controller > * > * {
+  width: 30px;
+  height: 30px;
+  user-select: none;
+  cursor: pointer;
+  font-size: 2em;
+}
