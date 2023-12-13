@@ -78,43 +78,64 @@ function preview(url) {
     });
 }
 // import fs from 'fs';
-// (() => {
+// import jimp from 'jimp';
+// (async () => {
 //   interface PageObj {isbn_c_p: string, link: string}
-//   const list: PageObj[] = JSON.parse(fs.readFileSync('./data/ls/dirs/Thomas Jr. G.B., Hass J., Heil Ch., Weir M.D. Thomas Calculus 14 ed 2018 9780134438986.json', 'utf8'))
+//   // if you want to change the source, remember also change the isbn below
+//   const list: PageObj[] = JSON.parse(fs.readFileSync('./data/ls/dirs/Roth Ch., Kinney L. Fundamentals of Logic Design 7ed 2014 9781133628477.json', 'utf8'))
 //   function fileList() {
 //     return fs.readdirSync('./ls/')
 //   }
 //   function hasFile(id: string) {
 //     return fileList().includes(`${id}.png`)
 //   }
-//   function processFile(obj: PageObj) {
+//   function processFile(obj: PageObj, tries: number = 0): Promise<any> {
 //     return new Promise<void>(async (resolve, reject) => {
 //       const { isbn_c_p, link } = obj
-//       if (hasFile(isbn_c_p)) {
-//         return resolve()
-//       }
-//       console.log('processing:', isbn_c_p);
+//       // if (hasFile(isbn_c_p)) {
+//       //   return resolve()
+//       // }
+//       console.log('processing:', isbn_c_p)
 //       try {
 //         const response = await preview(link)
-//         const fp = `./ls/${isbn_c_p}.png`
+//         const fp = `./data/ls/files/${isbn_c_p.split('_')[0]}/${isbn_c_p}.png`
 //         if (response.started) {
 //           fs.writeFileSync(fp, await response.data)
 //         } else {
 //           const writableStream = fs.createWriteStream(fp);
 //           response.stream.pipe(writableStream);
 //         }
-//         console.log('done', isbn_c_p, `${fileList().length}/${list.length}`);
+//         console.log('done', isbn_c_p, /*`${fileList().length}/${list.length}`*/);
 //         resolve();
 //       } catch (e) {
 //         console.log('error:', isbn_c_p);
-//         return resolve(await processFile(obj));
+//         return resolve(await processFile(obj, tries + 1));
 //       }
 //     })
 //   }
 //   let i = 0;
-//   for (const obj of list) {
-//     setTimeout(() => processFile(obj), 100 * i++);
+//   const p = './data/ls/files/9781133628477/'
+//   const list2 = fs.readdirSync(p)
+//   const list2length = list2.length
+//   for (let i2 = 0; i2 < list2length; i2++) {
+//     const f = list2[i2]
+//     try {
+//       await jimp.read(`${p}${f}`)
+//       console.log(`checked: ${i2 + 1} / ${list2length}`)
+//     } catch (e) {
+//       const isbn_c_p = f.substring(0, f.length - 4)
+//       for (const fobj of list) {
+//         if (fobj.isbn_c_p === isbn_c_p) {
+//           setTimeout(() => processFile(fobj), 100 * i++);
+//           break
+//         }
+//       }
+//     }
 //   }
+//   console.log('Check Done!')
+//   // for (const obj of list) {
+//   //   setTimeout(() => processFile(obj), 100 * i++);
+//   // }
 // })();
 exports.default = {
     preview
