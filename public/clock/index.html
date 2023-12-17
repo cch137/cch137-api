@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html >
+<head>
+  <title>Clock</title>
+  <meta name="description" content="A clock">
+  <link rel="stylesheet" href="./main.css">
+  <style>
+    body {
+      --sz: 160px;
+    }
+    .content {
+      user-select: none;
+    }
+    #date {
+      font-size: calc(var(--sz) / 4);
+      opacity: 0.67;
+      letter-spacing: 2px;
+      font-family: Quicksand;
+    }
+    .time {
+      font-size: var(--sz);
+      font-weight: bold;
+    }
+    .colon {
+      padding: 0 calc(0.15 * var(--sz));
+    }
+    #f11 {
+      --sz: 32px;
+      margin: 8px;
+      padding: 4px 8px;
+      opacity: 0.33;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    #f11:hover {
+      opacity: 0.67;
+    }
+    #f11 > svg {
+      height: var(--sz);
+      width: var(--sz);
+    }
+    @media screen and (max-width:1300px) {
+      .content {
+        --sz: 140px;
+      }
+    }
+    @media screen and (max-width:1100px) {
+      .content {
+        --sz: 120px;
+      }
+    }
+    @media screen and (max-width:900px) {
+      .content {
+        --sz: 100px;
+      }
+    }
+    @media screen and (max-width:700px) {
+      .content {
+        --sz: 80px;
+      }
+    }
+    @media screen and (max-width:500px) {
+      .content {
+        --sz: 60px;
+      }
+      #f11 {
+        opacity: 0.33 !important;
+      }
+    }
+    @media screen and (max-height:300px) {
+      #f11 {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="content pg-ct flex-col flex-ct">
+    <div id="date">Sunday, 00-00-0000</div>
+    <div class="time flex-ct">
+      <span id="t-h">00</span>
+      <span class="colon">:</span>
+      <span id="t-m">00</span>
+      <span class="colon">:</span>
+      <span id="t-s">00</span>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:5%;width:100%;" class="flex-ct">
+    <div id="f11" class="flex-ct"></div>
+  </div>
+  <script>
+    (() => {
+      const elById = (s) => {return document.getElementById(s)}, newElW3 = (s, attb={}, children=[]) => {
+        const el = document.createElementNS('http:\/\/www.w3.org/2000/svg', s);
+        for (const i in attb) if(attb != null && attb != undefined) el.setAttribute(i, attb[i]);
+        if (!children instanceof Array) children = [children];
+        el.append(...[children]);
+        return el;
+      };
+      const s_full = newElW3('svg', {viewBox: '0 0 48 48', class: 'hidden'}, newElW3('path', {d: 'M10 38v-9.65h3V35h6.65v3Zm0-18.35V10h9.65v3H13v6.65ZM28.35 38v-3H35v-6.65h3V38ZM35 19.65V13h-6.65v-3H38v9.65Z'}));
+      const s_exit = newElW3('svg', {viewBox: '0 0 48 48', class: 'hidden'}, newElW3('path', {d: 'M16.65 38v-6.65H10v-3h9.65V38Zm11.7 0v-9.65H38v3h-6.65V38ZM10 19.65v-3h6.65V10h3v9.65Zm18.35 0V10h3v6.65H38v3Z'}));
+      const el = [elById('date'), elById('t-h'), elById('t-m'), elById('t-s')];
+      const f11 = elById('f11');
+      const wd = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const run = () => {
+        const n = new Date(), t = [`${wd[n.getDay()]}, ${n.getDate()}-${n.getMonth()+1}-${n.getFullYear()}`, ...n.toTimeString().split(' ')[0].split(':')];
+        for (let i = 0; i < t.length; i++) if (el[i].innerText != t[i]) el[i].innerText = t[i];
+      }, screen = {
+        isFullScreen: function() {
+          return document.fullScreen || document.webkitIsFullScreen || document.mozFullScreen;
+        },
+        f11: function() {
+          if (typeof window.ActiveXObject !== 'undefined') {
+            const wscript = new ActiveXObject('WScript.Shell');
+            if (wscript) wscript.SendKeys('{F11}');
+          };
+        },
+        full: function(ele = null) {
+          if (this.isFullScreen()) return;
+          const el = ele || document.documentElement;
+          const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+          if (rfs) rfs.call(el);
+          else this.f11();
+        },
+        exit: function() {
+          if (!this.isFullScreen()) return;
+          const el = document;
+          const efs = el.exitFullscreen || el.webkitExitFullscreen || el.mozCancelFullScreen;
+          if (efs) efs.call(el);
+          else this.f11();
+        },
+        chk: function() {
+          if (screen.isFullScreen()) {
+            if (f11.title != 'Exit full screen') f11.title = 'Exit full screen', s_full.classList.add('hidden'), s_exit.classList.remove('hidden');
+          } else if (f11.title != 'Full screen') f11.title = 'Full screen', s_full.classList.remove('hidden'), s_exit.classList.add('hidden');
+        }
+      };
+      run(), setInterval(run, 100);
+      f11.onclick = () => {
+        if (screen.isFullScreen()) screen.exit();
+        else screen.full();
+        setTimeout(screen.chk, 100);
+      };
+      f11.append(...[s_full, s_exit]);
+      screen.chk();
+      window.onfocus = screen.chk;
+      document.addEventListener('fullscreenchange', screen.chk);
+      history.replaceState(0, 0, location.pathname);
+    })();
+  </script>
+</body>
+</html>
