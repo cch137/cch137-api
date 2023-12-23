@@ -20,3 +20,13 @@ server.listen(port, () => {
   console.log(`Mongoose version: ${mongoose.version}`)
   if (subdom.ready) console.log('Subdom is ready.')
 })
+
+import { packData, unpackData } from './utils/bson'
+let x, y, z
+x = { a: 1.1, b: -2.3, c: [1, 'Hello', { d: 96 }] }
+x = 123.456
+y = packData(x)
+z = unpackData(y)
+console.log(x)
+console.log(y.length)
+console.log(z)

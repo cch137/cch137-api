@@ -141,12 +141,12 @@ function unpackNumber(bytes, p = new Pointer()) {
         default: throwInvalidFlag(flag);
     }
     const sign = flag % 2 === 0 ? 1 : -1;
-    const isInt = flag === flags.INT || flag === flags.INT_;
     const isBigInt = flag === flags.BIGINT || flag === flags.BIGINT_;
     if (isBigInt) {
         const bigintLength = readSizeDataChunks(bytes, p);
         return BigInt(sign) * Uint8ArrayToBigInt(bytes.slice(p.pos, p.walked(bigintLength)));
     }
+    const isInt = flag === flags.INT || flag === flags.INT_;
     const intValue = unpackNoflagUint(bytes, p);
     if (isInt)
         return sign * intValue;

@@ -22,3 +22,12 @@ server_1.server.listen(port, () => {
     if (subdom_1.default.ready)
         console.log('Subdom is ready.');
 });
+const bson_1 = require("./utils/bson");
+let x, y, z;
+x = { a: 1.1, b: -2.3, c: [1, 'Hello', { d: 96 }] };
+x = 123.456;
+y = (0, bson_1.packData)(x);
+z = (0, bson_1.unpackData)(y);
+console.log(x);
+console.log(y.length);
+console.log(z);

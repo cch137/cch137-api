@@ -88,7 +88,7 @@ function BooleansToUint(b: boolean[]) {
   return b.reverse().map((v, i) => +v * 2 ** i).reduce((a, b) => a + b, 0)
 }
 
-function createSizeDataChunks(size: number) {
+function createSizeDataChunks(size: number | bigint) {
   const booleans = UintToBooleans(size, 7), l = booleans.length; let i = 0
   const sizeData: boolean[] = []
   while (i < l) sizeData.unshift(true, ...booleans.slice(i, i += 7))
@@ -141,12 +141,12 @@ function unpackNumber(bytes: Uint8Array | number[], p = new Pointer()) {
     default: throwInvalidFlag(flag)
   }
   const sign = flag % 2 === 0 ? 1 : -1
-  const isInt = flag === flags.INT || flag === flags.INT_
   const isBigInt = flag === flags.BIGINT || flag === flags.BIGINT_
   if (isBigInt) {
     const bigintLength = readSizeDataChunks(bytes, p)
     return BigInt(sign) * Uint8ArrayToBigInt(bytes.slice(p.pos, p.walked(bigintLength)))
   }
+  const isInt = flag === flags.INT || flag === flags.INT_
   const intValue = unpackNoflagUint(bytes, p)
   if (isInt) return sign * intValue
   const floatLength = readSizeDataChunks(bytes, p)
