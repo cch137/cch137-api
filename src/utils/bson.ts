@@ -18,18 +18,17 @@ const flags = {
 
   STR: 64,
 
-  // all iterable end flag are ENDARR
   ARR: 96,
-  ENDARR: 97,
   SET: 98,
   MAP: 100,
 
   OBJ: 128,
-  ENDOBJ: 129,
 
   BUF8: 160,
   BUF16: 162,
   BUF32: 164,
+
+  END: 255,
 }
 
 class Pointer {
@@ -201,25 +200,25 @@ function unpackSpecial(bytes: Uint8Array | number[], p = new Pointer()) {
 
 function packArray(value: any[] | Set<any> | Map<any,any>) {
   const flag = value instanceof Set ? flags.SET : value instanceof Map ? flags.MAP : flags.ARR
-  return new Uint8Array([flag, ...[...value].map(v => [...packData(v)]).flat(), flags.ENDARR])
+  return new Uint8Array([flag, ...[...value].map(v => [...packData(v)]).flat(), flags.END])
 }
 
 function unpackArray(bytes: Uint8Array, p = new Pointer()): any[] | Set<any> | Map<any,any> {
   const flag = bytes[p.walk()]
   const arr: any[] = []
-  while (bytes[p.pos] !== flags.ENDARR) arr.push(unpackData(bytes, p))
+  while (bytes[p.pos] !== flags.END) arr.push(unpackData(bytes, p))
   p.walk()
   return flag === flags.SET ? new Set(arr) : flag === flags.MAP ? new Map(arr) : arr
 }
 
 function packObject(value: any) {
-  return new Uint8Array([flags.OBJ, ...Object.keys(value).map((k) => [...packData(isNaN(Number(k)) ? k : +k), ...packData(value[k])]).flat(), flags.ENDOBJ])
+  return new Uint8Array([flags.OBJ, ...Object.keys(value).map((k) => [...packData(isNaN(Number(k)) ? k : +k), ...packData(value[k])]).flat(), flags.END])
 }
 
 function unpackObject(bytes: Uint8Array, p = new Pointer()): object {
   p.walk()
   const obj: any = {}
-  while (bytes[p.pos] !== flags.ENDOBJ) {
+  while (bytes[p.pos] !== flags.END) {
     const k = unpackData(bytes, p) as string, v = unpackData(bytes, p)
     obj[k] = v
   }
