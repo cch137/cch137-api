@@ -18,28 +18,60 @@ const flags = {
 
   STR: 64,
 
+  // all iterable end flag are ENDARR
   ARR: 96,
   ENDARR: 97,
+  SET: 98,
+  MAP: 100,
 
   OBJ: 128,
   ENDOBJ: 129,
 
-  BUF: 160,
-  ENDBUF: 161,
+  BUF8: 160,
+  BUF16: 162,
+  BUF32: 164,
 }
 
 class Pointer {
   pos: number
-  constructor(value: number = 0) {
-    this.pos = value
+  constructor(value: number | bigint = 0) {
+    this.pos = Number(value)
   }
-  walk(value: number = 1) {
+  walk(value: number | bigint = 1) {
     const pos = this.pos
-    return (this.pos += value, pos)
+    return (this.pos += Number(value), pos)
   }
-  walked(value: number = 1) {
-    return this.pos += value
+  walked(value: number | bigint = 1) {
+    return this.pos += Number(value)
   }
+}
+
+function getBufferBytePerElement(bytes: Uint8Array | Uint16Array | Uint32Array) {
+  return bytes instanceof Uint8Array ? 1 : bytes instanceof Uint16Array ? 2 : bytes instanceof Uint32Array ? 4 : 0
+}
+
+/** Warning: This function only allows bidirectional conversion of encoding and decoding in this module. If it is a one-way conversion, it may cause errors. */
+function convertUintArray(bytes: Uint8Array | Uint16Array | Uint32Array, toUint: 8 | 16 | 32) {
+  const fromBytePerEl = getBufferBytePerElement(bytes)
+  const fromUint = 8 * fromBytePerEl as 8 | 16 | 32
+  const toBytePerEl = toUint / 8 as 1 | 2 | 4
+  if (bytes.length % toBytePerEl !== 0) throw new Error(`Buffer size is not divisible`)
+  const toConstruct = [Uint8Array, Uint16Array, Uint32Array][Math.log(toBytePerEl) / Math.log(2)]
+  if (fromUint === toUint) return new toConstruct(bytes)
+  const step = fromBytePerEl / toBytePerEl
+  if (fromUint < toUint) {
+    return new toConstruct(bytes.buffer, bytes.byteOffset, bytes.length * step)
+  }
+  const arr = new toConstruct(bytes.length * step)
+  for (let i = 0, j; i < bytes.length; i++) {
+    let value = bytes[i]; const chunk: number[] = []
+    for (j = 0; j < step; j++) arr[i * step + j] = (value >> (toUint * j)) & (2 ** fromUint - 1)
+  }
+  return arr
+}
+
+function isBigInt(value: any): value is bigint {
+  return typeof value === 'bigint'
 }
 
 function isBigIntArray(items: Uint8Array | any[]): items is bigint[] {
@@ -48,10 +80,6 @@ function isBigIntArray(items: Uint8Array | any[]): items is bigint[] {
 
 function isNumberArray(items: Uint8Array | any[]): items is number[] {
   return typeof items[0] === 'number'
-}
-
-function isUint8Array(items: any): items is Uint8Array {
-  return items instanceof Uint8Array
 }
 
 function sum(arr: Uint8Array | number[]): number
@@ -75,25 +103,8 @@ function fillR<T>(arr: T[], fillValue: T, multiples: number = 8) {
   return arr
 }
 
-function UintToUnit8Array(n: number | bigint) {
-  return BooleansToUint8Array(UintToBooleans(n))
-}
-
 function UintToBooleans(n: number | bigint, multiples: number = 8): boolean[] {
   return fillL([...n.toString(2)].map(i => i === '1'), false, multiples)
-}
-
-function Uint8ArrayToUint(bytes: Uint8Array | number[]) {
-  return sum([...bytes].reverse().map((v, i) => v * 256 ** i))
-}
-
-function Uint8ArrayToBigInt(bytes: Uint8Array | number[]) {
-  const b256 = BigInt(256)
-  return sum([...bytes].reverse().map((v, i) => BigInt(v) * b256 ** BigInt(i)))
-}
-
-function Uint8ArrayToBooleans(bytes: Uint8Array | number[]) {
-  return [...bytes].map(v => UintToBooleans(v)).flat()
 }
 
 function BooleansToUint8Array(b: boolean[]) {
@@ -104,7 +115,8 @@ function BooleansToUint8Array(b: boolean[]) {
 }
 
 function BooleansToUint(b: boolean[]) {
-  return sum(b.reverse().map((v, i) => +v * 2 ** i))
+  const bigint2 = BigInt(2)
+  return sum(b.reverse().map((v, i) => BigInt(+v) * bigint2 ** BigInt(i)))
 }
 
 function packNoflagUint(n: number | bigint) {
@@ -118,8 +130,8 @@ function packNoflagUint(n: number | bigint) {
 function unpackNoflagUint(bytes: Uint8Array | number[], p = new Pointer()) {
   const chunks: boolean[] = []
   while (p.pos < bytes.length) {
-    const [next, ...bools] = UintToBooleans(bytes[p.walk()])
-    chunks.push(...bools.reverse())
+    const [next, ...chunk] = UintToBooleans(bytes[p.walk()])
+    chunks.push(...chunk.reverse())
     if (!next) break
   }
   return BooleansToUint(chunks)
@@ -131,10 +143,9 @@ function packNumber(n: number | bigint) {
   if (n === Infinity) return new Uint8Array([flags.INFI])
   if (n === -Infinity) return new Uint8Array([flags.INFI_])
   const negative = n < 0; if (negative) n = -n
-  if (typeof n === 'bigint') return new Uint8Array([negative ? flags.BIGINT_ : flags.BIGINT, ...packNoflagUint(n)])
   const isInt = Number.isInteger(n)
-  const flag = isInt ? negative ? flags.INT_ : flags.INT : negative ? flags.FLOAT_ : flags.FLOAT
-  if (isInt) return new Uint8Array([flag, ...packNoflagUint(n)])
+  const flag = (isBigInt(n) ? flags.BIGINT : isInt ? flags.INT : flags.FLOAT) + (negative ? 1 : 0)
+  if (isInt || isBigInt(n)) return new Uint8Array([flag, ...packNoflagUint(n)])
   const decimalUint = BooleansToUint(fillR([...(n % 1).toString(2).substring(2)].map(i => i === '1'), false))
   return new Uint8Array([flag, ...packNoflagUint(Math.floor(n)), ...packNoflagUint(decimalUint)])
 }
@@ -142,24 +153,22 @@ function packNumber(n: number | bigint) {
 function unpackNumber(bytes: Uint8Array | number[], p = new Pointer()) {
   const flag = bytes[p.walk()]
   switch (flag) {
-    case flags.INT: case flags.INT_: case flags.FLOAT: case flags.FLOAT_: case flags.BIGINT: case flags.BIGINT_: break
     case flags.ZERO: return 0
     case flags.NAN: return NaN
     case flags.INFI: return Infinity
     case flags.INFI_: return -Infinity
+    case flags.INT: case flags.INT_: case flags.FLOAT: case flags.FLOAT_: case flags.BIGINT: case flags.BIGINT_: break
     default: throwInvalidFlag(flag)
   }
   const sign = flag % 2 === 0 ? 1 : -1
-  const isBigInt = flag === flags.BIGINT || flag === flags.BIGINT_
-  if (isBigInt) {
-    return BigInt(sign) * BigInt(unpackNoflagUint(bytes, p))
-  }
-  const isInt = flag === flags.INT || flag === flags.INT_
   const intValue = unpackNoflagUint(bytes, p)
-  if (isInt) return sign * intValue
-  const floatValue = unpackNoflagUint(bytes, p)
+  const isBigInt = flag === flags.BIGINT || flag === flags.BIGINT_
+  if (isBigInt) return BigInt(sign) * intValue
+  const isInt = flag === flags.INT || flag === flags.INT_
+  if (isInt) return sign * Number(intValue)
+  const floatValue = Number(unpackNoflagUint(bytes, p))
   const floatBooleans = UintToBooleans(floatValue)
-  return sign * (intValue + (floatValue / 2 ** floatBooleans.length))
+  return sign * (Number(intValue) + (floatValue / 2 ** floatBooleans.length))
 }
 
 function packString(s: string) {
@@ -190,16 +199,17 @@ function unpackSpecial(bytes: Uint8Array | number[], p = new Pointer()) {
   }
 }
 
-function packArray(value: any[]) {
-  return new Uint8Array([flags.ARR, ...value.map(v => [...packData(v)]).flat(), flags.ENDARR])
+function packArray(value: any[] | Set<any> | Map<any,any>) {
+  const flag = value instanceof Set ? flags.SET : value instanceof Map ? flags.MAP : flags.ARR
+  return new Uint8Array([flag, ...[...value].map(v => [...packData(v)]).flat(), flags.ENDARR])
 }
 
-function unpackArray(bytes: Uint8Array, p = new Pointer()): any[] {
-  p.walk()
-  const arr = []
+function unpackArray(bytes: Uint8Array, p = new Pointer()): any[] | Set<any> | Map<any,any> {
+  const flag = bytes[p.walk()]
+  const arr: any[] = []
   while (bytes[p.pos] !== flags.ENDARR) arr.push(unpackData(bytes, p))
   p.walk()
-  return arr
+  return flag === flags.SET ? new Set(arr) : flag === flags.MAP ? new Map(arr) : arr
 }
 
 function packObject(value: any) {
@@ -217,20 +227,23 @@ function unpackObject(bytes: Uint8Array, p = new Pointer()): object {
   return obj
 }
 
-function packBuffer(bytes: Uint8Array) {
-  return new Uint8Array([flags.BUF, ...packNoflagUint(bytes.length), ...bytes, flags.ENDBUF])
+function packBuffer(bytes: Uint8Array | Uint16Array | Uint32Array) {
+  const bytePerElement = getBufferBytePerElement(bytes)
+  const flag = [flags.BUF8, flags.BUF16, 0, flags.BUF32][bytePerElement - 1]
+  return new Uint8Array([flag, ...packNoflagUint(bytes.length), ...(bytePerElement === 1 ? bytes : convertUintArray(bytes, 8))])
 }
 
 function unpackBuffer(bytes: Uint8Array, p = new Pointer) {
-  p.walk()
-  const bufferLength = unpackNoflagUint(bytes, p)
+  const flag = bytes[p.walk()]
+  const bytePerElement = [0, flags.BUF8, flags.BUF16, 0, flags.BUF32].indexOf(flag)
+  const bufferLength = unpackNoflagUint(bytes, p) * BigInt(bytePerElement)
   const buffer = bytes.slice(p.pos, p.walked(bufferLength))
-  p.walk()
-  return buffer
+  return convertUintArray(buffer, bytePerElement * 8 as 8 | 16 | 32)
 }
 
 function packData(value: any): Uint8Array {
-  switch (typeof value) {
+  const dataType = typeof value
+  switch (dataType) {
     case 'bigint':
     case 'number':
       return packNumber(value)
@@ -241,22 +254,24 @@ function packData(value: any): Uint8Array {
       return packSpecial(value)
     case 'object':
       if (value === null) return packSpecial(value)
-      if (value instanceof Uint8Array) return packBuffer(value)
-      if (typeof value[Symbol?.iterator] === 'function') return packArray([...value])
+      if (getBufferBytePerElement(value) !== 0) return packBuffer(value)
+      if (typeof value[Symbol?.iterator] === 'function') return packArray(value)
       return packObject(value)
   }
-  throw new Error('Unsupported Data Type')
+  throw new Error(`Unsupported Data Type: ${dataType}`)
 }
 
 function unpackData(value: Uint8Array, p = new Pointer()) {
   const flag = value[p.pos]
-  if (flag < 32) return unpackSpecial(value, p)
-  if (flag < 64) return unpackNumber(value, p)
-  if (flag < 96) return unpackString(value, p)
-  if (flag < 128) return unpackArray(value, p)
-  if (flag < 160) return unpackObject(value, p)
-  if (flag < 192) return unpackBuffer(value, p)
-  throwInvalidFlag(flag)
+  switch (Math.floor(flag / 32)) {
+    case 0: return unpackSpecial(value, p)  // < 32
+    case 1: return unpackNumber(value, p)   // < 64
+    case 2: return unpackString(value, p)   // < 96
+    case 3: return unpackArray(value, p)    // < 128
+    case 4: return unpackObject(value, p)   // < 160
+    case 5: return unpackBuffer(value, p)   // < 192
+    default: throwInvalidFlag(flag)
+  }
 }
 
 export {

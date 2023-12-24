@@ -22,13 +22,18 @@ server_1.server.listen(port, () => {
     if (subdom_1.default.ready)
         console.log('Subdom is ready.');
 });
-const bson_1 = require("./utils/bson");
-console.log(bson_1.packData);
-let x, y, z;
-// x = { a: 1.1, b: -2.3, c: [1, 'Hello World!', { d: BigInt(96) }], d: [123.04056] }
-x = 127;
-y = (0, bson_1.packData)(x);
-z = (0, bson_1.unpackData)(y);
-console.log(x);
-console.log(y.length);
-console.log(z);
+// import { packData, unpackData } from './utils/bson'
+// console.log(packData)
+// let x, y, z, m = new Map()
+// let bu = new Uint16Array([1,2,3])
+// let s = new Set([123.04056])
+// m.set('x', 1)
+// m.set('y', 2)
+// m.set(123, s)
+// x = { a: 1.1, b: -2.03, c: [1, 'Hello World!', { d: BigInt(96) }], s, m, bu }
+// // x = 127
+// y = packData(x)
+// z = unpackData(y)
+// console.log(x)
+// console.log(y.length)
+// console.log(z)
