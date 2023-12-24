@@ -196,7 +196,11 @@ function unpackSpecial(bytes, p = new Pointer()) {
 }
 function packArray(value) {
     const flag = value instanceof Set ? flags.SET : value instanceof Map ? flags.MAP : flags.ARR;
-    return new Uint8Array([flag, ...[...value].map(v => [...packData(v)]).flat(), flags.END]);
+    if (flag === flags.MAP)
+        value = [...value.entries()].flat();
+    else if (flag === flags.SET)
+        value = [...value];
+    return new Uint8Array([flag, ...value.map(v => [...packData(v)]).flat(), flags.END]);
 }
 function unpackArray(bytes, p = new Pointer()) {
     const flag = bytes[p.walk()];
@@ -204,7 +208,9 @@ function unpackArray(bytes, p = new Pointer()) {
     while (bytes[p.pos] !== flags.END)
         arr.push(unpackData(bytes, p));
     p.walk();
-    return flag === flags.SET ? new Set(arr) : flag === flags.MAP ? new Map(arr) : arr;
+    if (flag === flags.MAP)
+        return new Map(arr.map((v, i, a) => i % 2 === 0 ? [v, a[i + 1]] : undefined).filter(i => i !== undefined));
+    return flag === flags.SET ? new Set(arr) : arr;
 }
 function packObject(value) {
     return new Uint8Array([flags.OBJ, ...Object.keys(value).map((k) => [...packData(isNaN(Number(k)) ? k : +k), ...packData(value[k])]).flat(), flags.END]);

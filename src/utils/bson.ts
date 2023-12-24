@@ -200,7 +200,9 @@ function unpackSpecial(bytes: Uint8Array | number[], p = new Pointer()) {
 
 function packArray(value: any[] | Set<any> | Map<any,any>) {
   const flag = value instanceof Set ? flags.SET : value instanceof Map ? flags.MAP : flags.ARR
-  return new Uint8Array([flag, ...[...value].map(v => [...packData(v)]).flat(), flags.END])
+  if (flag === flags.MAP) value = [...value.entries()].flat()
+  else if (flag === flags.SET) value = [...value]
+  return new Uint8Array([flag, ...(value as any[]).map(v => [...packData(v)]).flat(), flags.END])
 }
 
 function unpackArray(bytes: Uint8Array, p = new Pointer()): any[] | Set<any> | Map<any,any> {
@@ -208,7 +210,8 @@ function unpackArray(bytes: Uint8Array, p = new Pointer()): any[] | Set<any> | M
   const arr: any[] = []
   while (bytes[p.pos] !== flags.END) arr.push(unpackData(bytes, p))
   p.walk()
-  return flag === flags.SET ? new Set(arr) : flag === flags.MAP ? new Map(arr) : arr
+  if (flag === flags.MAP) return new Map(arr.map((v, i, a) => i % 2 === 0 ? [v, a[i + 1]] : undefined).filter(i => i !== undefined) as [any, any][])
+  return flag === flags.SET ? new Set(arr) : arr
 }
 
 function packObject(value: any) {
