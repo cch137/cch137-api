@@ -73,10 +73,6 @@ function isBigIntArray(items) {
 function isNumberArray(items) {
     return typeof items[0] === 'number';
 }
-function sum(items) {
-    return isBigIntArray(items) ? items.reduce((a, b) => a + b, BigInt(0))
-        : (isNumberArray(items) ? items : [...items]).reduce((a, b) => a + b, 0);
-}
 function throwInvalidFlag(flag) {
     throw new Error(`Invalid flag: ${flag}`);
 }
@@ -103,7 +99,7 @@ function BooleansToUint8Array(b) {
 }
 function BooleansToUint(b) {
     const bigint2 = BigInt(2);
-    return sum(b.reverse().map((v, i) => BigInt(+v) * bigint2 ** BigInt(i)));
+    return b.reverse().map((v, i) => BigInt(+v) * bigint2 ** BigInt(i)).reduce((a, b) => a + b, BigInt(0));
 }
 function packNoflagUint(n) {
     const booleans = fillL(UintToBooleans(n, 1), false, 7).reverse(), l = booleans.length;

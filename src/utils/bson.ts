@@ -81,13 +81,6 @@ function isNumberArray(items: Uint8Array | any[]): items is number[] {
   return typeof items[0] === 'number'
 }
 
-function sum(arr: Uint8Array | number[]): number
-function sum(arr: bigint[]): bigint
-function sum(items: Uint8Array | number[] | bigint[]) {
-  return isBigIntArray(items) ? items.reduce((a, b) => a + b, BigInt(0))
-    : (isNumberArray(items) ? items : [...items]).reduce((a, b) => a + b, 0)
-}
-
 function throwInvalidFlag(flag: number): never {
   throw new Error(`Invalid flag: ${flag}`)
 }
@@ -115,7 +108,7 @@ function BooleansToUint8Array(b: boolean[]) {
 
 function BooleansToUint(b: boolean[]) {
   const bigint2 = BigInt(2)
-  return sum(b.reverse().map((v, i) => BigInt(+v) * bigint2 ** BigInt(i)))
+  return b.reverse().map((v, i) => BigInt(+v) * bigint2 ** BigInt(i)).reduce((a, b) => a + b, BigInt(0))
 }
 
 function packNoflagUint(n: number | bigint) {
