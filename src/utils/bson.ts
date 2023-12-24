@@ -259,15 +259,6 @@ function unpackData(value: Uint8Array, p = new Pointer()) {
   throwInvalidFlag(flag)
 }
 
-let x, y, z
-x = 421687762147647124
-// x = 4
-y = packNoflagUint(x)
-z = unpackNoflagUint(y)
-console.log(x)
-console.log(y)
-console.log(z)
-
 export {
   packData,
   unpackData,
