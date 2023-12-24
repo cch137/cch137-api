@@ -7,14 +7,15 @@ const flags = {
   // positive flags are even, negative flags are odd
   INT: 32,
   INT_: 33,
-  FLOAT: 34,
-  FLOAT_: 35,
-  INFI: 36,
-  INFI_: 37,
-  NAN: 38,
-  ZERO: 40,
-  BIGINT: 42,
-  BIGINT_: 43,
+  BIGINT: 34,
+  BIGINT_: 35,
+  FLOAT: 36,
+  FLOAT_: 37,
+  INFI: 52,
+  INFI_: 53,
+  NAN: 54,
+  ZERO: 55,
+  DATE: 56,
 
   STR: 64,
 
@@ -129,17 +130,18 @@ function unpackNoflagUint(bytes: Uint8Array | number[], p = new Pointer()) {
   return BooleansToUint(chunks)
 }
 
-function packNumber(n: number | bigint) {
+function packNumber(n: number | bigint | Date) {
   if (n === 0) return new Uint8Array([flags.ZERO])
+  if (n instanceof Date) return new Uint8Array([flags.DATE, ...packNoflagUint(n.getTime())])
   if (Number.isNaN(n)) return new Uint8Array([flags.NAN])
   if (n === Infinity) return new Uint8Array([flags.INFI])
   if (n === -Infinity) return new Uint8Array([flags.INFI_])
   const negative = n < 0; if (negative) n = -n
   const isInt = Number.isInteger(n)
   const flag = (isBigInt(n) ? flags.BIGINT : isInt ? flags.INT : flags.FLOAT) + (negative ? 1 : 0)
-  if (isInt || isBigInt(n)) return new Uint8Array([flag, ...packNoflagUint(n)])
-  const decimalUint = BooleansToUint(fillR([...(n % 1).toString(2).substring(2)].map(i => i === '1'), false))
-  return new Uint8Array([flag, ...packNoflagUint(Math.floor(n)), ...packNoflagUint(decimalUint)])
+  if (flag < flags.FLOAT) return new Uint8Array([flag, ...packNoflagUint(n)])
+  const decimalUint = BooleansToUint(fillR([...(n as number % 1).toString(2).substring(2)].map(i => i === '1'), false))
+  return new Uint8Array([flag, ...packNoflagUint(Math.floor(n as number)), ...packNoflagUint(decimalUint)])
 }
 
 function unpackNumber(bytes: Uint8Array | number[], p = new Pointer()) {
@@ -149,6 +151,7 @@ function unpackNumber(bytes: Uint8Array | number[], p = new Pointer()) {
     case flags.NAN: return NaN
     case flags.INFI: return Infinity
     case flags.INFI_: return -Infinity
+    case flags.DATE: return new Date(Number(unpackNoflagUint(bytes, p)))
     case flags.INT: case flags.INT_: case flags.FLOAT: case flags.FLOAT_: case flags.BIGINT: case flags.BIGINT_: break
     default: throwInvalidFlag(flag)
   }
@@ -249,6 +252,7 @@ function packData(value: any): Uint8Array {
       return packSpecial(value)
     case 'object':
       if (value === null) return packSpecial(value)
+      if (value instanceof Date) return packNumber(value)
       if (getBufferBytePerElement(value) !== 0) return packBuffer(value)
       if (typeof value[Symbol?.iterator] === 'function') return packArray(value)
       return packObject(value)

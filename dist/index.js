@@ -25,12 +25,13 @@ server_1.server.listen(port, () => {
 // import { packData, unpackData } from './utils/bson'
 // console.log(packData)
 // let x, y, z, m = new Map()
-// let bu = new Uint16Array([1,2,3])
+// let b = new Uint16Array([1,2,3])
 // let s = new Set([123.04056])
+// let d = new Date(2023, 12, 25, 8, 30)
 // m.set('x', 1)
 // m.set('y', 2)
 // m.set(123, s)
-// x = { a: 1.1, b: -2.03, c: [1, 'Hello World!', { d: BigInt(96) }], s, m, bu }
+// x = { i: 1.1, j: -2.03, c: ['Hello World!', { d: BigInt(96) }], s, m, b, d }
 // // x = 127
 // y = packData(x)
 // z = unpackData(y)

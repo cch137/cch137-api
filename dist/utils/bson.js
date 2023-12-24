@@ -9,14 +9,15 @@ const flags = {
     // positive flags are even, negative flags are odd
     INT: 32,
     INT_: 33,
-    FLOAT: 34,
-    FLOAT_: 35,
-    INFI: 36,
-    INFI_: 37,
-    NAN: 38,
-    ZERO: 40,
-    BIGINT: 42,
-    BIGINT_: 43,
+    BIGINT: 34,
+    BIGINT_: 35,
+    FLOAT: 36,
+    FLOAT_: 37,
+    INFI: 52,
+    INFI_: 53,
+    NAN: 54,
+    ZERO: 55,
+    DATE: 56,
     STR: 64,
     ARR: 96,
     SET: 98,
@@ -123,6 +124,8 @@ function unpackNoflagUint(bytes, p = new Pointer()) {
 function packNumber(n) {
     if (n === 0)
         return new Uint8Array([flags.ZERO]);
+    if (n instanceof Date)
+        return new Uint8Array([flags.DATE, ...packNoflagUint(n.getTime())]);
     if (Number.isNaN(n))
         return new Uint8Array([flags.NAN]);
     if (n === Infinity)
@@ -134,7 +137,7 @@ function packNumber(n) {
         n = -n;
     const isInt = Number.isInteger(n);
     const flag = (isBigInt(n) ? flags.BIGINT : isInt ? flags.INT : flags.FLOAT) + (negative ? 1 : 0);
-    if (isInt || isBigInt(n))
+    if (flag < flags.FLOAT)
         return new Uint8Array([flag, ...packNoflagUint(n)]);
     const decimalUint = BooleansToUint(fillR([...(n % 1).toString(2).substring(2)].map(i => i === '1'), false));
     return new Uint8Array([flag, ...packNoflagUint(Math.floor(n)), ...packNoflagUint(decimalUint)]);
@@ -146,6 +149,7 @@ function unpackNumber(bytes, p = new Pointer()) {
         case flags.NAN: return NaN;
         case flags.INFI: return Infinity;
         case flags.INFI_: return -Infinity;
+        case flags.DATE: return new Date(Number(unpackNoflagUint(bytes, p)));
         case flags.INT:
         case flags.INT_:
         case flags.FLOAT:
@@ -247,6 +251,8 @@ function packData(value) {
         case 'object':
             if (value === null)
                 return packSpecial(value);
+            if (value instanceof Date)
+                return packNumber(value);
             if (getBufferBytePerElement(value) !== 0)
                 return packBuffer(value);
             if (typeof value[Symbol === null || Symbol === void 0 ? void 0 : Symbol.iterator] === 'function')
