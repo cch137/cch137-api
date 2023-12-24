@@ -37,6 +37,19 @@ class Pointer {
         return this.pos += value;
     }
 }
+function isBigIntArray(items) {
+    return typeof items[0] === 'bigint';
+}
+function isNumberArray(items) {
+    return typeof items[0] === 'number';
+}
+function isUint8Array(items) {
+    return items instanceof Uint8Array;
+}
+function sum(items) {
+    return isBigIntArray(items) ? items.reduce((a, b) => a + b, BigInt(0))
+        : (isNumberArray(items) ? items : [...items]).reduce((a, b) => a + b, 0);
+}
 function throwInvalidFlag(flag) {
     throw new Error(`Invalid flag: ${flag}`);
 }
@@ -57,11 +70,11 @@ function UintToBooleans(n, multiples = 8) {
     return fillL([...n.toString(2)].map(i => i === '1'), false, multiples);
 }
 function Uint8ArrayToUint(bytes) {
-    return [...bytes].reverse().map((v, i) => v * 256 ** i).reduce((a, b) => a + b, 0);
+    return sum([...bytes].reverse().map((v, i) => v * 256 ** i));
 }
 function Uint8ArrayToBigInt(bytes) {
     const b256 = BigInt(256);
-    return [...bytes].reverse().map((v, i) => BigInt(v) * b256 ** BigInt(i)).reduce((a, b) => a + b, BigInt(0));
+    return sum([...bytes].reverse().map((v, i) => BigInt(v) * b256 ** BigInt(i)));
 }
 function Uint8ArrayToBooleans(bytes) {
     return [...bytes].map(v => UintToBooleans(v)).flat();
@@ -75,10 +88,10 @@ function BooleansToUint8Array(b) {
     return x;
 }
 function BooleansToUint(b) {
-    return b.reverse().map((v, i) => +v * 2 ** i).reduce((a, b) => a + b, 0);
+    return sum(b.reverse().map((v, i) => +v * 2 ** i));
 }
-function createSizeDataChunks(size) {
-    const booleans = UintToBooleans(size, 7), l = booleans.length;
+function packNoflagUint(n) {
+    const booleans = fillL(UintToBooleans(n, 1), false, 7).reverse(), l = booleans.length;
     let i = 0;
     const sizeData = [];
     while (i < l)
@@ -86,23 +99,15 @@ function createSizeDataChunks(size) {
     sizeData[sizeData.length - 8] = false;
     return BooleansToUint8Array(sizeData);
 }
-function readSizeDataChunks(bytes, p = new Pointer()) {
+function unpackNoflagUint(bytes, p = new Pointer()) {
     const chunks = [];
     while (p.pos < bytes.length) {
         const [next, ...bools] = UintToBooleans(bytes[p.walk()]);
-        chunks.push(...bools);
+        chunks.push(...bools.reverse());
         if (!next)
             break;
     }
     return BooleansToUint(chunks);
-}
-function packNoflagUint(n) {
-    const intUint8Array = UintToUnit8Array(n);
-    return new Uint8Array([...createSizeDataChunks(intUint8Array.length), ...intUint8Array]);
-}
-function unpackNoflagUint(bytes, p = new Pointer()) {
-    const intLength = readSizeDataChunks(bytes, p);
-    return Uint8ArrayToUint(bytes.slice(p.pos, p.walked(intLength)));
 }
 function packNumber(n) {
     if (n === 0)
@@ -143,23 +148,22 @@ function unpackNumber(bytes, p = new Pointer()) {
     const sign = flag % 2 === 0 ? 1 : -1;
     const isBigInt = flag === flags.BIGINT || flag === flags.BIGINT_;
     if (isBigInt) {
-        const bigintLength = readSizeDataChunks(bytes, p);
-        return BigInt(sign) * Uint8ArrayToBigInt(bytes.slice(p.pos, p.walked(bigintLength)));
+        return BigInt(sign) * BigInt(unpackNoflagUint(bytes, p));
     }
     const isInt = flag === flags.INT || flag === flags.INT_;
     const intValue = unpackNoflagUint(bytes, p);
     if (isInt)
         return sign * intValue;
-    const floatLength = readSizeDataChunks(bytes, p);
-    const floatBinaryString = Uint8ArrayToBooleans(bytes.slice(p.pos, p.walked(floatLength))).map(b => b ? '1' : '0').join('');
-    return sign * (intValue + (parseInt(floatBinaryString, 2) / 2 ** floatBinaryString.length));
+    const floatValue = unpackNoflagUint(bytes, p);
+    const floatBooleans = UintToBooleans(floatValue);
+    return sign * (intValue + (floatValue / 2 ** floatBooleans.length));
 }
 function packString(s) {
     const uint8Array = new TextEncoder().encode(s);
-    return new Uint8Array([flags.STR, ...createSizeDataChunks(uint8Array.length), ...uint8Array]);
+    return new Uint8Array([flags.STR, ...packNoflagUint(uint8Array.length), ...uint8Array]);
 }
 function unpackString(bytes, p = new Pointer()) {
-    const stringLength = (p.walk(), readSizeDataChunks(bytes, p));
+    const stringLength = (p.walk(), unpackNoflagUint(bytes, p));
     return new TextDecoder().decode(bytes.slice(p.pos, p.walked(stringLength)));
 }
 function packSpecial(b) {
@@ -203,11 +207,11 @@ function unpackObject(bytes, p = new Pointer()) {
     return obj;
 }
 function packBuffer(bytes) {
-    return new Uint8Array([flags.BUF, ...createSizeDataChunks(bytes.length), ...bytes, flags.ENDBUF]);
+    return new Uint8Array([flags.BUF, ...packNoflagUint(bytes.length), ...bytes, flags.ENDBUF]);
 }
 function unpackBuffer(bytes, p = new Pointer) {
     p.walk();
-    const bufferLength = readSizeDataChunks(bytes, p);
+    const bufferLength = unpackNoflagUint(bytes, p);
     const buffer = bytes.slice(p.pos, p.walked(bufferLength));
     p.walk();
     return buffer;
@@ -248,6 +252,14 @@ function unpackData(value, p = new Pointer()) {
         return unpackObject(value, p);
     if (flag < 192)
         return unpackBuffer(value, p);
-    throw new Error('Unsupported Data Type');
+    throwInvalidFlag(flag);
 }
 exports.unpackData = unpackData;
+let x, y, z;
+x = 421687762147647124;
+// x = 4
+y = packNoflagUint(x);
+z = unpackNoflagUint(y);
+console.log(x);
+console.log(y);
+console.log(z);

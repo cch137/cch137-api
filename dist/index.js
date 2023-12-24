@@ -23,9 +23,10 @@ server_1.server.listen(port, () => {
         console.log('Subdom is ready.');
 });
 const bson_1 = require("./utils/bson");
+console.log(bson_1.packData);
 let x, y, z;
-x = { a: 1.1, b: -2.3, c: [1, 'Hello', { d: 96 }] };
-x = 123.456;
+x = { a: 1.1, b: -2.3, c: [1, 'Hello World!', { d: BigInt(96) }], d: [123.04056] };
+// x = 123.14817349813749713463246137416347316491346317634263246
 y = (0, bson_1.packData)(x);
 z = (0, bson_1.unpackData)(y);
 console.log(x);

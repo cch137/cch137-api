@@ -42,16 +42,35 @@ class Pointer {
   }
 }
 
-function throwInvalidFlag(flag: number) {
+function isBigIntArray(items: Uint8Array | any[]): items is bigint[] {
+  return typeof items[0] === 'bigint'
+}
+
+function isNumberArray(items: Uint8Array | any[]): items is number[] {
+  return typeof items[0] === 'number'
+}
+
+function isUint8Array(items: any): items is Uint8Array {
+  return items instanceof Uint8Array
+}
+
+function sum(arr: Uint8Array | number[]): number
+function sum(arr: bigint[]): bigint
+function sum(items: Uint8Array | number[] | bigint[]) {
+  return isBigIntArray(items) ? items.reduce((a, b) => a + b, BigInt(0))
+    : (isNumberArray(items) ? items : [...items]).reduce((a, b) => a + b, 0)
+}
+
+function throwInvalidFlag(flag: number): never {
   throw new Error(`Invalid flag: ${flag}`)
 }
 
-function fillL(arr: any[], fillValue: any, multiples: number = 8) {
+function fillL<T>(arr: T[], fillValue: T, multiples: number = 8) {
   if (arr.length % multiples !== 0) arr.unshift(...new Array(multiples - arr.length % multiples).fill(fillValue))
   return arr
 }
 
-function fillR(arr: any[], fillValue: any, multiples: number = 8) {
+function fillR<T>(arr: T[], fillValue: T, multiples: number = 8) {
   if (arr.length % multiples !== 0) arr.push(...new Array(multiples - arr.length % multiples).fill(fillValue))
   return arr
 }
@@ -65,12 +84,12 @@ function UintToBooleans(n: number | bigint, multiples: number = 8): boolean[] {
 }
 
 function Uint8ArrayToUint(bytes: Uint8Array | number[]) {
-  return [...bytes].reverse().map((v, i) => v * 256 ** i).reduce((a, b) => a + b, 0)
+  return sum([...bytes].reverse().map((v, i) => v * 256 ** i))
 }
 
 function Uint8ArrayToBigInt(bytes: Uint8Array | number[]) {
   const b256 = BigInt(256)
-  return [...bytes].reverse().map((v, i) => BigInt(v) * b256 ** BigInt(i)).reduce((a, b) => a + b, BigInt(0))
+  return sum([...bytes].reverse().map((v, i) => BigInt(v) * b256 ** BigInt(i)))
 }
 
 function Uint8ArrayToBooleans(bytes: Uint8Array | number[]) {
@@ -85,35 +104,25 @@ function BooleansToUint8Array(b: boolean[]) {
 }
 
 function BooleansToUint(b: boolean[]) {
-  return b.reverse().map((v, i) => +v * 2 ** i).reduce((a, b) => a + b, 0)
+  return sum(b.reverse().map((v, i) => +v * 2 ** i))
 }
 
-function createSizeDataChunks(size: number | bigint) {
-  const booleans = UintToBooleans(size, 7), l = booleans.length; let i = 0
+function packNoflagUint(n: number | bigint) {
+  const booleans = fillL(UintToBooleans(n, 1), false, 7).reverse(), l = booleans.length; let i = 0
   const sizeData: boolean[] = []
   while (i < l) sizeData.unshift(true, ...booleans.slice(i, i += 7))
   sizeData[sizeData.length - 8] = false
   return BooleansToUint8Array(sizeData)
 }
 
-function readSizeDataChunks(bytes: Uint8Array | number[], p = new Pointer()) {
+function unpackNoflagUint(bytes: Uint8Array | number[], p = new Pointer()) {
   const chunks: boolean[] = []
   while (p.pos < bytes.length) {
     const [next, ...bools] = UintToBooleans(bytes[p.walk()])
-    chunks.push(...bools)
+    chunks.push(...bools.reverse())
     if (!next) break
   }
   return BooleansToUint(chunks)
-}
-
-function packNoflagUint(n: number | bigint) {
-  const intUint8Array = UintToUnit8Array(n)
-  return new Uint8Array([...createSizeDataChunks(intUint8Array.length), ...intUint8Array])
-}
-
-function unpackNoflagUint(bytes: Uint8Array | number[], p = new Pointer()) {
-  const intLength = readSizeDataChunks(bytes, p)
-  return Uint8ArrayToUint(bytes.slice(p.pos, p.walked(intLength)))
 }
 
 function packNumber(n: number | bigint) {
@@ -143,24 +152,23 @@ function unpackNumber(bytes: Uint8Array | number[], p = new Pointer()) {
   const sign = flag % 2 === 0 ? 1 : -1
   const isBigInt = flag === flags.BIGINT || flag === flags.BIGINT_
   if (isBigInt) {
-    const bigintLength = readSizeDataChunks(bytes, p)
-    return BigInt(sign) * Uint8ArrayToBigInt(bytes.slice(p.pos, p.walked(bigintLength)))
+    return BigInt(sign) * BigInt(unpackNoflagUint(bytes, p))
   }
   const isInt = flag === flags.INT || flag === flags.INT_
   const intValue = unpackNoflagUint(bytes, p)
   if (isInt) return sign * intValue
-  const floatLength = readSizeDataChunks(bytes, p)
-  const floatBinaryString = Uint8ArrayToBooleans(bytes.slice(p.pos, p.walked(floatLength))).map(b => b ? '1' : '0').join('')
-  return sign * (intValue + (parseInt(floatBinaryString, 2) / 2 ** floatBinaryString.length))
+  const floatValue = unpackNoflagUint(bytes, p)
+  const floatBooleans = UintToBooleans(floatValue)
+  return sign * (intValue + (floatValue / 2 ** floatBooleans.length))
 }
 
 function packString(s: string) {
   const uint8Array = new TextEncoder().encode(s)
-  return new Uint8Array([flags.STR, ...createSizeDataChunks(uint8Array.length), ...uint8Array])
+  return new Uint8Array([flags.STR, ...packNoflagUint(uint8Array.length), ...uint8Array])
 }
 
 function unpackString(bytes: Uint8Array, p = new Pointer()) {
-  const stringLength = (p.walk(), readSizeDataChunks(bytes, p))
+  const stringLength = (p.walk(), unpackNoflagUint(bytes, p))
   return new TextDecoder().decode(bytes.slice(p.pos, p.walked(stringLength)))
 }
 
@@ -202,7 +210,7 @@ function unpackObject(bytes: Uint8Array, p = new Pointer()): object {
   p.walk()
   const obj: any = {}
   while (bytes[p.pos] !== flags.ENDOBJ) {
-    const k: string = unpackData(bytes, p), v = unpackData(bytes, p)
+    const k = unpackData(bytes, p) as string, v = unpackData(bytes, p)
     obj[k] = v
   }
   p.walk()
@@ -210,12 +218,12 @@ function unpackObject(bytes: Uint8Array, p = new Pointer()): object {
 }
 
 function packBuffer(bytes: Uint8Array) {
-  return new Uint8Array([flags.BUF, ...createSizeDataChunks(bytes.length), ...bytes, flags.ENDBUF])
+  return new Uint8Array([flags.BUF, ...packNoflagUint(bytes.length), ...bytes, flags.ENDBUF])
 }
 
 function unpackBuffer(bytes: Uint8Array, p = new Pointer) {
   p.walk()
-  const bufferLength = readSizeDataChunks(bytes, p)
+  const bufferLength = unpackNoflagUint(bytes, p)
   const buffer = bytes.slice(p.pos, p.walked(bufferLength))
   p.walk()
   return buffer
@@ -240,7 +248,7 @@ function packData(value: any): Uint8Array {
   throw new Error('Unsupported Data Type')
 }
 
-function unpackData(value: Uint8Array, p = new Pointer()): any {
+function unpackData(value: Uint8Array, p = new Pointer()) {
   const flag = value[p.pos]
   if (flag < 32) return unpackSpecial(value, p)
   if (flag < 64) return unpackNumber(value, p)
@@ -248,8 +256,17 @@ function unpackData(value: Uint8Array, p = new Pointer()): any {
   if (flag < 128) return unpackArray(value, p)
   if (flag < 160) return unpackObject(value, p)
   if (flag < 192) return unpackBuffer(value, p)
-  throw new Error('Unsupported Data Type')
+  throwInvalidFlag(flag)
 }
+
+let x, y, z
+x = 421687762147647124
+// x = 4
+y = packNoflagUint(x)
+z = unpackNoflagUint(y)
+console.log(x)
+console.log(y)
+console.log(z)
 
 export {
   packData,
