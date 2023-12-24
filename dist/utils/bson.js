@@ -17,12 +17,12 @@ const flags = {
     INFI_: 53,
     NAN: 54,
     ZERO: 55,
-    DATE: 56,
     STR: 64,
     ARR: 96,
     SET: 98,
     MAP: 100,
     OBJ: 128,
+    DATE: 130,
     BUF8: 160,
     BUF16: 162,
     BUF32: 164,
@@ -115,8 +115,6 @@ function unpackNoflagUint(bytes, p = new Pointer()) {
 function packNumber(n) {
     if (n === 0)
         return new Uint8Array([flags.ZERO]);
-    if (n instanceof Date)
-        return new Uint8Array([flags.DATE, ...packNoflagUint(n.getTime())]);
     if (Number.isNaN(n))
         return new Uint8Array([flags.NAN]);
     if (n === Infinity)
@@ -203,10 +201,13 @@ function unpackArray(bytes, p = new Pointer()) {
     return flag === flags.SET ? new Set(arr) : arr;
 }
 function packObject(value) {
+    if (value instanceof Date)
+        return new Uint8Array([flags.DATE, ...packNoflagUint(value.getTime())]);
     return new Uint8Array([flags.OBJ, ...Object.keys(value).map((k) => [...packData(isNaN(Number(k)) ? k : +k), ...packData(value[k])]).flat(), flags.END]);
 }
 function unpackObject(bytes, p = new Pointer()) {
-    p.walk();
+    if (bytes[p.walk()] === flags.DATE)
+        return new Date(Number(unpackNoflagUint(bytes, p)));
     const obj = {};
     while (bytes[p.pos] !== flags.END) {
         const k = unpackData(bytes, p), v = unpackData(bytes, p);
@@ -242,7 +243,7 @@ function packData(value) {
             if (value === null)
                 return packSpecial(value);
             if (value instanceof Date)
-                return packNumber(value);
+                return packObject(value);
             if (getBufferBytePerElement(value) !== 0)
                 return packBuffer(value);
             if (typeof value[Symbol === null || Symbol === void 0 ? void 0 : Symbol.iterator] === 'function')

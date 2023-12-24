@@ -15,7 +15,6 @@ const flags = {
   INFI_: 53,
   NAN: 54,
   ZERO: 55,
-  DATE: 56,
 
   STR: 64,
 
@@ -24,6 +23,7 @@ const flags = {
   MAP: 100,
 
   OBJ: 128,
+  DATE: 130,
 
   BUF8: 160,
   BUF16: 162,
@@ -118,9 +118,8 @@ function unpackNoflagUint(bytes: Uint8Array | number[], p = new Pointer()) {
   return BooleansToUint(chunks)
 }
 
-function packNumber(n: number | bigint | Date) {
+function packNumber(n: number | bigint) {
   if (n === 0) return new Uint8Array([flags.ZERO])
-  if (n instanceof Date) return new Uint8Array([flags.DATE, ...packNoflagUint(n.getTime())])
   if (Number.isNaN(n)) return new Uint8Array([flags.NAN])
   if (n === Infinity) return new Uint8Array([flags.INFI])
   if (n === -Infinity) return new Uint8Array([flags.INFI_])
@@ -198,11 +197,12 @@ function unpackArray(bytes: Uint8Array, p = new Pointer()): any[] | Set<any> | M
 }
 
 function packObject(value: any) {
+  if (value instanceof Date) return new Uint8Array([flags.DATE, ...packNoflagUint(value.getTime())])
   return new Uint8Array([flags.OBJ, ...Object.keys(value).map((k) => [...packData(isNaN(Number(k)) ? k : +k), ...packData(value[k])]).flat(), flags.END])
 }
 
 function unpackObject(bytes: Uint8Array, p = new Pointer()): object {
-  p.walk()
+  if (bytes[p.walk()] === flags.DATE) return new Date(Number(unpackNoflagUint(bytes, p)))
   const obj: any = {}
   while (bytes[p.pos] !== flags.END) {
     const k = unpackData(bytes, p) as string, v = unpackData(bytes, p)
@@ -239,7 +239,7 @@ function packData(value: any): Uint8Array {
       return packSpecial(value)
     case 'object':
       if (value === null) return packSpecial(value)
-      if (value instanceof Date) return packNumber(value)
+      if (value instanceof Date) return packObject(value)
       if (getBufferBytePerElement(value) !== 0) return packBuffer(value)
       if (typeof value[Symbol?.iterator] === 'function') return packArray(value)
       return packObject(value)
