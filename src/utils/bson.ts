@@ -64,7 +64,7 @@ function convertUintArray(bytes: Uint8Array | Uint16Array | Uint32Array, toUint:
   }
   const arr = new toConstruct(bytes.length * step)
   for (let i = 0, j; i < bytes.length; i++) {
-    let value = bytes[i]; const chunk: number[] = []
+    let value = bytes[i]
     for (j = 0; j < step; j++) arr[i * step + j] = (value >> (toUint * j)) & (2 ** fromUint - 1)
   }
   return arr
