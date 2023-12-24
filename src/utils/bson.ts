@@ -70,18 +70,6 @@ function convertUintArray(bytes: Uint8Array | Uint16Array | Uint32Array, toUint:
   return arr
 }
 
-function isBigInt(value: any): value is bigint {
-  return typeof value === 'bigint'
-}
-
-function isBigIntArray(items: Uint8Array | any[]): items is bigint[] {
-  return typeof items[0] === 'bigint'
-}
-
-function isNumberArray(items: Uint8Array | any[]): items is number[] {
-  return typeof items[0] === 'number'
-}
-
 function throwInvalidFlag(flag: number): never {
   throw new Error(`Invalid flag: ${flag}`)
 }
@@ -137,8 +125,7 @@ function packNumber(n: number | bigint | Date) {
   if (n === Infinity) return new Uint8Array([flags.INFI])
   if (n === -Infinity) return new Uint8Array([flags.INFI_])
   const negative = n < 0; if (negative) n = -n
-  const isInt = Number.isInteger(n)
-  const flag = (isBigInt(n) ? flags.BIGINT : isInt ? flags.INT : flags.FLOAT) + (negative ? 1 : 0)
+  const flag = (typeof n === 'bigint' ? flags.BIGINT : Number.isInteger(n) ? flags.INT : flags.FLOAT) + (negative ? 1 : 0)
   if (flag < flags.FLOAT) return new Uint8Array([flag, ...packNoflagUint(n)])
   const decimalUint = BooleansToUint(fillR([...(n as number % 1).toString(2).substring(2)].map(i => i === '1'), false))
   return new Uint8Array([flag, ...packNoflagUint(Math.floor(n as number)), ...packNoflagUint(decimalUint)])

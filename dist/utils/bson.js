@@ -65,15 +65,6 @@ function convertUintArray(bytes, toUint) {
     }
     return arr;
 }
-function isBigInt(value) {
-    return typeof value === 'bigint';
-}
-function isBigIntArray(items) {
-    return typeof items[0] === 'bigint';
-}
-function isNumberArray(items) {
-    return typeof items[0] === 'number';
-}
 function throwInvalidFlag(flag) {
     throw new Error(`Invalid flag: ${flag}`);
 }
@@ -135,8 +126,7 @@ function packNumber(n) {
     const negative = n < 0;
     if (negative)
         n = -n;
-    const isInt = Number.isInteger(n);
-    const flag = (isBigInt(n) ? flags.BIGINT : isInt ? flags.INT : flags.FLOAT) + (negative ? 1 : 0);
+    const flag = (typeof n === 'bigint' ? flags.BIGINT : Number.isInteger(n) ? flags.INT : flags.FLOAT) + (negative ? 1 : 0);
     if (flag < flags.FLOAT)
         return new Uint8Array([flag, ...packNoflagUint(n)]);
     const decimalUint = BooleansToUint(fillR([...(n % 1).toString(2).substring(2)].map(i => i === '1'), false));
