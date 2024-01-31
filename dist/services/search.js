@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ddgSearchSummary = exports.googleSearchSummaryV2 = exports.googleSearchSummary = exports.ddgSearch = exports.googleSearch = void 0;
+exports.googleSearchSummaryV2 = exports.googleSearchSummary = exports.ddgSearchSummary = exports.googleSearch = exports.ddgSearch = void 0;
 const axios_1 = __importDefault(require("axios"));
 const cheerio_1 = require("cheerio");
 const qs_1 = __importDefault(require("qs"));
@@ -123,14 +123,14 @@ const summary = (items, showUrl = true) => {
     ].join('\n\n');
 };
 const ddgSearchSummary = (showUrl = true, ...queries) => __awaiter(void 0, void 0, void 0, function* () {
-    return summary(yield ddgSearch(...queries), showUrl);
+    return summary(yield (0, exports.ddgSearch)(...queries), showUrl);
 });
 exports.ddgSearchSummary = ddgSearchSummary;
 const googleSearchSummary = (showUrl = true, ...queries) => __awaiter(void 0, void 0, void 0, function* () {
-    return summary(yield googleSearch(...queries), showUrl);
+    return summary(yield (0, exports.googleSearch)(...queries), showUrl);
 });
 exports.googleSearchSummary = googleSearchSummary;
-function googleExtractText($, el, isRoot = false, showUrl = true) {
+const googleExtractText = ($, el, isRoot = false, showUrl = true) => {
     try {
         const children = $(el).children('*');
         let href = $(el).prop('href') || undefined;
@@ -151,7 +151,7 @@ function googleExtractText($, el, isRoot = false, showUrl = true) {
         else
             throw e;
     }
-}
+};
 const _googleSearchSummaryV2 = (query, showUrl = true) => __awaiter(void 0, void 0, void 0, function* () {
     const res = yield axios_1.default.get(`https://www.google.com.sg/search?q=${query}`);
     const $ = (0, cheerio_1.load)(res.data);

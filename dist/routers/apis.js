@@ -23,6 +23,7 @@ const currency_1 = require("../services/currency");
 const wikipedia_1 = __importDefault(require("../services/wikipedia"));
 const ls_1 = __importDefault(require("../services/ls"));
 const yadisk_1 = __importDefault(require("../services/yadisk"));
+const crawl_1 = require("../services/crawl");
 const apisRouter = express_1.default.Router();
 apisRouter.use('/', express_1.default.static('public/'));
 apisRouter.get('/', (req, res) => {
@@ -56,6 +57,12 @@ apisRouter.use('/wikipedia', (req, res) => __awaiter(void 0, void 0, void 0, fun
         return res.status(400).send({ error: 'Invalid body' });
     res.type('text/plain; charset=utf-8');
     res.send(yield (0, wikipedia_1.default)(searchTerm, langCode));
+}));
+apisRouter.use('/crawl', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { url } = (0, adaptParseBody_1.default)(req);
+    if (!url)
+        return res.status(400).send({ error: 'Invalid body' });
+    res.send(yield (0, crawl_1.fetchWebpage)(url));
 }));
 apisRouter.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query } = (0, adaptParseBody_1.default)(req);

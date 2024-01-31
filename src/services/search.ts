@@ -1,13 +1,8 @@
 import axios from 'axios'
 import { load as cheerioLoad } from 'cheerio'
-import type { CheerioAPI, Element, AnyNode } from 'cheerio'
+import type { CheerioAPI, Element } from 'cheerio'
 import qs from 'qs'
 import random from '../utils/random'
-import puppeteer from 'puppeteer'
-import TurndownService from 'turndown'
-// @ts-ignore
-import { gfm } from '@joplin/turndown-plugin-gfm'
-import path from 'path'
 
 interface SearcherResultItem {
   title: string;
@@ -90,7 +85,7 @@ async function _googleSearch(query: string): Promise<SearcherResultItem[]> {
   }).filter(i => i) as SearcherResultItem[]
 }
 
-const ddgSearch = async (...queries: string[]) => {
+export const ddgSearch = async (...queries: string[]) => {
   for (let i = 0; i < 3; i++) {
     try {
       return (await Promise.all(queries.map(q => _ddgSearch(q)))).flat()
@@ -101,7 +96,7 @@ const ddgSearch = async (...queries: string[]) => {
   return []
 }
 
-const googleSearch = async (...queries: string[]) => {
+export const googleSearch = async (...queries: string[]) => {
   for (let i = 0; i < 3; i++) {
     try {
       return (await Promise.all(queries.map(q => _googleSearch(q)))).flat()
@@ -121,15 +116,15 @@ const summary = (items: SearcherResultItem[], showUrl: boolean = true) => {
   ].join('\n\n')
 }
 
-const ddgSearchSummary = async (showUrl=true, ...queries: string[]) => {
+export const ddgSearchSummary = async (showUrl=true, ...queries: string[]) => {
   return summary(await ddgSearch(...queries), showUrl)
 }
 
-const googleSearchSummary = async (showUrl=true, ...queries: string[]) => {
+export const googleSearchSummary = async (showUrl=true, ...queries: string[]) => {
   return summary(await googleSearch(...queries), showUrl)
 }
 
-function googleExtractText($: CheerioAPI, el: Element, isRoot: boolean = false, showUrl: boolean = true): string {
+const googleExtractText = ($: CheerioAPI, el: Element, isRoot: boolean = false, showUrl: boolean = true): string => {
   try {
     const children = $(el).children('*')
     let href = $(el).prop('href') || undefined
@@ -155,84 +150,6 @@ const _googleSearchSummaryV2 = async (query: string, showUrl: boolean = true) =>
   return text
 }
 
-const googleSearchSummaryV2 = async (showUrl=true, ...queries: string[]) => {
+export const googleSearchSummaryV2 = async (showUrl=true, ...queries: string[]) => {
   return (await Promise.all(queries.map((query) => _googleSearchSummaryV2(query, showUrl)))).join('\n\n---\n\n')
-}
-
-// (() => {
-//   function joinURL(baseURL: string, relativeURL: string) {
-//     const urlParts = baseURL.split('/'), relativeParts = relativeURL.split('/');
-//     urlParts.pop();
-//     for (const part of relativeParts) {
-//       if (part === '..') urlParts.pop();
-//       else if (part !== '.') urlParts.push(part);
-//     }
-//     return urlParts.join('/');
-//   }
-
-//   function parseHtml(html: string | AnyNode | AnyNode[] | Buffer, url: string, textOnly = true) {
-//     const $ = cheerioLoad(html)
-//     $('style').remove()
-//     $('script').remove()
-//     if (textOnly) {
-//       $('img').remove()
-//       $('video').remove()
-//       $('audio').remove()
-//       $('canvas').remove()
-//       $('svg').remove()
-//     }
-//     const origin = new URL(url).origin
-//     const links = new Set<string>()
-//     $('a').each((_, el) => {
-//       const href = $(el).attr('href')
-//       if (typeof href === 'string' && !links.has(href)) {
-//         if (href.startsWith('/')) links.add(origin + href)
-//         else if (href.startsWith('#')) links.add(url + href)
-//         else if (href.startsWith('../') || href.startsWith('./')) links.add(joinURL(url, href))
-//         else links.add(href)
-//       }
-//     })
-//     // $('a').replaceWith(function () {
-//     //   return $('<span>').text($(this).prop('innerText') || $(this).text())
-//     // })
-//     const td = new TurndownService()
-//     td.use(gfm)
-//     const markdown = td.turndown($('body').prop('innerHTML') as string)
-//     return {
-//       title: $('title').text() || $('meta[name="title"]').attr()?.content || $('meta[name="og:title"]').attr()?.content,
-//       description: $('meta[name="description"]').attr()?.content || $('meta[name="og:description"]').attr()?.content,
-//       links: [...links],
-//       content: markdown.replace(/<br>/g, '\n').trim(),
-//     }
-//   }
-
-//   async function _fetchHTML(url: string) {
-//     const browser = await puppeteer.launch();
-//     const page = await browser.newPage();
-//     await page.goto(url);
-//     const html = await page.content();
-//     await browser.close();
-//     return parseHtml(html, url);
-//   }
-
-//   async function fetchHTML(url: string) {
-//     return parseHtml((await axios.get(url)).data, url);
-//   }
-
-//   // 這是一個測試用例
-//   const url = 'https://zh.wikipedia.org/zh-tw/%E8%B6%85%E5%A4%A7%E8%A7%84%E6%A8%A1%E9%9B%86%E6%88%90%E7%94%B5%E8%B7%AF'
-//   _fetchHTML(url)
-//     .then(html => console.log(1, html))
-//     .catch(err => console.error('錯誤發生:', err))
-//   fetchHTML(url)
-//     .then(html => console.log(2, html))
-//     .catch(err => console.error('錯誤發生:', err))
-// })();
-
-export {
-  googleSearch,
-  ddgSearch,
-  googleSearchSummary,
-  googleSearchSummaryV2,
-  ddgSearchSummary
 }

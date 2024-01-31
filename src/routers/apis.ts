@@ -10,6 +10,7 @@ import { convertCurrency, getCurrencyList } from '../services/currency'
 import wikipedia from '../services/wikipedia'
 import ls from '../services/ls';
 import yadisk from '../services/yadisk';
+import { fetchWebpage } from '../services/crawl';
 
 const apisRouter = express.Router();
 
@@ -49,6 +50,12 @@ apisRouter.use('/wikipedia', async (req, res) => {
   if (!searchTerm) return res.status(400).send({ error: 'Invalid body' });
   res.type('text/plain; charset=utf-8');
   res.send(await wikipedia(searchTerm, langCode));
+});
+
+apisRouter.use('/crawl', async (req, res) => {
+  const { url } = adaptParseBody(req);
+  if (!url) return res.status(400).send({ error: 'Invalid body' });
+  res.send(await fetchWebpage(url));
 });
 
 apisRouter.use('/google-search', async (req, res) => {
