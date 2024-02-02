@@ -25,6 +25,12 @@ apisRouter.use('/currency', async (req, res) => {
   res.send({ rate: await convertCurrency(from, to) });
 });
 
+apisRouter.use('/currency-text', async (req, res) => {
+  const { from, to } = adaptParseBody(req);
+  const rate = await convertCurrency(from, to);
+  res.send(`1 ${from} = ${rate} ${to}`);
+});
+
 apisRouter.use('/currency-list', async (req, res) => {
   res.send(await getCurrencyList());
 });

@@ -33,6 +33,11 @@ apisRouter.use('/currency', (req, res) => __awaiter(void 0, void 0, void 0, func
     const { from, to } = (0, adaptParseBody_1.default)(req);
     res.send({ rate: yield (0, currency_1.convertCurrency)(from, to) });
 }));
+apisRouter.use('/currency-text', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { from, to } = (0, adaptParseBody_1.default)(req);
+    const rate = yield (0, currency_1.convertCurrency)(from, to);
+    res.send(`1 ${from} = ${rate} ${to}`);
+}));
 apisRouter.use('/currency-list', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.send(yield (0, currency_1.getCurrencyList)());
 }));
