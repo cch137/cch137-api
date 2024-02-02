@@ -16,7 +16,10 @@ function joinURL(baseURL: string, relativeURL: string) {
   return urlParts.join('/');
 }
 
-function parseHtml(html: string | AnyNode | AnyNode[] | Buffer, url: string, textOnly = true) {
+function parseHtml(
+  html: string | AnyNode | AnyNode[] | Buffer,
+  {url, links=false, showATag=false, textOnly=true} :{url: string, links?: boolean, showATag?: boolean, textOnly?: boolean}
+) {
   const $ = cheerioLoad(html)
   $('style').remove()
   $('script').remove()
@@ -28,39 +31,50 @@ function parseHtml(html: string | AnyNode | AnyNode[] | Buffer, url: string, tex
     $('svg').remove()
   }
   const origin = new URL(url).origin
-  const links = new Set<string>()
+  const linkSet = new Set<string>()
   $('a').each((_, el) => {
     const href = $(el).attr('href')
-    if (typeof href === 'string' && !links.has(href)) {
-      if (href.startsWith('/')) links.add(origin + href)
-      else if (href.startsWith('#')) links.add(url + href)
-      else if (href.startsWith('../') || href.startsWith('./')) links.add(joinURL(url, href))
-      else links.add(href)
+    if (typeof href === 'string' && !linkSet.has(href)) {
+      if (href.startsWith('/')) linkSet.add(origin + href)
+      else if (href.startsWith('#')) linkSet.add(url + href)
+      else if (href.startsWith('../') || href.startsWith('./')) linkSet.add(joinURL(url, href))
+      else linkSet.add(href)
     }
   })
-  // $('a').replaceWith(function () {
-  //   return $('<span>').text($(this).prop('innerText') || $(this).text())
-  // })
+  if (!showATag) $('a').replaceWith(function () {
+    return $('<span>').text($(this).prop('innerText') || $(this).text())
+  })
   const td = new TurndownService()
   td.use(gfm)
   const markdown = td.turndown($('body').prop('innerHTML') as string)
   return {
     title: $('title').text() || $('meta[name="title"]').attr()?.content || $('meta[name="og:title"]').attr()?.content,
     description: $('meta[name="description"]').attr()?.content || $('meta[name="og:description"]').attr()?.content,
-    links: [...links],
+    links: links ? [...linkSet] : undefined,
     content: markdown.replace(/<br>/g, '\n').trim(),
   }
 }
 
+const fixUrl = (url: string) => {
+  if (/^https?:\/\//.test(url)) return url;
+  return `http://${url}`;
+}
+
 export async function fetchWebpageWithPupeeter(url: string) {
+  url = fixUrl(url);
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.goto(url);
   const html = await page.content();
   await browser.close();
-  return parseHtml(html, url);
+  return parseHtml(html, {url});
 }
 
-export async function fetchWebpage(url: string) {
-  return parseHtml((await axios.get(url)).data, url);
+export async function fetchWebpage(url: string, options: {textOnly?: boolean, links?: boolean} = {}) {
+  try {
+    url = fixUrl(url);
+    return parseHtml((await axios.get(url, {timeout: 60000, validateStatus: () => true})).data, {...options, url});
+  } catch (e) {
+    return {title: e instanceof Error ? `Error: ${e.message || e.name || 'Unknown'}` : 'Error: Failed to fetch', description: '', content: '', links: options.links ? [] : undefined }
+  }
 }

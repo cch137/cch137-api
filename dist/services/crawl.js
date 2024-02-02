@@ -30,7 +30,7 @@ function joinURL(baseURL, relativeURL) {
     }
     return urlParts.join('/');
 }
-function parseHtml(html, url, textOnly = true) {
+function parseHtml(html, { url, links = false, showATag = false, textOnly = true }) {
     var _a, _b, _c, _d;
     const $ = (0, cheerio_1.load)(html);
     $('style').remove();
@@ -43,47 +43,60 @@ function parseHtml(html, url, textOnly = true) {
         $('svg').remove();
     }
     const origin = new URL(url).origin;
-    const links = new Set();
+    const linkSet = new Set();
     $('a').each((_, el) => {
         const href = $(el).attr('href');
-        if (typeof href === 'string' && !links.has(href)) {
+        if (typeof href === 'string' && !linkSet.has(href)) {
             if (href.startsWith('/'))
-                links.add(origin + href);
+                linkSet.add(origin + href);
             else if (href.startsWith('#'))
-                links.add(url + href);
+                linkSet.add(url + href);
             else if (href.startsWith('../') || href.startsWith('./'))
-                links.add(joinURL(url, href));
+                linkSet.add(joinURL(url, href));
             else
-                links.add(href);
+                linkSet.add(href);
         }
     });
-    // $('a').replaceWith(function () {
-    //   return $('<span>').text($(this).prop('innerText') || $(this).text())
-    // })
+    if (!showATag)
+        $('a').replaceWith(function () {
+            return $('<span>').text($(this).prop('innerText') || $(this).text());
+        });
     const td = new turndown_1.default();
     td.use(turndown_plugin_gfm_1.gfm);
     const markdown = td.turndown($('body').prop('innerHTML'));
     return {
         title: $('title').text() || ((_a = $('meta[name="title"]').attr()) === null || _a === void 0 ? void 0 : _a.content) || ((_b = $('meta[name="og:title"]').attr()) === null || _b === void 0 ? void 0 : _b.content),
         description: ((_c = $('meta[name="description"]').attr()) === null || _c === void 0 ? void 0 : _c.content) || ((_d = $('meta[name="og:description"]').attr()) === null || _d === void 0 ? void 0 : _d.content),
-        links: [...links],
+        links: links ? [...linkSet] : undefined,
         content: markdown.replace(/<br>/g, '\n').trim(),
     };
 }
+const fixUrl = (url) => {
+    if (/^https?:\/\//.test(url))
+        return url;
+    return `http://${url}`;
+};
 function fetchWebpageWithPupeeter(url) {
     return __awaiter(this, void 0, void 0, function* () {
+        url = fixUrl(url);
         const browser = yield puppeteer_1.default.launch();
         const page = yield browser.newPage();
         yield page.goto(url);
         const html = yield page.content();
         yield browser.close();
-        return parseHtml(html, url);
+        return parseHtml(html, { url });
     });
 }
 exports.fetchWebpageWithPupeeter = fetchWebpageWithPupeeter;
-function fetchWebpage(url) {
+function fetchWebpage(url, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        return parseHtml((yield axios_1.default.get(url)).data, url);
+        try {
+            url = fixUrl(url);
+            return parseHtml((yield axios_1.default.get(url, { timeout: 60000, validateStatus: () => true })).data, Object.assign(Object.assign({}, options), { url }));
+        }
+        catch (e) {
+            return { title: e instanceof Error ? `Error: ${e.message || e.name || 'Unknown'}` : 'Error: Failed to fetch', description: '', content: '', links: options.links ? [] : undefined };
+        }
     });
 }
 exports.fetchWebpage = fetchWebpage;
