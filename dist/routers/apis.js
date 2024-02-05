@@ -69,6 +69,17 @@ apisRouter.use('/crawl', (req, res) => __awaiter(void 0, void 0, void 0, functio
         return res.status(400).send({ error: 'Invalid body' });
     res.send(yield (0, crawl_1.fetchWebpage)(url));
 }));
+apisRouter.use('/crawl-text', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { url } = (0, adaptParseBody_1.default)(req);
+    if (!url)
+        return res.status(400).send({ error: 'Invalid body' });
+    const { title, description, content } = yield (0, crawl_1.fetchWebpage)(url);
+    res.send([
+        title ? `title:\n${title}` : '',
+        description ? `description:\n${description}` : '',
+        `content:\n${content}`,
+    ].filter(i => i).join('\n\n'));
+}));
 apisRouter.use('/google-search', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { query } = (0, adaptParseBody_1.default)(req);
     if (!query)

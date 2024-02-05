@@ -64,6 +64,17 @@ apisRouter.use('/crawl', async (req, res) => {
   res.send(await fetchWebpage(url));
 });
 
+apisRouter.use('/crawl-text', async (req, res) => {
+  const { url } = adaptParseBody(req);
+  if (!url) return res.status(400).send({ error: 'Invalid body' });
+  const {title, description, content} = await fetchWebpage(url);
+  res.send([
+    title ? `title:\n${title}` : '',
+    description ? `description:\n${description}` : '',
+    `content:\n${content}`,
+  ].filter(i => i).join('\n\n'));
+});
+
 apisRouter.use('/google-search', async (req, res) => {
   const { query } = adaptParseBody(req);
   if (!query) return res.status(400).send({ error: 'Invalid body' });
