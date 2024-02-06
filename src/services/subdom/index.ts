@@ -1,11 +1,6 @@
 import { wss } from '../../server'
 import random from "@cch137/utils/random";
 
-const subdom = {
-  ready: true,
-  wss
-}
-
 const players = new Map<number, Player>()
 
 class Player {
@@ -88,4 +83,4 @@ wss.on('connection', (socket, req) => {
   })
 })
 
-export default subdom
+export default wss;

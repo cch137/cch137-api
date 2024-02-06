@@ -1,16 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import express from 'express';
-import translate from '@saipulanuar/google-translate-api';
 import adaptParseBody from '../utils/adaptParseBody';
-import type { LockerOptions } from '../services/lockers';
-import lockerManager from '../services/lockers';
-import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary, googleSearchSummaryV2 } from '../services/search';
-import { convertCurrency, getCurrencyList } from '../services/currency'
-import wikipedia from '../services/wikipedia'
-import ls from '../services/ls';
-import yadisk from '../services/yadisk';
-import { fetchWebpage } from '../services/crawl';
 
 const apis = express.Router();
 
@@ -20,25 +11,34 @@ apis.get('/', (req, res) => {
   res.send({ t: Date.now() });
 });
 
-apis.use('/currency', async (req, res) => {
-  const { from, to } = adaptParseBody(req);
-  res.send({ rate: await convertCurrency(from, to) });
+apis.post('/wakeup', (req, res) => {
+  res.send('OK');
 });
 
-apis.use('/currency-text', async (req, res) => {
-  const { from, to } = adaptParseBody(req);
-  const rate = await convertCurrency(from, to);
-  res.send(`1 ${from} = ${rate} ${to}`);
-});
-
-apis.use('/currency-list', async (req, res) => {
-  res.send(await getCurrencyList());
+const started = Date.now()
+apis.get('/started', (req, res) => {
+  res.send({ t: started });
 });
 
 apis.get('/dashboard', (req, res) => {
   res.sendFile(path.resolve(__dirname, '../pages/dashboard.html'));
 });
 
+import { convertCurrency, getCurrencyList } from '../services/currency';
+apis.use('/currency', async (req, res) => {
+  const { from, to } = adaptParseBody(req);
+  res.send({ rate: await convertCurrency(from, to) });
+});
+apis.use('/currency-text', async (req, res) => {
+  const { from, to } = adaptParseBody(req);
+  const rate = await convertCurrency(from, to);
+  res.send(`1 ${from} = ${rate} ${to}`);
+});
+apis.use('/currency-list', async (req, res) => {
+  res.send(await getCurrencyList());
+});
+
+import translate from '@saipulanuar/google-translate-api';
 apis.use('/translate', async (req, res) => {
   const { text, from, to } = adaptParseBody(req);
   res.type('application/json');
@@ -49,6 +49,7 @@ apis.use('/translate', async (req, res) => {
   }
 });
 
+import wikipedia from '../services/wikipedia';
 apis.use('/wikipedia', async (req, res) => {
   const { query, q, article, a, title, t, page, p, language, lang, l } = adaptParseBody(req);
   const searchTerm: string = a || q || p || t || query || article || page || title;
@@ -58,12 +59,12 @@ apis.use('/wikipedia', async (req, res) => {
   res.send(await wikipedia(searchTerm, langCode));
 });
 
+import { fetchWebpage } from '../services/crawl';
 apis.use('/crawl', async (req, res) => {
   const { url } = adaptParseBody(req);
   if (!url) return res.status(400).send({ error: 'Invalid body' });
   res.send(await fetchWebpage(url));
 });
-
 apis.use('/crawl-text', async (req, res) => {
   const { url } = adaptParseBody(req);
   if (!url) return res.status(400).send({ error: 'Invalid body' });
@@ -75,18 +76,17 @@ apis.use('/crawl-text', async (req, res) => {
   ].filter(i => i).join('\n\n'));
 });
 
+import { ddgSearch, ddgSearchSummary, googleSearch, googleSearchSummary, googleSearchSummaryV2 } from '../services/search';
 apis.use('/google-search', async (req, res) => {
   const { query } = adaptParseBody(req);
   if (!query) return res.status(400).send({ error: 'Invalid body' });
   res.send(await googleSearch(query));
 });
-
 apis.use('/ddg-search', async (req, res) => {
   const { query } = adaptParseBody(req);
   if (!query) return res.status(400).send({ error: 'Invalid body' });
   res.send(await ddgSearch(query));
 });
-
 apis.use('/google-search-summary', async (req, res) => {
   const { query, showUrl = true, v = 2 } = adaptParseBody(req);
   if (!query) return res.status(400).send({ error: 'Invalid body' });
@@ -94,7 +94,6 @@ apis.use('/google-search-summary', async (req, res) => {
   if (v == 2) res.send(await googleSearchSummaryV2(showUrl, query));
   else res.send(await googleSearchSummary(showUrl, query));
 });
-
 apis.use('/ddg-search-summary', async (req, res) => {
   const { query, showUrl = true } = adaptParseBody(req);
   if (!query) return res.status(400).send({ error: 'Invalid body' });
@@ -102,6 +101,8 @@ apis.use('/ddg-search-summary', async (req, res) => {
   res.send(await ddgSearchSummary(showUrl, query));
 });
 
+
+import lockerManager, {type LockerOptions} from '../services/lockers';
 apis.put('/lockers', (req, res) => {
   const { id, item, options = {} } = adaptParseBody(req) as { id?: string, item: any, options: LockerOptions };
   res.type('application/json');
@@ -112,7 +113,6 @@ apis.put('/lockers', (req, res) => {
     res.status(400).send({ name: (err as Error)?.name, message: (err as Error)?.message });
   }
 });
-
 apis.post('/lockers', (req, res) => {
   const { id, options = {} } = adaptParseBody(req) as { id: string, options: LockerOptions };
   res.type('application/json');
@@ -122,7 +122,6 @@ apis.post('/lockers', (req, res) => {
     res.status(400).send({ name: (err as Error)?.name, message: (err as Error)?.message });
   }
 });
-
 apis.delete('/lockers', (req, res) => {
   const { id } = adaptParseBody(req) as { id: string };
   res.type('application/json');
@@ -133,6 +132,8 @@ apis.delete('/lockers', (req, res) => {
   }
 });
 
+import yadisk from '../services/yadisk';
+import ls from '../services/ls';
 apis.get('/ls/list', (req, res) => {
   res.type('application/json');
   try {
@@ -141,7 +142,6 @@ apis.get('/ls/list', (req, res) => {
     res.status(500).send(`${err}`);
   }
 });
-
 apis.get('/ls/:fn', (req, res) => {
   res.type('application/json');
   try {
@@ -150,7 +150,6 @@ apis.get('/ls/:fn', (req, res) => {
     res.status(404).send(`Not Found`);
   }
 });
-
 apis.get('/ls/i/:chap_problem', async (req, res) => {
   const chap_problem = req.params.chap_problem;
   const isbn = req.query.b || req.query.isbn;
@@ -176,13 +175,9 @@ apis.get('/ls/i/:chap_problem', async (req, res) => {
   }
 });
 
-apis.post('/wakeup', (req, res) => {
-  res.send('OK');
-});
-
-const started = Date.now()
-apis.get('/started', (req, res) => {
-  res.send({ t: started });
+import notes from '../services/notes';
+apis.post('/note', (req, res) => {
+  res.send(notes);
 });
 
 export default apis

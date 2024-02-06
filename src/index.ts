@@ -3,7 +3,7 @@ import { app, server } from './server'
 import apis from './routers/apis'
 import pdf from './routers/pdf'
 import mongoose from './services/mongoose'
-import subdom from './services/subdom'
+import wss from './services/subdom'
 
 dotenvConfig()
 
@@ -15,6 +15,5 @@ const port = process.env.PORT || 3000
 
 server.listen(port, () => {
   console.log(`Server is listening to http://localhost:${port}`)
-  console.log(`Mongoose version: ${mongoose.version}`)
-  if (subdom.ready) console.log('Subdom is ready.')
+  if (wss && mongoose) return 0;
 })
