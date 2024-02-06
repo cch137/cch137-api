@@ -1,5 +1,6 @@
 caches/
 
+dist/
 node_modules/
 
 # dotenv environment variable files

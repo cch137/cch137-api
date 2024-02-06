@@ -1,14 +1,14 @@
 import { config as dotenvConfig } from 'dotenv'
 import { app, server } from './server'
 import apis from './routers/apis'
-import pdfRouter from './routers/pdf'
+import pdf from './routers/pdf'
 import mongoose from './services/mongoose'
 import subdom from './services/subdom'
 
 dotenvConfig()
 
 app.use('/', apis)
-app.use('/pdf/', pdfRouter)
+app.use('/pdf/', pdf)
 app.use('*', (req, res) => res.status(404).end())
 
 const port = process.env.PORT || 3000
