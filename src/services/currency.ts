@@ -1,5 +1,5 @@
 import axios from 'axios'
-import htmlTableTo2DArray from './utils/htmlTableTo2DArray'
+import htmlTableTo2DArray from '../utils/htmlTableTo2DArray'
 
 const url = 'https://docs.google.com/spreadsheets/d/1VjdmK8-PBoOt6sRCvZ40G5qmYyxpLzHl5RCSQWejxYk/preview/sheet?gid=1360697588'
 let lastFetched = 0

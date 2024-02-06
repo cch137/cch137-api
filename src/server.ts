@@ -13,8 +13,8 @@ const wss = new WebSocketServer({ server })
 
 app.use(cors());
 
-app.set('trust proxy', true)
-app.disable('x-powered-by')
+app.set('trust proxy', true);
+app.disable('x-powered-by');
 
 app.use(express.json())
 app.use(bodyParser.json())

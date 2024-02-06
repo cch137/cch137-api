@@ -1,5 +1,5 @@
 import { wss } from '../../server'
-import random from '../../utils/random'
+import random from "@cch137/utils/random";
 
 const subdom = {
   ready: true,

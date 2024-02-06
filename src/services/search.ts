@@ -2,7 +2,7 @@ import axios from 'axios'
 import { load as cheerioLoad } from 'cheerio'
 import type { CheerioAPI, Element } from 'cheerio'
 import qs from 'qs'
-import random from '../utils/random'
+import random from "@cch137/utils/random";
 
 interface SearcherResultItem {
   title: string;

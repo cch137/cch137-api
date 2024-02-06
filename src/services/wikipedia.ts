@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { analyzeLanguage } from "../utils/analyzeLanguages";
+import { analyzeLanguage } from "@cch137/utils/lang/analyze-languages";
 
 const defaultApiUrl: string = 'https://en.wikipedia.org/w/api.php';
 

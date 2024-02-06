@@ -1,4 +1,4 @@
-import random from "../utils/random";
+import random from "@cch137/utils/random";
 
 const defaultAge = 5 * 60 * 1000;
 

@@ -7,7 +7,7 @@
     "devbuild": "tsc -w",
     "devstart": "nodemon ./dist/index.js",
     "test": "npm-run-all --parallel devbuild devstart",
-    "build": "npm i",
+    "build": "npm i && tsc",
     "start": "node ./dist/index.js"
   },
   "repository": {
@@ -21,6 +21,7 @@
   "author": "cch137",
   "license": "ISC",
   "dependencies": {
+    "@cch137/utils": "^0.0.135",
     "@joplin/turndown-plugin-gfm": "^1.0.50",
     "@saipulanuar/google-translate-api": "^8.0.0",
     "axios": "^1.6.2",
