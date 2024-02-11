@@ -4,8 +4,11 @@ import apis from './routers/apis'
 import pdf from './routers/pdf'
 import mongoose from './services/mongoose'
 import wss from './services/subdom'
+import { run as runBots } from './bots'
 
 dotenvConfig()
+
+runBots();
 
 app.use('/', apis)
 app.use('/pdf/', pdf)
