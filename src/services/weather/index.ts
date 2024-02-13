@@ -44,8 +44,8 @@ const getTemperatureMetadata = (_unit?: string) => {
   const unit = normalizeTemperatureUnit(_unit);
   const isCelsius = unit.at(0)!.toUpperCase() !== "F";
   const regexp = isCelsius
-    ? new RegExp(/^[0-9]+[\s]*°C$/)
-    : new RegExp(/^[0-9]+[\s]*°F$/);
+    ? new RegExp(/^[0-9]+\s*°C$/)
+    : new RegExp(/^[0-9]+\s*°F$/);
   return Object.freeze({ unit, regexp });
 };
 
@@ -87,7 +87,7 @@ async function fetchWeather(
   if (typeof options === "string")
     return await fetchWeather(city, { unit: options });
   if (!options) return await fetchWeather(city, {});
-  city = city.replace(/[\s]+/g, " ").trim();
+  city = city.replace(/\s+/g, " ").trim();
   const { unit: _unit } = options;
   const { unit, regexp } = getTemperatureMetadata(_unit);
   const query = `${city} weather (temperature unit: ${unit})`;
@@ -137,15 +137,15 @@ async function fetchWeather(
     return res;
   };
   const matched = findWeatherData(nodeTree);
-  const [_temperature = "", _w = "-", source = "-", location = "-"] =
+  const [_temperature = "", _w = "-", _source = "-", location = "-"] =
     Array.isArray(matched) ? matched : [matched];
   const _weatherDetails = _w.split("\n").map((i) => i.trim());
   return {
-    temperature: _temperature.replace(/[\s]*/g, "") || "no info",
+    temperature: _temperature.replace(/\s*/g, "") || "no info",
     weather: (_weatherDetails.at(-1) as string) || "-",
     time: (_weatherDetails.at(-2) as string) || "-",
     location,
-    source,
+    source: (_source.match(/\S+.\S+/) || []).at(0) || _source,
   };
 }
 
@@ -170,7 +170,7 @@ async function fetchWeatherText(
     options
   );
   return [temperature, weather, time, location, source]
-    .map((i) => i.replace(/\n/g, " "))
+    .map((i) => i.replace(/\n+/g, " "))
     .join("\n");
 }
 
