@@ -204,4 +204,17 @@ apis.get("/ls/i/:chap_problem", async (req, res) => {
   }
 });
 
+import { fetchWeather, fetchWeatherText } from "../services/weather";
+apis.use("/weather", async (req, res) => {
+  const { city, loc, location, unit } = adaptParseBody(req);
+  if (!city) return res.status(400).send({ error: "Invalid body" });
+  res.json(await fetchWeather(city || loc || location, unit));
+});
+apis.use("/weather-text", async (req, res) => {
+  const { city, loc, location, unit } = adaptParseBody(req);
+  if (!city) return res.status(400).send({ error: "Invalid body" });
+  res.type("text/plain; charset=utf-8");
+  res.send(await fetchWeatherText(city || loc || location, unit));
+});
+
 export default apis;
