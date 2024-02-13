@@ -98,6 +98,7 @@ async function fetchWeather(
   const decoder = new TextDecoder("iso-8859-1");
   const text = decoder.decode(buffer);
   const $ = cheerioLoad(text);
+  $("link").remove();
   $("meta").remove();
   $("style").remove();
   $("script").remove();

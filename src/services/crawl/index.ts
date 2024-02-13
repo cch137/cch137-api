@@ -27,8 +27,11 @@ function parseHtml(
   }: { url: string; links?: boolean; showATag?: boolean; textOnly?: boolean }
 ) {
   const $ = cheerioLoad(html);
+  $("link").remove();
+  $("meta").remove();
   $("style").remove();
   $("script").remove();
+  $("noscript").remove();
   if (textOnly) {
     $("img").remove();
     $("video").remove();
