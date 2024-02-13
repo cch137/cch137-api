@@ -145,7 +145,7 @@ async function fetchWeather(
     weather: (_weatherDetails.at(-1) as string) || "-",
     time: (_weatherDetails.at(-2) as string) || "-",
     location,
-    source: (_source.match(/\S+.\S+/) || []).at(0) || _source,
+    source: (_source.match(/\S+\.\S+/) || []).at(0) || _source,
   };
 }
 
