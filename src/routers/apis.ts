@@ -71,6 +71,7 @@ apis.use("/crawl-text", async (req, res) => {
   const { url } = adaptParseBody(req);
   if (!url) return res.status(400).send({ error: "Invalid body" });
   const { title, description, content } = await fetchWebpage(url);
+  res.type("text/plain; charset=utf-8");
   res.send(
     [
       title ? `title:\n${title}` : "",
