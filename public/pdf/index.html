@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="./main.css" />
+  <title>PDF Tools</title>
+</head>
+<body>
+  <div id="main">
+    <div id="main-header">
+      <h1>Images To PDF</h1>
+      <div id="main-message"></div>
+    </div>
+    <hr />
+    <form id="upload-form">
+      <input id="files-input" type="file" multiple />
+      <div class="upload-form-group">
+        <div>Filename:</div>
+        <input id="output-filename" type="text" />
+      </div>
+      <div class="upload-form-group">
+        <div id="files-upload-button" class="button">Select files</div>
+        <div id="files-convert-button" class="button locked">Convert to PDF</div>
+      </div>
+    </form>
+    <div id="file-list"></div>
+  </div>
+  <script src="./main.js"></script>
+</body>
+</html>

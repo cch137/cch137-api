@@ -227,9 +227,21 @@ apis.use("/weather-text", async (req, res) => {
   res.send(await fetchWeatherText(_city, { unit, lang }));
 });
 
-apis.use("/test", async (req, res) => {
-  const { q } = parseForm(req);
-  res.json({ ok: 1, q });
+import { ImagesToPDF } from "../services/pdf-tools";
+apis.use("/images-to-pdf/create-task", async (req, res) => {
+  res.json({ id: ImagesToPDF.createTask().id });
+});
+apis.use("/images-to-pdf/upload/:id/:index", async (req, res) => {
+  const { id, index } = req.params;
+  ImagesToPDF.upload(id, Number(index), req.body);
+  res.json({ ok: 1 });
+});
+apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
+  const { id, filename } = req.params;
+  if (!filename.endsWith(".pdf"))
+    return res.redirect(`/images-to-pdf/convert/${id}/${filename}.pdf`);
+  res.type("application/pdf");
+  res.send(Buffer.from(await ImagesToPDF.convert(id)));
 });
 
 export default apis;
