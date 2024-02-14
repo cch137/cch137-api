@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import express from "express";
-import adaptParseBody from "../utils/adaptParseBody";
+import parseForm from "../utils/parseForm";
 
 const apis = express.Router();
 
@@ -26,11 +26,11 @@ apis.get("/dashboard", (req, res) => {
 
 import { convertCurrency, getCurrencyList } from "../services/currency";
 apis.use("/currency", async (req, res) => {
-  const { from, to } = adaptParseBody(req);
+  const { from, to } = parseForm(req);
   res.send({ rate: await convertCurrency(from, to) });
 });
 apis.use("/currency-text", async (req, res) => {
-  const { from, to } = adaptParseBody(req);
+  const { from, to } = parseForm(req);
   const rate = await convertCurrency(from, to);
   res.send(`1 ${from} = ${rate} ${to}`);
 });
@@ -40,7 +40,7 @@ apis.use("/currency-list", async (req, res) => {
 
 import translate from "@saipulanuar/google-translate-api";
 apis.use("/translate", async (req, res) => {
-  const { text, from, to } = adaptParseBody(req);
+  const { text, from, to } = parseForm(req);
   res.type("application/json");
   try {
     res.status(200).send(await translate(text, { from, to }));
@@ -52,7 +52,7 @@ apis.use("/translate", async (req, res) => {
 import wikipedia from "../services/wikipedia";
 apis.use("/wikipedia", async (req, res) => {
   const { query, q, article, a, title, t, page, p, language, lang, l } =
-    adaptParseBody(req);
+    parseForm(req);
   const searchTerm: string =
     a || q || p || t || query || article || page || title;
   const langCode: string | undefined = l || lang || language;
@@ -63,12 +63,12 @@ apis.use("/wikipedia", async (req, res) => {
 
 import { fetchWebpage } from "../services/crawl";
 apis.use("/crawl", async (req, res) => {
-  const { url } = adaptParseBody(req);
+  const { url } = parseForm(req);
   if (!url) return res.status(400).send({ error: "Invalid body" });
   res.send(await fetchWebpage(url));
 });
 apis.use("/crawl-text", async (req, res) => {
-  const { url } = adaptParseBody(req);
+  const { url } = parseForm(req);
   if (!url) return res.status(400).send({ error: "Invalid body" });
   const { title, description, content } = await fetchWebpage(url);
   res.type("text/plain; charset=utf-8");
@@ -91,24 +91,24 @@ import {
   googleSearchSummaryV2,
 } from "../services/search";
 apis.use("/google-search", async (req, res) => {
-  const { query } = adaptParseBody(req);
+  const { query } = parseForm(req);
   if (!query) return res.status(400).send({ error: "Invalid body" });
   res.send(await googleSearch(query));
 });
 apis.use("/ddg-search", async (req, res) => {
-  const { query } = adaptParseBody(req);
+  const { query } = parseForm(req);
   if (!query) return res.status(400).send({ error: "Invalid body" });
   res.send(await ddgSearch(query));
 });
 apis.use("/google-search-summary", async (req, res) => {
-  const { query, showUrl = true, v = 2 } = adaptParseBody(req);
+  const { query, showUrl = true, v = 2 } = parseForm(req);
   if (!query) return res.status(400).send({ error: "Invalid body" });
   res.type("text/plain; charset=utf-8");
   if (v == 2) res.send(await googleSearchSummaryV2(showUrl, query));
   else res.send(await googleSearchSummary(showUrl, query));
 });
 apis.use("/ddg-search-summary", async (req, res) => {
-  const { query, showUrl = true } = adaptParseBody(req);
+  const { query, showUrl = true } = parseForm(req);
   if (!query) return res.status(400).send({ error: "Invalid body" });
   res.type("text/plain; charset=utf-8");
   res.send(await ddgSearchSummary(showUrl, query));
@@ -120,7 +120,7 @@ apis.put("/lockers", (req, res) => {
     id,
     item,
     options = {},
-  } = adaptParseBody(req) as { id?: string; item: any; options: LockerOptions };
+  } = parseForm(req) as { id?: string; item: any; options: LockerOptions };
   res.type("application/json");
   try {
     if (typeof id === "string")
@@ -133,7 +133,7 @@ apis.put("/lockers", (req, res) => {
   }
 });
 apis.post("/lockers", (req, res) => {
-  const { id, options = {} } = adaptParseBody(req) as {
+  const { id, options = {} } = parseForm(req) as {
     id: string;
     options: LockerOptions;
   };
@@ -147,7 +147,7 @@ apis.post("/lockers", (req, res) => {
   }
 });
 apis.delete("/lockers", (req, res) => {
-  const { id } = adaptParseBody(req) as { id: string };
+  const { id } = parseForm(req) as { id: string };
   res.type("application/json");
   try {
     res.send(lockerManager.destroyItem(id));
@@ -207,17 +207,22 @@ apis.get("/ls/i/:chap_problem", async (req, res) => {
 
 import { fetchWeather, fetchWeatherText } from "../services/weather";
 apis.use("/weather", async (req, res) => {
-  const { city, loc, location, unit } = adaptParseBody(req);
+  const { city, loc, location, unit } = parseForm(req);
   const _city = city || loc || location;
   if (!_city) return res.status(400).send({ error: "Invalid body" });
   res.json(await fetchWeather(_city, unit));
 });
 apis.use("/weather-text", async (req, res) => {
-  const { city, loc, location, unit } = adaptParseBody(req);
+  const { city, loc, location, unit } = parseForm(req);
   const _city = city || loc || location;
   if (!_city) return res.status(400).send({ error: "Invalid body" });
   res.type("text/plain; charset=utf-8");
   res.send(await fetchWeatherText(_city, unit));
+});
+
+apis.use("/test", async (req, res) => {
+  const { q } = parseForm(req);
+  res.json({ ok: 1, q });
 });
 
 export default apis;
