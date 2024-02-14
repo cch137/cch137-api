@@ -3,8 +3,6 @@ import { load as cheerioLoad } from "cheerio";
 import type { AnyNode } from "cheerio";
 import puppeteer from "puppeteer";
 import TurndownService from "turndown";
-// @ts-ignore
-import { gfm } from "@joplin/turndown-plugin-gfm";
 
 function joinURL(baseURL: string, relativeURL: string) {
   const urlParts = baseURL.split("/"),
@@ -46,7 +44,6 @@ function parseHtml(
       return $("<span>").text($(this).prop("innerText") || $(this).text());
     });
   const td = new TurndownService();
-  td.use(gfm);
   const markdown = td.turndown($("body").prop("innerHTML") as string);
   return {
     title:
@@ -89,10 +86,18 @@ export async function fetchWebpage(
       responseEncoding: "latin1",
     });
     const buffer = await res.data;
-    const decoder = new TextDecoder("iso-8859-1");
+    const contentType = String(
+      res.headers["content-type"] || res.headers["Content-Type"] || "utf-8"
+    );
+    const charset = (
+      (/charset=(\S+)\s*(;|\s|$)/.exec(contentType) || [])[1] || ""
+    ).toLowerCase();
+    const decoder = new TextDecoder(charset);
+    // const decoder = new TextDecoder("utf-8");
     const content = decoder.decode(buffer);
     return parseHtml(content, { ...options, url });
   } catch (e) {
+    console.error(e);
     return {
       title:
         e instanceof Error

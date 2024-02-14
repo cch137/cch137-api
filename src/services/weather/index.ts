@@ -74,7 +74,12 @@ async function fetchWeather(
   const { unit, regexp } = getTemperatureMetadata(_unit);
   const query = `${city} weather (temperature unit: ${unit})`;
   const res = await fetch(`https://www.google.com/search?q=${query}`);
-  const content = new TextDecoder("iso-8859-1").decode(await res.arrayBuffer());
+  const contentType =
+    res.headers.get("content-type") || res.headers.get("Content-Type") || "";
+  const charset = (
+    (/charset=(\S+)\s*(;|\s|$)/.exec(contentType) || [])[1] || "utf-8"
+  ).toLowerCase();
+  const content = new TextDecoder(charset).decode(await res.arrayBuffer());
 
   const $ = cheerioLoad(content);
   $("link,meta,style,script,noscript,img,video,audio,canvas,svg").remove();
