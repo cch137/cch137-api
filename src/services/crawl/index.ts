@@ -27,18 +27,8 @@ function parseHtml(
   }: { url: string; links?: boolean; showATag?: boolean; textOnly?: boolean }
 ) {
   const $ = cheerioLoad(html);
-  $("link").remove();
-  $("meta").remove();
-  $("style").remove();
-  $("script").remove();
-  $("noscript").remove();
-  if (textOnly) {
-    $("img").remove();
-    $("video").remove();
-    $("audio").remove();
-    $("canvas").remove();
-    $("svg").remove();
-  }
+  $("link,meta,style,script,noscript").remove();
+  if (textOnly) $("img,video,audio,canvas,svg").remove();
   const origin = new URL(url).origin;
   const linkSet = new Set<string>();
   $("a").each((_, el) => {

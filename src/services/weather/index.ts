@@ -1,9 +1,5 @@
-import {
-  CheerioAPI,
-  load as cheerioLoad,
-  type Cheerio,
-  type Element,
-} from "cheerio";
+import { load as cheerioLoad } from "cheerio";
+import { cheerioToTextNodes, type TextNode } from "../../utils/cheerio";
 
 type TemperatureUnit =
   | "c"
@@ -49,23 +45,6 @@ const getTemperatureMetadata = (_unit?: string) => {
   return Object.freeze({ unit, regexp });
 };
 
-type TextNode = string | TextNode[];
-
-const cheerioToTextNodes = (el: Cheerio<Element>, $: CheerioAPI): TextNode => {
-  const children = [...el.children()];
-  if (children.length === 0) return [el.text().trim()];
-  return children
-    .map((el) => {
-      const node = cheerioToTextNodes($(el), $);
-      return Array.isArray(node) ? (node.length === 1 ? node[0] : node) : node;
-    })
-    .filter(
-      (node) =>
-        !(Array.isArray(node) && node.length === 0) &&
-        !(typeof node === "string" && !node)
-    );
-};
-
 type FetchWeatherOptions = { unit?: TemperatureUnit };
 
 async function fetchWeather(
@@ -87,29 +66,19 @@ async function fetchWeather(
   if (typeof options === "string")
     return await fetchWeather(city, { unit: options });
   if (!options) return await fetchWeather(city, {});
+
   city = city.replace(/\s+/g, " ").trim();
+
   const { unit: _unit } = options;
   const { unit, regexp } = getTemperatureMetadata(_unit);
   const query = `${city} weather (temperature unit: ${unit})`;
-  const res = await fetch(`https://www.google.com/search?q=${query}`, {
-    headers: { "Accept-Language": "en-US", "Content-Language": "en-US" },
-  });
-  const buffer = await res.arrayBuffer();
-  const decoder = new TextDecoder("iso-8859-1");
-  const text = decoder.decode(buffer);
-  const $ = cheerioLoad(text);
-  $("link").remove();
-  $("meta").remove();
-  $("style").remove();
-  $("script").remove();
-  $("noscript").remove();
-  $("img").remove();
-  $("video").remove();
-  $("audio").remove();
-  $("canvas").remove();
-  $("svg").remove();
-  const body = $("body");
-  const nodeTree = cheerioToTextNodes(body, $);
+  const res = await fetch(`https://www.google.com/search?q=${query}`);
+  const content = new TextDecoder("iso-8859-1").decode(await res.arrayBuffer());
+
+  const $ = cheerioLoad(content);
+  $("link,meta,style,script,noscript,img,video,audio,canvas,svg").remove();
+  const nodeTree = cheerioToTextNodes($("body"), $);
+
   const findWeatherData = (
     node: TextNode,
     indexes: number[] = [],
@@ -136,10 +105,12 @@ async function fetchWeather(
     }
     return res;
   };
+
   const matched = findWeatherData(nodeTree);
   const [_temperature = "", _w = "-", _source = "-", location = "-"] =
     Array.isArray(matched) ? matched : [matched];
   const _weatherDetails = _w.split("\n").map((i) => i.trim());
+
   return {
     temperature: _temperature.replace(/\s*/g, "") || "no info",
     weather: (_weatherDetails.at(-1) as string) || "-",
