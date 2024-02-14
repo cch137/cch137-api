@@ -38,14 +38,21 @@ apis.use("/currency-list", async (req, res) => {
   res.send(await getCurrencyList());
 });
 
-import translate from "@saipulanuar/google-translate-api";
+import googleTranslate from "../services/google-translate";
 apis.use("/translate", async (req, res) => {
   const { text, from, to } = parseForm(req);
-  res.type("application/json");
   try {
-    res.status(200).send(await translate(text, { from, to }));
+    res.status(200).json(await googleTranslate(text, { from, to }));
   } catch (error) {
-    res.send({ err: error });
+    res.status(500).json({ error });
+  }
+});
+apis.use("/translate-text", async (req, res) => {
+  const { text, from, to } = parseForm(req);
+  try {
+    res.status(200).json((await googleTranslate(text, { from, to })).text);
+  } catch (error) {
+    res.status(500).json("");
   }
 });
 

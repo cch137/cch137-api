@@ -24,7 +24,6 @@
     "@cch137/body-parser": "^0.0.1",
     "@cch137/utils": "^0.0.137",
     "@joplin/turndown-plugin-gfm": "^1.0.54",
-    "@saipulanuar/google-translate-api": "^8.0.0",
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
