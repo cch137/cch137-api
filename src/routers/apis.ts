@@ -214,17 +214,17 @@ apis.get("/ls/i/:chap_problem", async (req, res) => {
 
 import { fetchWeather, fetchWeatherText } from "../services/weather";
 apis.use("/weather", async (req, res) => {
-  const { city, loc, location, unit } = parseForm(req);
+  const { city, loc, location, unit, lang } = parseForm(req);
   const _city = city || loc || location;
   if (!_city) return res.status(400).send({ error: "Invalid body" });
-  res.json(await fetchWeather(_city, unit));
+  res.json(await fetchWeather(_city, { unit, lang }));
 });
 apis.use("/weather-text", async (req, res) => {
-  const { city, loc, location, unit } = parseForm(req);
+  const { city, loc, location, unit, lang } = parseForm(req);
   const _city = city || loc || location;
   if (!_city) return res.status(400).send({ error: "Invalid body" });
   res.type("text/plain; charset=utf-8");
-  res.send(await fetchWeatherText(_city, unit));
+  res.send(await fetchWeatherText(_city, { unit, lang }));
 });
 
 apis.use("/test", async (req, res) => {

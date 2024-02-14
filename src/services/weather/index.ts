@@ -1,5 +1,6 @@
 import { load as cheerioLoad } from "cheerio";
 import { cheerioToTextNodes, type TextNode } from "../../utils/cheerio";
+import googleTranslate from "../google-translate";
 
 type TemperatureUnit =
   | "c"
@@ -45,7 +46,7 @@ const getTemperatureMetadata = (_unit?: string) => {
   return Object.freeze({ unit, regexp });
 };
 
-type FetchWeatherOptions = { unit?: TemperatureUnit };
+type FetchWeatherOptions = { unit?: TemperatureUnit; lang?: string };
 
 async function fetchWeather(
   city: string,
@@ -69,7 +70,7 @@ async function fetchWeather(
 
   city = city.replace(/\s+/g, " ").trim();
 
-  const { unit: _unit } = options;
+  const { unit: _unit, lang } = options;
   const { unit, regexp } = getTemperatureMetadata(_unit);
   const query = `${city} weather (temperature unit: ${unit})`;
   const res = await fetch(`https://www.google.com/search?q=${query}`);
@@ -111,13 +112,30 @@ async function fetchWeather(
     Array.isArray(matched) ? matched : [matched];
   const _weatherDetails = _w.split("\n").map((i) => i.trim());
 
-  return {
+  const result = {
     temperature: _temperature.replace(/\s*/g, "") || "no info",
     weather: (_weatherDetails.at(-1) as string) || "-",
     time: (_weatherDetails.at(-2) as string) || "-",
     location,
     source: (_source.match(/\S+\.\S+/) || []).at(0) || _source,
   };
+
+  if (lang) {
+    try {
+      const translated = await googleTranslate(
+        [result.weather, result.time, result.location].join("\n\n---\n\n"),
+        { to: lang }
+      );
+      const [weather, time, loc] = translated.text
+        .split(/\s---\s/)
+        .map((i) => i.trim());
+      if (weather) result.weather = weather;
+      if (time) result.time = time;
+      if (loc) result.location = loc;
+    } catch {}
+  }
+
+  return result;
 }
 
 async function fetchWeatherText(
