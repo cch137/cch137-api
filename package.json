@@ -21,7 +21,7 @@
   "author": "cch137",
   "license": "ISC",
   "dependencies": {
-    "@cch137/body-parser": "^0.0.3",
+    "@cch137/body-parser": "^0.0.4",
     "@cch137/utils": "^0.0.137",
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
