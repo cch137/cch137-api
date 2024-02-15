@@ -83,6 +83,11 @@ body, button, input, select, textarea {
   margin-bottom: 0;
 }
 
+#files-upload-total {
+  font-style: italic;
+  opacity: 0.5;
+}
+
 .fileitem {
   display: flex;
   align-items: end;
@@ -91,6 +96,7 @@ body, button, input, select, textarea {
 
 .fileitem > .filename {
   flex: 1;
+  word-break: break-all;
 }
 
 .fileitem > .filesize {

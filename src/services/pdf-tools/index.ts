@@ -5,21 +5,22 @@ import random from "@cch137/utils/random";
 export class ImagesToPDF {
   readonly id: string;
   #files = new Map<number, Uint8Array>();
-  killTimeout: NodeJS.Timeout;
+  #killTimeout?: NodeJS.Timeout;
+  converted?: Promise<Uint8Array>;
 
   constructor() {
     this.id = random.base64(16);
     ImagesToPDF.tasks.set(this.id, this);
-    this.killTimeout = setTimeout(() => this.kill(), 15 * 60000);
+    this.alive();
   }
 
   alive() {
-    clearTimeout(this.killTimeout);
-    this.killTimeout = setTimeout(() => this.kill(), 60 * 60000);
+    clearTimeout(this.#killTimeout);
+    this.#killTimeout = setTimeout(() => this.kill(), 15 * 60000);
   }
 
   kill() {
-    clearTimeout(this.killTimeout);
+    clearTimeout(this.#killTimeout);
     ImagesToPDF.tasks.delete(this.id);
   }
 
@@ -37,28 +38,31 @@ export class ImagesToPDF {
     this.#files.set(index, file);
   }
 
-  converted?: Promise<Uint8Array>;
   async convert() {
+    this.alive();
     if (this.converted) return await this.converted;
     this.converted = new Promise<Uint8Array>(async (resolve, reject) => {
       const doc = await PDFDocument.create();
       const { files } = this;
+      this.#files.clear();
       for (const file of files) {
         try {
           const image = sharp(file).jpeg();
           const { width: w, height: h } = await image.metadata();
           if (!w || !h) throw new Error("Width and height not exist");
           const page = doc.addPage([w, h]);
+          const pageW = page.getWidth();
+          const pageH = page.getHeight();
           const imageEmbed = await doc.embedJpg(await image.toBuffer());
-          const { width, height } = imageEmbed.scaleToFit(
-            page.getWidth(),
-            page.getHeight()
+          const { width: imageW, height: imageH } = imageEmbed.scaleToFit(
+            pageW,
+            pageH
           );
           page.drawImage(imageEmbed, {
-            x: page.getWidth() / 2 - width / 2,
-            y: page.getHeight() / 2 - height / 2,
-            width,
-            height,
+            x: pageW / 2 - imageW / 2,
+            y: pageH / 2 - imageH / 2,
+            width: imageW,
+            height: imageH,
           });
         } catch (e) {
           console.error(e);
@@ -70,7 +74,7 @@ export class ImagesToPDF {
         reject(e);
       }
     });
-    this.kill();
+    this.alive();
     return await this.converted;
   }
 

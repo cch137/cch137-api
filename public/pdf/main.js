@@ -1,5 +1,6 @@
 (() => {
   let isLoading = false;
+
   /** @type {Uint8Array[]} */
   const fileBuffers = [];
   window.fileBuffers = fileBuffers;
@@ -36,31 +37,45 @@
     return array;
   }
 
+  /** @param {string} s */
+  const log = (...args) => {
+    const message = args.map(i => String(i)).join(' ').trim();
+    mainMessageEl.innerText = message;
+    if (message) console.log(message);
+  }
+
+  /** @type {string} */
+  let taskId = '';
+  /** @type {number} */
+  let lastConvertAt = 0;
   /** @type {HTMLElement} */
   const filesConvertButtonEl = document.querySelector('#files-convert-button');
   filesConvertButtonEl.addEventListener('click', async () => {
     if (isLoading) return;
     isLoading = true;
-    mainMessageEl.innerText = 'loading...';
+    log('loading...');
     try {
-      const taskId = (await (await fetch('/images-to-pdf/create-task', {method: 'POST'})).json())?.id;
-      if (typeof taskId !== 'string') throw new Error('Failed to create task');
-      console.log('created task:', taskId);
-      let done = 0;
-      const {length} = fileBuffers;
-      await Promise.all(fileBuffers.map(async (buff, i) => {
-        await fetch(`/images-to-pdf/upload/${taskId}/${i}`, {
-          method: 'POST',
-          body: buff,
-          headers: {'Content-Type': 'application/uint8array'}
-        });
-        done++;
-        console.log('uploaded:', done, '/', length);
-      }));
-      const filename = `${outputFilenameEl.value.trim() || Date.now()}`;
+      if (Date.now() - lastConvertAt > 10 * 60000) {
+        taskId = (await (await fetch('/images-to-pdf/create-task', {method: 'POST'})).json())?.id;
+        if (typeof taskId !== 'string') throw new Error('Failed to create task');
+        log('created task:', taskId);
+        let done = 0;
+        const {length} = fileBuffers;
+        await Promise.all(fileBuffers.map(async (buff, i) => {
+          await fetch(`/images-to-pdf/upload/${taskId}/${i}`, {
+            method: 'POST',
+            body: buff,
+            headers: {'Content-Type': 'application/uint8array'}
+          });
+          log(`uploaded: ${++done} / ${length}`);
+        }));
+      }
+      const filename = `${outputFilenameEl.value.trim() || `${Date.now()}.pdf`}`;
+      log('coverting...');
       const res = await fetch(`/images-to-pdf/convert/${taskId}/${filename}`, {method: 'POST'});
       const pdf = await readStream(res.body);
-      console.log('converted:', filename);
+      lastConvertAt = Date.now();
+      log('converted:', filename);
       const blob = new Blob([pdf], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -72,9 +87,9 @@
       a.remove();
     } catch (e) {
       console.error(e);
+      log('something went wrong!');
     } finally {
       isLoading = false;
-      mainMessageEl.innerText = '';
     }
   });
   
@@ -85,12 +100,18 @@
   const fileListEl = document.querySelector('#file-list');
 
   filesInputEl.addEventListener('change', async (e) => {
+    lastConvertAt = 0;
+    log('preparing...');
+    const {files} = filesInputEl;
     for (const child of [...fileListEl.childNodes]) child.remove();
     const titleEl = document.createElement('h2');
     titleEl.id = 'files-upload-title';
     titleEl.innerText = 'Files';
     fileListEl.appendChild(titleEl);
-    const {files} = filesInputEl;
+    const fileCountEl = document.createElement('p');
+    fileCountEl.id = 'files-upload-total';
+    fileCountEl.innerText = `total files: ${files.length}`;
+    fileListEl.appendChild(fileCountEl);
     fileBuffers.splice(0, fileBuffers.length);
     if (files.length > 0) filesConvertButtonEl.classList.remove('locked');
     else filesConvertButtonEl.classList.add('locked');
@@ -108,5 +129,6 @@
       fileListEl.appendChild(fileitemEl);
       fileBuffers.push(await readStream(file.stream()));
     }
+    log('ready!');
   });
 })();
