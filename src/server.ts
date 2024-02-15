@@ -4,6 +4,7 @@ import http from "http";
 import cors from "cors";
 import { WebSocketServer } from "ws";
 import bodyParser from "@cch137/body-parser";
+import getIp from "@cch137/utils/server/get-ip";
 
 dotenvConfig();
 
@@ -19,7 +20,12 @@ app.use(bodyParser);
 
 app.use((req, res, next) => {
   res.on("finish", () => {
-    console.log(req.method, res.statusCode, req.originalUrl);
+    console.log(
+      req.method,
+      res.statusCode,
+      req.originalUrl,
+      `\x1b[34m${getIp(req) || "local"}\x1b[0m`
+    );
   });
   next();
 });
