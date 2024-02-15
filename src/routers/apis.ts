@@ -244,4 +244,22 @@ apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
   res.send(Buffer.from(await ImagesToPDF.convert(id)));
 });
 
+import { unpackData } from "@cch137/utils/shuttle";
+import { readStream } from "@cch137/utils/stream";
+apis.use("/proxy", async (req, res) => {
+  const { input, ...init } = unpackData<{ [key: string]: any }>(req.body);
+  try {
+    const _res = await fetch(input, init);
+    _res.headers.forEach((v, k) => {
+      if (/Set-Cookie/i.test(k)) return;
+      if (/Content-/i.test(k) && !/Content-Type/i.test(k)) return;
+      res.appendHeader(k, v);
+    });
+    res.write(await readStream(_res.body));
+    res.end();
+  } catch (e) {
+    res.status(500).send(e instanceof Error ? e.message : e);
+  }
+});
+
 export default apis;
