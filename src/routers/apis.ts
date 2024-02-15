@@ -247,7 +247,7 @@ apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
 import { unpackData } from "@cch137/utils/shuttle";
 import { readStream } from "@cch137/utils/stream";
 apis.use("/proxy", async (req, res) => {
-  const { input, ...init } = unpackData<{ [key: string]: any }>(req.body);
+  const { input, ...init } = unpackData<{ [key: string]: any }>(req.body, 0);
   try {
     const _res = await fetch(input, init);
     _res.headers.forEach((v, k) => {
