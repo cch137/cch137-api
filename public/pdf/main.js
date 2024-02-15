@@ -71,7 +71,7 @@
         }));
       }
       const filename = `${outputFilenameEl.value.trim() || `${Date.now()}.pdf`}`;
-      log('coverting...');
+      log('converting...');
       const res = await fetch(`/images-to-pdf/convert/${taskId}/${filename}`, {method: 'POST'});
       const pdf = await readStream(res.body);
       lastConvertAt = Date.now();
