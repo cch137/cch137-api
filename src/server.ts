@@ -18,7 +18,7 @@ app.disable("x-powered-by");
 app.use(bodyParser);
 
 app.use((req, res, next) => {
-  req.on("end", () => {
+  res.on("finish", () => {
     console.log(req.method, res.statusCode, req.originalUrl);
   });
   next();
