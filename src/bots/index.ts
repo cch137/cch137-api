@@ -6,6 +6,6 @@ export { ch4, curva };
 export const run = () => {
   const bots: Promise<void>[] = [];
   bots.push(ch4Run());
-  // bots.push(curvaRun());
+  bots.push(curvaRun());
   return Promise.all(bots);
 };
