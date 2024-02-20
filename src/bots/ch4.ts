@@ -1,8 +1,25 @@
-import type { TextBasedChannel, TextChannel } from "discord.js";
-import { Client, EmbedBuilder, IntentsBitField } from "discord.js";
+import type {
+  Interaction,
+  TextBasedChannel,
+  TextChannel,
+  VoiceChannel,
+} from "discord.js";
+import {
+  ApplicationCommandOptionType,
+  Client,
+  EmbedBuilder,
+  IntentsBitField,
+} from "discord.js";
 import formatBytes from "@cch137/utils/format/format-bytes";
 import { isGuildMessage, IntervalTask, BotClient } from "./utils";
 import { config } from "dotenv";
+import {
+  NoSubscriberBehavior,
+  VoiceConnectionStatus,
+  createAudioPlayer,
+  createAudioResource,
+  joinVoiceChannel,
+} from "@discordjs/voice";
 
 config();
 
@@ -88,6 +105,7 @@ const ch4 = new BotClient(
       IntentsBitField.Flags.GuildMessages,
       IntentsBitField.Flags.MessageContent,
       IntentsBitField.Flags.GuildMessageReactions,
+      IntentsBitField.Flags.GuildVoiceStates,
     ],
   },
   process.env.CH4_TOKEN || "",
@@ -214,9 +232,71 @@ export const run = () =>
           // NOT A USER
           return;
         }
-
         // VERIFY USER
         ch4.addRoleToUser(guild.id, user, memberRoleId);
+      });
+    } catch {}
+
+    try {
+      const singChoiSanDou = async (channelId: string) => {
+        try {
+          if (!channelId) throw new Error("No Channel");
+          const channel = (await guild.channels.fetch(
+            // "1113758792430145547"
+            channelId
+          )) as VoiceChannel;
+          const connection = joinVoiceChannel({
+            channelId: channel.id,
+            guildId: channel.guild.id,
+            adapterCreator: channel.guild.voiceAdapterCreator,
+          });
+          const player = createAudioPlayer({
+            behaviors: {
+              noSubscriber: NoSubscriberBehavior.Pause,
+            },
+          });
+          const resource = createAudioResource(
+            "./data/music/Donald Trump Sings 财神到.mp3"
+          );
+          connection.on(VoiceConnectionStatus.Ready, async () => {
+            player.play(resource);
+            connection.subscribe(player);
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      ch4.on("interactionCreate", async (interaction: Interaction) => {
+        if (!interaction.isChatInputCommand()) return;
+        switch (interaction.commandName) {
+          case "sing": {
+            singChoiSanDou(String(interaction.options.get("channel")?.value));
+            interaction.reply("ok");
+            break;
+          }
+        }
+      });
+    } catch {}
+
+    try {
+      throw new Error("no command needed to be created");
+      ch4!.application!.commands.create({
+        name: "sing",
+        description: "sing a song",
+        options: [
+          {
+            name: "channel",
+            description: "selected a channel",
+            type: ApplicationCommandOptionType.Channel,
+            required: true,
+          },
+          {
+            name: "song",
+            description: "name of the song",
+            type: ApplicationCommandOptionType.String,
+            required: true,
+          },
+        ],
       });
     } catch {}
   });
