@@ -6,7 +6,7 @@ import { run as runBots } from "./bots";
 
 dotenvConfig();
 
-if (!Number(process.env.DONT_RUN_BOTS)) runBots();
+runBots();
 
 app.use("/", apis);
 app.use("*", (req, res) => res.status(404).end());
