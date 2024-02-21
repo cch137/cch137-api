@@ -214,10 +214,22 @@ export const run = () =>
 
     try {
       player.on("interactionCreate", async (interaction: Interaction) => {
-        const { channel, guild } = interaction;
+        const { guild } = interaction;
         const isButton = interaction.isButton();
         const isChatInputCommand = interaction.isChatInputCommand();
         if (!(isButton || isChatInputCommand)) return;
+        const roles = interaction.member!.roles;
+        if (
+          Array.isArray(roles) ||
+          (guild?.id === ch4GuildId &&
+            !roles.cache.map((r) => r.id).includes(argonRoleId))
+        ) {
+          interaction.reply({
+            content: errorMessage("No permission"),
+            ephemeral: true,
+          });
+          return;
+        }
         try {
           if (!guild) throw new Error("Guild not found");
           const player = GuildPlayer.get(guild);
@@ -230,19 +242,6 @@ export const run = () =>
             throw new Error("Unknown interaction");
           }
           if (isChatInputCommand) {
-            if (!channel) return;
-            const roles = interaction.member!.roles;
-            if (
-              Array.isArray(roles) ||
-              (guild?.id === ch4GuildId &&
-                !roles.cache.map((r) => r.id).includes(argonRoleId))
-            ) {
-              interaction.reply({
-                content: errorMessage("No permission"),
-                ephemeral: true,
-              });
-              return;
-            }
             switch (interaction.commandName) {
               case "play": {
                 const source = String(
