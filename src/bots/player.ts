@@ -71,8 +71,6 @@ export const run = () =>
     const OK = successMessage("OK");
 
     try {
-      type ChatInputCmdInteraction = ChatInputCommandInteraction<CacheType>;
-
       let currentVolume = 1;
       let currentConnection: VoiceConnection | null = null;
       let currentChannel: VoiceChannel | null = null;
@@ -130,10 +128,7 @@ export const run = () =>
         }
       };
 
-      const search = async (
-        query: string,
-        interaction: ChatInputCmdInteraction
-      ) => {
+      const search = async (query: string, interaction: Interaction) => {
         query = query.trim();
         if (!query) throw new Error("Query is required");
         const res = await googleSearch(`${query} site:youtube.com`);
@@ -149,14 +144,11 @@ export const run = () =>
             rows.push(new ActionRowBuilder());
           rows.at(-1)!.addComponents(button);
         }
-        const message = {
+        interaction.channel!.send({
           content: `**Search results:**`,
+          // @ts-ignore
           components: rows,
-        };
-        // @ts-ignore
-        if (interaction.replied) interaction.channel!.send(message);
-        // @ts-ignore
-        else interaction.reply(message);
+        });
       };
 
       const play = async (
@@ -196,15 +188,19 @@ export const run = () =>
         player.on("subscribe", () => {
           setVolume(currentVolume);
         });
-        player.on("error", (e) => {
+        player.on("error", async (e) => {
           const cmdChannel = interaction.channel;
-          if (cmdChannel)
-            cmdChannel.send(errorMessage(`${e.name}: ${e.message}`));
+          if (cmdChannel) {
+            await cmdChannel.send(errorMessage(`${e.name}: ${e.message}`));
+            if (e.message.startsWith("No video id found"))
+              search(source, interaction);
+          }
         });
         currentSubscription = conn.subscribe(player) || null;
       };
 
       const setVolume = (value: number) => {
+        throw new Error("Not supported");
         // if (currentResource) currentResource.volume?.setVolume(value);
         // currentVolume = value;
       };
@@ -248,6 +244,7 @@ export const run = () =>
                 const query = String(
                   interaction.options.get("query")?.value || ""
                 );
+                interaction.reply(OK);
                 await search(query, interaction);
                 break;
               }
