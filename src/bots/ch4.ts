@@ -3,22 +3,35 @@ import type {
   TextBasedChannel,
   TextChannel,
   VoiceChannel,
+  Guild,
 } from "discord.js";
 import {
   ApplicationCommandOptionType,
+  ChannelType,
   Client,
   EmbedBuilder,
   IntentsBitField,
 } from "discord.js";
 import formatBytes from "@cch137/utils/format/format-bytes";
-import { isGuildMessage, IntervalTask, BotClient } from "./utils";
+import {
+  isGuildMessage,
+  IntervalTask,
+  BotClient,
+  createWarningEmbed,
+  createErrorEmbed,
+} from "./utils";
 import { config } from "dotenv";
 import {
   NoSubscriberBehavior,
   VoiceConnectionStatus,
   createAudioPlayer,
   createAudioResource,
+  entersState,
+  getVoiceConnection,
   joinVoiceChannel,
+  type VoiceConnection,
+  type AudioPlayer,
+  type AudioResource,
 } from "@discordjs/voice";
 
 config();
@@ -116,10 +129,12 @@ const guildId = "730345526360539197";
 const totalMemberChannelId = "1113758792430145547";
 const newMemberRoleId = "1209327130593202186";
 const memberRoleId = "1106198793935917106";
+const argonRoleId = "1056267998530375821";
 const explorerRoleId = "1133371837179506738";
 const reactionEmoji = "✨";
 const getRoleChannelId = "1138887783927263283";
 const getRoleMessageId = "1138889775487668224";
+const OK = "<:success:1114703694437556334> OK";
 
 export const run = () =>
   ch4.connect().then(async () => {
@@ -238,61 +253,136 @@ export const run = () =>
     } catch {}
 
     try {
-      const singChoiSanDou = async (channelId: string) => {
+      let currentConnection: VoiceConnection | null = null;
+      let currentChannel: VoiceChannel | null = null;
+      let currentPlayer: AudioPlayer | null = null;
+      let currentResource: AudioResource | null = null;
+      let current;
+
+      const join = async (channelId: any) => {
+        if (typeof channelId !== "string" || !channelId)
+          throw new Error("Invalid channel");
+        const channel = await guild.channels.fetch(channelId);
+        if (channel?.type !== ChannelType.GuildVoice)
+          throw new Error("Channel is not a voice channel");
+        currentChannel = channel;
         try {
-          if (!channelId) throw new Error("No Channel");
-          const channel = (await guild.channels.fetch(
-            // "1113758792430145547"
-            channelId
-          )) as VoiceChannel;
-          const connection = joinVoiceChannel({
-            channelId: channel.id,
-            guildId: channel.guild.id,
-            adapterCreator: channel.guild.voiceAdapterCreator,
-          });
-          const player = createAudioPlayer({
-            behaviors: {
-              noSubscriber: NoSubscriberBehavior.Pause,
-            },
-          });
-          const resource = createAudioResource(
-            "./data/music/Donald Trump Sings 财神到.mp3"
-          );
-          connection.on(VoiceConnectionStatus.Ready, async () => {
-            player.play(resource);
-            connection.subscribe(player);
-          });
-        } catch (e) {
-          console.error(e);
+          const oldConnection = getVoiceConnection(guild.id);
+          if (!oldConnection) throw new Error("No Old Connection");
+          oldConnection.destroy();
+        } catch {}
+        const conn = joinVoiceChannel({
+          channelId: channel.id,
+          guildId: channel.guild.id,
+          adapterCreator: channel.guild.voiceAdapterCreator,
+        });
+        currentConnection = conn;
+        conn.on(VoiceConnectionStatus.Disconnected, async () => {
+          try {
+            await Promise.race([
+              entersState(conn, VoiceConnectionStatus.Signalling, 5_000),
+              entersState(conn, VoiceConnectionStatus.Connecting, 5_000),
+            ]);
+          } catch (error) {
+            conn.destroy();
+          }
+        });
+        return conn;
+      };
+
+      const leave = () => {
+        const conn = currentConnection || getVoiceConnection(guild.id);
+        if (conn) {
+          conn.destroy();
+          currentConnection = null;
+          currentChannel = null;
         }
+      };
+
+      const play = async (source: string) => {
+        const conn = currentConnection;
+        if (!conn) return;
+        if (currentPlayer) currentPlayer.stop(true);
+        const player = createAudioPlayer({
+          behaviors: {
+            noSubscriber: NoSubscriberBehavior.Pause,
+          },
+        });
+        currentPlayer = player;
+        const resource = createAudioResource(
+          "./data/music/Donald Trump Sings 财神到.mp3"
+        );
+        player.play(resource);
+        conn.subscribe(player);
       };
       ch4.on("interactionCreate", async (interaction: Interaction) => {
         if (!interaction.isChatInputCommand()) return;
-        switch (interaction.commandName) {
-          case "sing": {
-            singChoiSanDou(String(interaction.options.get("channel")?.value));
-            interaction.reply("ok");
-            break;
+        const { channel } = interaction;
+        if (!channel) return;
+        const roles = interaction.member!.roles;
+        if (
+          Array.isArray(roles) ||
+          !roles.cache.map((r) => r.id).includes(argonRoleId)
+        ) {
+          interaction.reply({ content: "no permission", ephemeral: true });
+          return;
+        }
+        try {
+          switch (interaction.commandName) {
+            case "play": {
+              const source = String(interaction.options.get("source")?.value);
+              interaction.reply(OK);
+              break;
+            }
+            case "join": {
+              const targetChannel =
+                interaction.options.get("channel")?.value ||
+                (await interaction.guild!.members.fetch(interaction.user.id))
+                  .voice.channelId;
+              await join(targetChannel);
+              interaction.reply(OK);
+              break;
+            }
+            case "leave": {
+              leave();
+              interaction.reply(OK);
+              break;
+            }
           }
+        } catch (e) {
+          interaction.reply(
+            `<:error:1114456717216976936> ${
+              e instanceof Error ? e.message || e.name : "Unknown Error"
+            }`
+          );
         }
       });
     } catch {}
 
     try {
       throw new Error("no command needed to be created");
-      ch4!.application!.commands.create({
-        name: "sing",
-        description: "sing a song",
+      await ch4!.application!.commands.create({
+        name: "join",
+        description: "join a channel",
         options: [
           {
             name: "channel",
             description: "selected a channel",
             type: ApplicationCommandOptionType.Channel,
-            required: true,
           },
+        ],
+      });
+      await ch4!.application!.commands.create({
+        name: "leave",
+        description: "disconnect",
+      });
+      await ch4!.application!.commands.create({
+        name: "play",
+        description: "play music",
+        options: [
           {
-            name: "song",
-            description: "name of the song",
+            name: "source",
+            description: "url / query",
             type: ApplicationCommandOptionType.String,
             required: true,
           },
