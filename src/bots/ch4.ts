@@ -1,9 +1,9 @@
 import type {
-  Interaction,
+  CacheType,
+  ChatInputCommandInteraction,
   TextBasedChannel,
   TextChannel,
   VoiceChannel,
-  Guild,
 } from "discord.js";
 import {
   ApplicationCommandOptionType,
@@ -13,13 +13,7 @@ import {
   IntentsBitField,
 } from "discord.js";
 import formatBytes from "@cch137/utils/format/format-bytes";
-import {
-  isGuildMessage,
-  IntervalTask,
-  BotClient,
-  createWarningEmbed,
-  createErrorEmbed,
-} from "./utils";
+import { isGuildMessage, IntervalTask, BotClient } from "./utils";
 import { config } from "dotenv";
 import {
   NoSubscriberBehavior,
@@ -31,8 +25,10 @@ import {
   joinVoiceChannel,
   type VoiceConnection,
   type AudioPlayer,
-  type AudioResource,
+  type PlayerSubscription,
+  AudioResource,
 } from "@discordjs/voice";
+import ytdl from "ytdl-core";
 
 config();
 
@@ -134,7 +130,6 @@ const explorerRoleId = "1133371837179506738";
 const reactionEmoji = "✨";
 const getRoleChannelId = "1138887783927263283";
 const getRoleMessageId = "1138889775487668224";
-const OK = "<:success:1114703694437556334> OK";
 
 export const run = () =>
   ch4.connect().then(async () => {
@@ -151,6 +146,11 @@ export const run = () =>
     }
 
     const guild = await ch4.guilds.fetch(guildId);
+
+    const errorMessage = (s: string) => `<:error:1114456717216976936> ${s}`;
+    const successMessage = (s: string) => `<:success:1114703694437556334> ${s}`;
+
+    const OK = successMessage("OK");
 
     async function ch4UpdateMemberCount() {
       const channel = await guild.channels.fetch(totalMemberChannelId);
@@ -253,11 +253,14 @@ export const run = () =>
     } catch {}
 
     try {
+      type InteractionType = ChatInputCommandInteraction<CacheType>;
+
+      let currentVolume = 1;
       let currentConnection: VoiceConnection | null = null;
       let currentChannel: VoiceChannel | null = null;
       let currentPlayer: AudioPlayer | null = null;
       let currentResource: AudioResource | null = null;
-      let current;
+      let currentSubscription: PlayerSubscription | null = null;
 
       const join = async (channelId: any) => {
         if (typeof channelId !== "string" || !channelId)
@@ -290,6 +293,14 @@ export const run = () =>
         return conn;
       };
 
+      const autoJoin = async (interaction: InteractionType) => {
+        const targetChannel =
+          interaction.options.get("channel")?.value ||
+          (await interaction.guild!.members.fetch(interaction.user.id)).voice
+            .channelId;
+        return await join(targetChannel);
+      };
+
       const leave = () => {
         const conn = currentConnection || getVoiceConnection(guild.id);
         if (conn) {
@@ -299,23 +310,61 @@ export const run = () =>
         }
       };
 
-      const play = async (source: string) => {
+      const play = async (
+        source: string,
+        interaction: InteractionType,
+        { retried = false, playbackDuration = 0 } = {}
+      ): Promise<void> => {
         const conn = currentConnection;
-        if (!conn) return;
+        if (!conn || !currentChannel) {
+          if (retried)
+            throw new Error("The bot hasn't joined the voice channel yet.");
+          await autoJoin(interaction);
+          return await play(source, interaction, {
+            retried: true,
+            playbackDuration,
+          });
+        }
+        const stream = ytdl(source, {
+          filter: "audioonly",
+          quality: "highestaudio",
+          dlChunkSize: 0,
+          begin: playbackDuration,
+          highWaterMark: 1 << 62,
+          liveBuffer: 1 << 62,
+        });
         if (currentPlayer) currentPlayer.stop(true);
+        if (currentSubscription) currentSubscription.unsubscribe();
         const player = createAudioPlayer({
           behaviors: {
             noSubscriber: NoSubscriberBehavior.Pause,
           },
         });
         currentPlayer = player;
-        const resource = createAudioResource(
-          "./data/music/Donald Trump Sings 财神到.mp3"
-        );
+        const resource = createAudioResource(stream);
+        currentResource = resource;
         player.play(resource);
-        conn.subscribe(player);
+        player.on("subscribe", () => {
+          setVolume(currentVolume);
+        });
+        player.on("error", (e) => {
+          console.error("Player Error:", e.resource);
+          play(source, interaction, {
+            playbackDuration: e.resource.playbackDuration,
+          });
+          const cmdChannel = interaction.channel;
+          if (cmdChannel)
+            cmdChannel.send(errorMessage(`${e.name}: ${e.message}`));
+        });
+        currentSubscription = conn.subscribe(player) || null;
       };
-      ch4.on("interactionCreate", async (interaction: Interaction) => {
+
+      const setVolume = (value: number) => {
+        // if (currentResource) currentResource.volume?.setVolume(value);
+        // currentVolume = value;
+      };
+
+      ch4.on("interactionCreate", async (interaction: InteractionType) => {
         if (!interaction.isChatInputCommand()) return;
         const { channel } = interaction;
         if (!channel) return;
@@ -331,15 +380,18 @@ export const run = () =>
           switch (interaction.commandName) {
             case "play": {
               const source = String(interaction.options.get("source")?.value);
+              await play(source, interaction);
+              interaction.reply(OK);
+              break;
+            }
+            case "set-volume": {
+              const value = Number(interaction.options.get("value")?.value);
+              setVolume(value);
               interaction.reply(OK);
               break;
             }
             case "join": {
-              const targetChannel =
-                interaction.options.get("channel")?.value ||
-                (await interaction.guild!.members.fetch(interaction.user.id))
-                  .voice.channelId;
-              await join(targetChannel);
+              autoJoin(interaction);
               interaction.reply(OK);
               break;
             }
@@ -351,9 +403,9 @@ export const run = () =>
           }
         } catch (e) {
           interaction.reply(
-            `<:error:1114456717216976936> ${
+            errorMessage(
               e instanceof Error ? e.message || e.name : "Unknown Error"
-            }`
+            )
           );
         }
       });
@@ -384,6 +436,18 @@ export const run = () =>
             name: "source",
             description: "url / query",
             type: ApplicationCommandOptionType.String,
+            required: true,
+          },
+        ],
+      });
+      await ch4!.application!.commands.create({
+        name: "set-volume",
+        description: "set volume",
+        options: [
+          {
+            name: "value",
+            description: "number between 0 and 1",
+            type: ApplicationCommandOptionType.Number,
             required: true,
           },
         ],

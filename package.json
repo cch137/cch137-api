@@ -46,7 +46,8 @@
     "qs": "^6.11.2",
     "sharp": "^0.33.2",
     "turndown": "^7.1.2",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.5",
