@@ -1,10 +1,14 @@
 import type {
   CacheType,
   ChatInputCommandInteraction,
+  Interaction,
   VoiceChannel,
 } from "discord.js";
 import {
+  ActionRowBuilder,
   ApplicationCommandOptionType,
+  ButtonBuilder,
+  ButtonStyle,
   ChannelType,
   IntentsBitField,
 } from "discord.js";
@@ -24,6 +28,7 @@ import {
   AudioResource,
 } from "@discordjs/voice";
 import ytdl from "ytdl-core";
+import { googleSearch } from "../services/search";
 
 config();
 
@@ -66,7 +71,7 @@ export const run = () =>
     const OK = successMessage("OK");
 
     try {
-      type InteractionType = ChatInputCommandInteraction<CacheType>;
+      type ChatInputCmdInteraction = ChatInputCommandInteraction<CacheType>;
 
       let currentVolume = 1;
       let currentConnection: VoiceConnection | null = null;
@@ -106,9 +111,11 @@ export const run = () =>
         return conn;
       };
 
-      const autoJoin = async (interaction: InteractionType) => {
+      const autoJoin = async (interaction: Interaction) => {
         const targetChannel =
-          interaction.options.get("channel")?.value ||
+          (interaction.isChatInputCommand()
+            ? interaction.options.get("channel")?.value
+            : "") ||
           (await interaction.guild!.members.fetch(interaction.user.id)).voice
             .channelId;
         return await join(targetChannel);
@@ -123,9 +130,38 @@ export const run = () =>
         }
       };
 
+      const search = async (
+        query: string,
+        interaction: ChatInputCmdInteraction
+      ) => {
+        query = query.trim();
+        if (!query) throw new Error("Query is required");
+        const res = await googleSearch(`${query} site:youtube.com`);
+        const buttons = res.map((r) =>
+          new ButtonBuilder()
+            .setCustomId(`/play ${r.url}`)
+            .setLabel(r.title)
+            .setStyle(ButtonStyle.Secondary)
+        );
+        const rows: ActionRowBuilder[] = [new ActionRowBuilder()];
+        for (const button of buttons) {
+          if (rows.at(-1)!.components.length >= 5)
+            rows.push(new ActionRowBuilder());
+          rows.at(-1)!.addComponents(button);
+        }
+        const message = {
+          content: `**Search results:**`,
+          components: rows,
+        };
+        // @ts-ignore
+        if (interaction.replied) interaction.channel!.send(message);
+        // @ts-ignore
+        else interaction.reply(message);
+      };
+
       const play = async (
         source: string,
-        interaction: InteractionType,
+        interaction: Interaction,
         { retried = false, playbackDuration = 0 } = {}
       ): Promise<void> => {
         const conn = currentConnection;
@@ -161,10 +197,6 @@ export const run = () =>
           setVolume(currentVolume);
         });
         player.on("error", (e) => {
-          console.error("Player Error:", e.resource);
-          play(source, interaction, {
-            playbackDuration: e.resource.playbackDuration,
-          });
           const cmdChannel = interaction.channel;
           if (cmdChannel)
             cmdChannel.send(errorMessage(`${e.name}: ${e.message}`));
@@ -177,52 +209,72 @@ export const run = () =>
         // currentVolume = value;
       };
 
-      player.on("interactionCreate", async (interaction: InteractionType) => {
-        if (!interaction.isChatInputCommand()) return;
+      player.on("interactionCreate", async (interaction: Interaction) => {
         const { channel } = interaction;
-        if (!channel) return;
-        const roles = interaction.member!.roles;
-        if (
-          Array.isArray(roles) ||
-          !roles.cache.map((r) => r.id).includes(argonRoleId)
-        ) {
-          interaction.reply({
-            content: errorMessage("No permission"),
-            ephemeral: true,
-          });
+        if (interaction.isButton()) {
+          const { customId } = interaction;
+          if (interaction.customId.startsWith("/play ")) {
+            interaction.reply(OK);
+            play(customId.replace("/play ", "").trim(), interaction);
+          } else {
+            interaction.reply(errorMessage("Unknown interaction"));
+          }
           return;
         }
-        try {
-          switch (interaction.commandName) {
-            case "play": {
-              const source = String(interaction.options.get("source")?.value);
-              await play(source, interaction);
-              interaction.reply(OK);
-              break;
-            }
-            case "set-volume": {
-              const value = Number(interaction.options.get("value")?.value);
-              setVolume(value);
-              interaction.reply(OK);
-              break;
-            }
-            case "join": {
-              autoJoin(interaction);
-              interaction.reply(OK);
-              break;
-            }
-            case "leave": {
-              leave();
-              interaction.reply(OK);
-              break;
-            }
+        if (interaction.isChatInputCommand()) {
+          if (!channel) return;
+          const roles = interaction.member!.roles;
+          if (
+            Array.isArray(roles) ||
+            !roles.cache.map((r) => r.id).includes(argonRoleId)
+          ) {
+            interaction.reply({
+              content: errorMessage("No permission"),
+              ephemeral: true,
+            });
+            return;
           }
-        } catch (e) {
-          interaction.reply(
-            errorMessage(
-              e instanceof Error ? e.message || e.name : "Unknown Error"
-            )
-          );
+          try {
+            switch (interaction.commandName) {
+              case "play": {
+                const source = String(
+                  interaction.options.get("source")?.value || ""
+                );
+                await play(source, interaction);
+                interaction.reply(OK);
+                break;
+              }
+              case "search": {
+                const query = String(
+                  interaction.options.get("query")?.value || ""
+                );
+                await search(query, interaction);
+                break;
+              }
+              case "set-volume": {
+                const value = Number(interaction.options.get("value")?.value);
+                setVolume(value);
+                interaction.reply(OK);
+                break;
+              }
+              case "join": {
+                autoJoin(interaction);
+                interaction.reply(OK);
+                break;
+              }
+              case "leave": {
+                leave();
+                interaction.reply(OK);
+                break;
+              }
+            }
+          } catch (e) {
+            interaction.reply(
+              errorMessage(
+                e instanceof Error ? e.message || e.name : "Unknown Error"
+              )
+            );
+          }
         }
       });
     } catch {}
@@ -264,6 +316,18 @@ export const run = () =>
             name: "value",
             description: "number between 0 and 100",
             type: ApplicationCommandOptionType.Number,
+            required: true,
+          },
+        ],
+      });
+      await player!.application!.commands.create({
+        name: "search",
+        description: "search query",
+        options: [
+          {
+            name: "query",
+            description: "query",
+            type: ApplicationCommandOptionType.String,
             required: true,
           },
         ],
