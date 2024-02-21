@@ -1,9 +1,4 @@
-import type {
-  CacheType,
-  ChatInputCommandInteraction,
-  Interaction,
-  VoiceChannel,
-} from "discord.js";
+import { Guild, Interaction, VoiceChannel } from "discord.js";
 import {
   ActionRowBuilder,
   ApplicationCommandOptionType,
@@ -46,7 +41,7 @@ const player = new BotClient(
   process.env.PLAYER_TOKEN || ""
 );
 
-const guildId = "730345526360539197";
+const ch4GuildId = "730345526360539197";
 const argonRoleId = "1056267998530375821";
 
 export const run = () =>
@@ -63,30 +58,40 @@ export const run = () =>
       }
     }
 
-    const guild = await player.guilds.fetch(guildId);
-
     const errorMessage = (s: string) => `<:error:1114456717216976936> ${s}`;
     const successMessage = (s: string) => `<:success:1114703694437556334> ${s}`;
 
     const OK = successMessage("OK");
 
-    try {
-      let currentVolume = 100;
-      let currentConnection: VoiceConnection | null = null;
-      let currentChannel: VoiceChannel | null = null;
-      let currentPlayer: AudioPlayer | null = null;
-      let currentResource: AudioResource | null = null;
-      let currentSubscription: PlayerSubscription | null = null;
+    class GuildPlayer {
+      static manager = new Map<string, GuildPlayer>();
+      static get(guild: Guild) {
+        const guildPlayer = GuildPlayer.manager.get(guild.id);
+        return guildPlayer || new GuildPlayer(guild);
+      }
 
-      const join = async (channelId: any) => {
+      currentVolume = 100;
+      currentConnection: VoiceConnection | null = null;
+      currentChannel: VoiceChannel | null = null;
+      currentPlayer: AudioPlayer | null = null;
+      currentResource: AudioResource | null = null;
+      currentSubscription: PlayerSubscription | null = null;
+      readonly guild: Guild;
+
+      constructor(guild: Guild) {
+        this.guild = guild;
+        GuildPlayer.manager.set(guild.id, this);
+      }
+
+      async join(channelId: any) {
         if (typeof channelId !== "string" || !channelId)
           throw new Error("Invalid channel");
-        const channel = await guild.channels.fetch(channelId);
+        const channel = await this.guild.channels.fetch(channelId);
         if (channel?.type !== ChannelType.GuildVoice)
           throw new Error("Channel is not a voice channel");
-        currentChannel = channel;
+        this.currentChannel = channel;
         try {
-          const oldConnection = getVoiceConnection(guild.id);
+          const oldConnection = getVoiceConnection(this.guild.id);
           if (!oldConnection) throw new Error("No Old Connection");
           oldConnection.destroy();
         } catch {}
@@ -95,7 +100,7 @@ export const run = () =>
           guildId: channel.guild.id,
           adapterCreator: channel.guild.voiceAdapterCreator,
         });
-        currentConnection = conn;
+        this.currentConnection = conn;
         conn.on(VoiceConnectionStatus.Disconnected, async () => {
           try {
             await Promise.race([
@@ -107,28 +112,29 @@ export const run = () =>
           }
         });
         return conn;
-      };
+      }
 
-      const autoJoin = async (interaction: Interaction) => {
+      async autoJoin(interaction: Interaction) {
         const targetChannel =
           (interaction.isChatInputCommand()
             ? interaction.options.get("channel")?.value
             : "") ||
           (await interaction.guild!.members.fetch(interaction.user.id)).voice
             .channelId;
-        return await join(targetChannel);
-      };
+        return await this.join(targetChannel);
+      }
 
-      const leave = () => {
-        const conn = currentConnection || getVoiceConnection(guild.id);
+      leave() {
+        const conn =
+          this.currentConnection || getVoiceConnection(this.guild.id);
         if (conn) {
           conn.destroy();
-          currentConnection = null;
-          currentChannel = null;
+          this.currentConnection = null;
+          this.currentChannel = null;
         }
-      };
+      }
 
-      const search = async (query: string, interaction: Interaction) => {
+      async search(query: string, interaction: Interaction) {
         query = query.trim();
         if (!query) throw new Error("Query is required");
         const res = await googleSearch(`${query} site:youtube.com`);
@@ -149,19 +155,19 @@ export const run = () =>
           // @ts-ignore
           components: rows,
         });
-      };
+      }
 
-      const play = async (
+      async play(
         source: string,
         interaction: Interaction,
         { retried = false, playbackDuration = 0 } = {}
-      ): Promise<void> => {
-        const conn = currentConnection;
-        if (!conn || !currentChannel) {
+      ): Promise<void> {
+        const conn = this.currentConnection;
+        if (!conn || !this.currentChannel) {
           if (retried)
             throw new Error("The bot hasn't joined the voice channel yet.");
-          await autoJoin(interaction);
-          return await play(source, interaction, {
+          await this.autoJoin(interaction);
+          return await this.play(source, interaction, {
             retried: true,
             playbackDuration,
           });
@@ -174,68 +180,75 @@ export const run = () =>
           highWaterMark: 1 << 62,
           liveBuffer: 1 << 62,
         });
-        if (currentPlayer) currentPlayer.stop(true);
-        if (currentSubscription) currentSubscription.unsubscribe();
+        if (this.currentPlayer) this.currentPlayer.stop(true);
+        if (this.currentSubscription) this.currentSubscription.unsubscribe();
         const player = createAudioPlayer({
           behaviors: {
             noSubscriber: NoSubscriberBehavior.Pause,
           },
         });
-        currentPlayer = player;
+        this.currentPlayer = player;
         const resource = createAudioResource(stream, { inlineVolume: true });
-        currentResource = resource;
+        this.currentResource = resource;
         player.play(resource);
         player.on("subscribe", () => {
-          setVolume(currentVolume);
+          this.setVolume(this.currentVolume);
         });
         player.on("error", async (e) => {
           const cmdChannel = interaction.channel;
           if (cmdChannel) {
             await cmdChannel.send(errorMessage(`${e.name}: ${e.message}`));
             if (e.message.startsWith("No video id found"))
-              search(source, interaction);
+              this.search(source, interaction);
           }
         });
-        currentSubscription = conn.subscribe(player) || null;
-      };
+        this.currentSubscription = conn.subscribe(player) || null;
+      }
 
-      const setVolume = (value: number) => {
-        if (currentResource) currentResource.volume!.setVolume(value / 100);
-        currentVolume = value;
-      };
+      setVolume(value: number) {
+        if (this.currentResource)
+          this.currentResource.volume!.setVolume(value / 100);
+        this.currentVolume = value;
+      }
+    }
 
+    try {
       player.on("interactionCreate", async (interaction: Interaction) => {
-        const { channel } = interaction;
-        if (interaction.isButton()) {
-          const { customId } = interaction;
-          if (interaction.customId.startsWith("/play ")) {
-            interaction.reply(OK);
-            play(customId.replace("/play ", "").trim(), interaction);
-          } else {
-            interaction.reply(errorMessage("Unknown interaction"));
+        const { channel, guild } = interaction;
+        const isButton = interaction.isButton();
+        const isChatInputCommand = interaction.isChatInputCommand();
+        if (!(isButton || isChatInputCommand)) return;
+        try {
+          if (!guild) throw new Error("Guild not found");
+          const player = GuildPlayer.get(guild);
+          if (isButton) {
+            const { customId } = interaction;
+            if (interaction.customId.startsWith("/play ")) {
+              interaction.reply(OK);
+              player.play(customId.replace("/play ", "").trim(), interaction);
+            }
+            throw new Error("Unknown interaction");
           }
-          return;
-        }
-        if (interaction.isChatInputCommand()) {
-          if (!channel) return;
-          const roles = interaction.member!.roles;
-          if (
-            Array.isArray(roles) ||
-            !roles.cache.map((r) => r.id).includes(argonRoleId)
-          ) {
-            interaction.reply({
-              content: errorMessage("No permission"),
-              ephemeral: true,
-            });
-            return;
-          }
-          try {
+          if (isChatInputCommand) {
+            if (!channel) return;
+            const roles = interaction.member!.roles;
+            if (
+              Array.isArray(roles) ||
+              (guild?.id === ch4GuildId &&
+                !roles.cache.map((r) => r.id).includes(argonRoleId))
+            ) {
+              interaction.reply({
+                content: errorMessage("No permission"),
+                ephemeral: true,
+              });
+              return;
+            }
             switch (interaction.commandName) {
               case "play": {
                 const source = String(
                   interaction.options.get("source")?.value || ""
                 );
-                await play(source, interaction);
+                await player.play(source, interaction);
                 interaction.reply(OK);
                 break;
               }
@@ -244,33 +257,31 @@ export const run = () =>
                   interaction.options.get("query")?.value || ""
                 );
                 interaction.reply(OK);
-                await search(query, interaction);
+                await player.search(query, interaction);
                 break;
               }
               case "set-volume": {
                 const value = Number(interaction.options.get("value")?.value);
-                setVolume(value);
+                player.setVolume(value);
                 interaction.reply(OK);
                 break;
               }
               case "join": {
-                autoJoin(interaction);
+                player.autoJoin(interaction);
                 interaction.reply(OK);
                 break;
               }
               case "leave": {
-                leave();
+                player.leave();
                 interaction.reply(OK);
                 break;
               }
             }
-          } catch (e) {
-            interaction.reply(
-              errorMessage(
-                e instanceof Error ? e.message || e.name : "Unknown Error"
-              )
-            );
           }
+        } catch (e) {
+          interaction.reply(
+            errorMessage(e instanceof Error ? e.message : "Unknown Error")
+          );
         }
       });
     } catch {}
