@@ -71,7 +71,7 @@ export const run = () =>
     const OK = successMessage("OK");
 
     try {
-      let currentVolume = 1;
+      let currentVolume = 100;
       let currentConnection: VoiceConnection | null = null;
       let currentChannel: VoiceChannel | null = null;
       let currentPlayer: AudioPlayer | null = null;
@@ -182,7 +182,7 @@ export const run = () =>
           },
         });
         currentPlayer = player;
-        const resource = createAudioResource(stream);
+        const resource = createAudioResource(stream, { inlineVolume: true });
         currentResource = resource;
         player.play(resource);
         player.on("subscribe", () => {
@@ -200,9 +200,8 @@ export const run = () =>
       };
 
       const setVolume = (value: number) => {
-        throw new Error("Not supported");
-        // if (currentResource) currentResource.volume?.setVolume(value);
-        // currentVolume = value;
+        if (currentResource) currentResource.volume!.setVolume(value / 100);
+        currentVolume = value;
       };
 
       player.on("interactionCreate", async (interaction: Interaction) => {
