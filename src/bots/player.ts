@@ -202,11 +202,11 @@ player.on(Events.ClientReady, async () => {
           ];
           cmdChannel.send({
             content: successMessage(
-              `Now playing:\n**Title:** ${title}\n**Author:** <[${
+              `Now playing:\n**Title:** ${title}\n**Author:** [${
                 name || author
-              }](${
+              }](<${
                 channel_url || external_channel_url
-              })> **Source:** <https://youtu.be/${details.videoId}>`
+              }>) **Source:** <https://youtu.be/${details.videoId}>`
             ),
             // files: thumbnailUrl ? [{ attachment: thumbnailUrl }] : [],
             // @ts-ignore
