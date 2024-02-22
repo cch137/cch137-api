@@ -7,7 +7,7 @@ import {
   ChannelType,
   IntentsBitField,
 } from "discord.js";
-import { BotClient } from "./utils";
+import { BotClient, errorMessage, successMessage } from "./utils";
 import { config } from "dotenv";
 import {
   NoSubscriberBehavior,
@@ -57,9 +57,6 @@ export const run = () =>
         console.log("DCBOT setActivity Failed:", err);
       }
     }
-
-    const errorMessage = (s: string) => `<:error:1114456717216976936> ${s}`;
-    const successMessage = (s: string) => `<:success:1114703694437556334> ${s}`;
 
     const OK = successMessage("OK");
 
