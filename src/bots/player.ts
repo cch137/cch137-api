@@ -180,6 +180,8 @@ export const run = () =>
           highWaterMark: 1 << 62,
           liveBuffer: 1 << 62,
         });
+        stream.on("readable", (...args) => console.log(...args));
+        stream.on("info", (...args) => console.log(...args));
         if (this.currentPlayer) this.currentPlayer.stop(true);
         if (this.currentSubscription) this.currentSubscription.unsubscribe();
         const player = createAudioPlayer({
@@ -238,6 +240,7 @@ export const run = () =>
             if (interaction.customId.startsWith("/play ")) {
               interaction.reply(OK);
               player.play(customId.replace("/play ", "").trim(), interaction);
+              return;
             }
             throw new Error("Unknown interaction");
           }
