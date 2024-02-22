@@ -195,7 +195,7 @@ player.on(Events.ClientReady, async () => {
           const rows = [
             new ActionRowBuilder().addComponents(
               new ButtonBuilder()
-                .setCustomId(`/play ${url.substring(0, 100)}`)
+                .setCustomId(`/play ${source.substring(0, 100)}`)
                 .setLabel("Replay")
                 .setStyle(ButtonStyle.Secondary)
             ),
