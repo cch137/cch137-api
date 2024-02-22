@@ -1,7 +1,7 @@
 import axios from "axios";
 import { load as cheerioLoad } from "cheerio";
 import type { AnyNode } from "cheerio";
-import puppeteer from "puppeteer";
+// import puppeteer from "puppeteer";
 import TurndownService from "turndown";
 
 function joinURL(baseURL: string, relativeURL: string) {
@@ -63,15 +63,15 @@ const fixUrl = (url: string) => {
   return `http://${url}`;
 };
 
-export async function fetchWebpageWithPupeeter(url: string) {
-  url = fixUrl(url);
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(url);
-  const html = await page.content();
-  await browser.close();
-  return parseHtml(html, { url });
-}
+// export async function fetchWebpageWithPupeeter(url: string) {
+//   url = fixUrl(url);
+//   const browser = await puppeteer.launch();
+//   const page = await browser.newPage();
+//   await page.goto(url);
+//   const html = await page.content();
+//   await browser.close();
+//   return parseHtml(html, { url });
+// }
 
 export async function fetchWebpage(
   url: string,
