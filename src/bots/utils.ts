@@ -129,7 +129,7 @@ export class BotClient extends Client {
   async disconnect() {
     const t0 = Date.now();
     for (const i of this.#intervalTasks) i.stop();
-    await this.destroy();
+    await this.disconnect();
     console.log(
       `${this.user?.displayName || "bot"} disconneted in ${Date.now() - t0} ms`
     );

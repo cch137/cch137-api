@@ -239,7 +239,7 @@ ch4.on(Events.ClientReady, async () => {
           const bot =
             bots.find((b) => b.id === botId) ||
             getBotByName((await guild.members.fetch(botId)).displayName);
-          if (!bot) throw new Error("No permission");
+          if (!bot || bot.id === ch4.id) throw new Error("No permission");
           bot.connect();
           interaction.reply(OK);
           return;
@@ -249,7 +249,7 @@ ch4.on(Events.ClientReady, async () => {
           const bot =
             bots.find((b) => b.id === botId) ||
             getBotByName((await guild.members.fetch(botId)).displayName);
-          if (!bot) throw new Error("No permission");
+          if (!bot || bot.id === ch4.id) throw new Error("No permission");
           bot.disconnect();
           interaction.reply(OK);
           return;
