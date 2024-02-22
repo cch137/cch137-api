@@ -24,6 +24,7 @@ import {
 } from "@discordjs/voice";
 import ytdl, { type VideoDetails } from "ytdl-core";
 import { googleSearch } from "../services/search";
+import { getYouTubeVideoId } from "@cch137/utils/format/youtube-urls";
 
 config();
 
@@ -131,12 +132,14 @@ player.on(Events.ClientReady, async () => {
       query = query.trim();
       if (!query) throw new Error("Query is required");
       const res = await googleSearch(`${query} site:youtube.com`);
-      const buttons = res.map((r) =>
-        new ButtonBuilder()
-          .setCustomId(`/play ${r.url}`)
-          .setLabel(r.title.substring(0, 80))
-          .setStyle(ButtonStyle.Secondary)
-      );
+      const buttons = res
+        .filter((r) => getYouTubeVideoId(r.url))
+        .map((r) =>
+          new ButtonBuilder()
+            .setCustomId(`/play ${r.url}`)
+            .setLabel(r.title.substring(0, 80))
+            .setStyle(ButtonStyle.Secondary)
+        );
       const rows: ActionRowBuilder[] = [new ActionRowBuilder()];
       for (const button of buttons) {
         if (rows.at(-1)!.components.length >= 5)
