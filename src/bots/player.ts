@@ -133,11 +133,15 @@ player.on(Events.ClientReady, async () => {
       if (!query) throw new Error("Query is required");
       const res = await googleSearch(`${query} site:youtube.com`);
       const buttons = res
-        .filter((r) => getYouTubeVideoId(r.url))
+        .map((r) => {
+          const id = getYouTubeVideoId(r.url);
+          return { ...r, id, url: `https://youtu.be/${id}` };
+        })
+        .filter((r) => r.id)
         .map((r) =>
           new ButtonBuilder()
-            .setCustomId(`/play ${r.url}`)
-            .setLabel(r.title.substring(0, 80))
+            .setCustomId(`/play ${r.url.substring(0, 100)}`)
+            .setLabel(r.title.substring(0, 75))
             .setStyle(ButtonStyle.Secondary)
         );
       const rows: ActionRowBuilder[] = [new ActionRowBuilder()];
