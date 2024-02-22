@@ -16,6 +16,8 @@ export const warningMessage = (s: string) => `⚠️ ${s}`;
 export const successMessage = (s: string) =>
   `<:success:1114703694437556334> ${s}`;
 
+export const OK = successMessage("OK");
+
 export const toCodeBlocks = (input: string, maxLength = 1980) => {
   const result: string[] = [];
   for (let i = 0; i < input.length; i += maxLength) {
@@ -98,6 +100,10 @@ export class BotClient extends Client {
   #token: string;
   #intervalTasks: IntervalTask[];
 
+  get id() {
+    return this.user?.id;
+  }
+
   constructor(
     options: ClientOptions,
     token: string,
@@ -109,6 +115,7 @@ export class BotClient extends Client {
   }
 
   async connect() {
+    if (this.isReady()) return this;
     const t0 = Date.now();
     await this.login(this.#token);
     for (const i of this.#intervalTasks) i.stop();
