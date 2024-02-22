@@ -151,7 +151,7 @@ player.on(Events.ClientReady, async () => {
         rows.at(-1)!.addComponents(button);
       }
       interaction.channel!.send({
-        content: `**Search results:**`,
+        content: `**Search results**`,
         // @ts-ignore
         components: rows,
       });
@@ -185,22 +185,32 @@ player.on(Events.ClientReady, async () => {
         const cmdChannel = interaction.channel;
         if (cmdChannel) {
           // const thumbnailUrl = details.thumbnails.at(-1)?.url;
-          const { author } = details;
+          const { author, title } = details;
           const {
             name,
-            user,
             channel_url = "",
             external_channel_url = "",
           } = author as any;
+          const url = channel_url || external_channel_url;
+          const rows = [
+            new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId(`/play ${url.substring(0, 100)}`)
+                .setLabel("Replay")
+                .setStyle(ButtonStyle.Secondary)
+            ),
+          ];
           cmdChannel.send({
             content: successMessage(
-              `Now playing:\n**Title:** ${details.title}\n**Author:** <[${
-                typeof author === "string" ? author : `${name} ${user}`
+              `Now playing:\n**Title:** ${title}\n**Author:** <[${
+                name || author
               }](${
                 channel_url || external_channel_url
-              })>\n**Source:** <https://youtu.be/${details.videoId}>`
+              })> **Source:** <https://youtu.be/${details.videoId}>`
             ),
             // files: thumbnailUrl ? [{ attachment: thumbnailUrl }] : [],
+            // @ts-ignore
+            components: rows,
             embeds: [],
           });
         }
