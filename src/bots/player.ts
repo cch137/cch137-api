@@ -22,7 +22,7 @@ import {
   type PlayerSubscription,
   AudioResource,
 } from "@discordjs/voice";
-import ytdl from "ytdl-core";
+import ytdl, { type VideoDetails } from "ytdl-core";
 import { googleSearch } from "../services/search";
 
 config();
@@ -134,7 +134,7 @@ player.on(Events.ClientReady, async () => {
       const buttons = res.map((r) =>
         new ButtonBuilder()
           .setCustomId(`/play ${r.url}`)
-          .setLabel(r.title)
+          .setLabel(r.title.substring(0, 80))
           .setStyle(ButtonStyle.Secondary)
       );
       const rows: ActionRowBuilder[] = [new ActionRowBuilder()];
@@ -173,8 +173,31 @@ player.on(Events.ClientReady, async () => {
         highWaterMark: 1 << 62,
         liveBuffer: 1 << 62,
       });
-      // stream.on("readable", (...args) => console.log(...args));
-      // stream.on("info", (...args) => console.log(...args));
+      stream.on("info", (info, mime) => {
+        const details = info.videoDetails as VideoDetails;
+        const cmdChannel = interaction.channel;
+        if (cmdChannel) {
+          // const thumbnailUrl = details.thumbnails.at(-1)?.url;
+          const { author } = details;
+          const {
+            name,
+            user,
+            channel_url = "",
+            external_channel_url = "",
+          } = author as any;
+          cmdChannel.send({
+            content: successMessage(
+              `Now playing:\n**Title:** ${details.title}\n**Author:** <[${
+                typeof author === "string" ? author : `${name} ${user}`
+              }](${
+                channel_url || external_channel_url
+              })>\n**Source:** <https://youtu.be/${details.videoId}>`
+            ),
+            // files: thumbnailUrl ? [{ attachment: thumbnailUrl }] : [],
+            embeds: [],
+          });
+        }
+      });
       if (this.currentPlayer) this.currentPlayer.stop(true);
       if (this.currentSubscription) this.currentSubscription.unsubscribe();
       const player = createAudioPlayer({
@@ -251,7 +274,7 @@ player.on(Events.ClientReady, async () => {
               const query = String(
                 interaction.options.get("query")?.value || ""
               );
-              interaction.reply(OK);
+              await interaction.reply(OK);
               await player.search(query, interaction);
               break;
             }
@@ -274,9 +297,15 @@ player.on(Events.ClientReady, async () => {
           }
         }
       } catch (e) {
-        interaction.reply(
-          errorMessage(e instanceof Error ? e.message : "Unknown Error")
-        );
+        console.error(e);
+        if (interaction.replied)
+          interaction.channel?.send(
+            errorMessage(e instanceof Error ? e.message : "Unknown Error")
+          );
+        else
+          interaction.reply(
+            errorMessage(e instanceof Error ? e.message : "Unknown Error")
+          );
       }
     });
   } catch {}
