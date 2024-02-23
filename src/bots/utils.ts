@@ -184,7 +184,7 @@ export const createBotClient = (
   return new Proxy(client, {
     get(target: any, prop) {
       if (prop in extension) return extension[prop as keyof ClientExtension];
-      target[prop];
+      return target[prop];
     },
     set(target: any, prop, value) {
       if (prop in target) target[prop] = value;
