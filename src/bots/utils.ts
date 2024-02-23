@@ -124,6 +124,9 @@ export const createBotClient = (
   let client = new Client(options);
   const listeners = new Map<string | symbol, Set<(...args: any[]) => void>>();
   const extension: ClientExtension = Object({
+    get id() {
+      return client.user?.id;
+    },
     async connect() {
       if (client.isReady()) return;
       const t0 = Date.now();
