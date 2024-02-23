@@ -7,7 +7,7 @@ import {
   ChannelType,
   IntentsBitField,
 } from "discord.js";
-import { BotClient, OK, errorMessage, successMessage } from "./utils";
+import { createBotClient, OK, errorMessage, successMessage } from "./utils";
 import { config } from "dotenv";
 import {
   NoSubscriberBehavior,
@@ -28,7 +28,7 @@ import { getYouTubeVideoId } from "@cch137/utils/format/youtube-urls";
 
 config();
 
-const player = new BotClient(
+const player = createBotClient(
   {
     intents: [
       IntentsBitField.Flags.Guilds,

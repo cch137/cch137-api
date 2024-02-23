@@ -10,7 +10,7 @@ import formatBytes from "@cch137/utils/format/format-bytes";
 import {
   isGuildMessage,
   IntervalTask,
-  BotClient,
+  createBotClient,
   errorMessage,
   OK,
 } from "./utils";
@@ -93,7 +93,7 @@ const updateCh4StatusTask = IntervalTask.create(
   1000
 );
 
-const ch4 = new BotClient(
+const ch4 = createBotClient(
   {
     intents: [
       IntentsBitField.Flags.Guilds,

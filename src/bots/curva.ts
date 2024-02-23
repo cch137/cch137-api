@@ -12,7 +12,7 @@ import {
 } from "discord.js";
 import Mexp from "math-expression-evaluator";
 import {
-  BotClient,
+  createBotClient,
   createErrorEmbed,
   createInfoEmbed,
   createSuccessEmbed,
@@ -44,7 +44,7 @@ async function askCh4Ai(messages: UniMessage[], model: string) {
   return wrapStreamResponse(res);
 }
 
-const curva = new BotClient(
+const curva = createBotClient(
   {
     intents: [
       IntentsBitField.Flags.Guilds,

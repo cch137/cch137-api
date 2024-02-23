@@ -96,7 +96,86 @@ export class IntervalTask {
   }
 }
 
-export class BotClient extends Client {
+type ClientExtension = {
+  id?: string;
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  on(eventName: string | symbol, listener: (...args: any[]) => void): void;
+  off(eventName: string | symbol, listener: (...args: any[]) => void): void;
+  addRoleToUser(
+    guildId: string,
+    user: PartialUser | User,
+    roleId: string
+  ): Promise<void>;
+  removeUserRole(
+    guildId: string,
+    user: PartialUser | User,
+    roleId: string
+  ): Promise<void>;
+};
+
+export type ExtendedClient = Client & ClientExtension;
+
+export const createBotClient = (
+  options: ClientOptions,
+  token: string,
+  intervalTasks: IntervalTask[] = []
+) => {
+  let client = new Client(options);
+  const extension: ClientExtension = Object({
+    async connect() {
+      if (client.isReady()) return;
+      const t0 = Date.now();
+      await client.login(token);
+      for (const i of intervalTasks) i.stop();
+      for (const i of intervalTasks) i.start(client);
+      console.log(
+        `${client.user?.displayName || "bot"} conneted in ${Date.now() - t0} ms`
+      );
+    },
+    async disconnect() {
+      const t0 = Date.now();
+      for (const i of intervalTasks) i.stop();
+      client = new Client(options);
+      await client.destroy();
+      console.log(
+        `${client.user?.displayName || "bot"} disconneted in ${
+          Date.now() - t0
+        } ms`
+      );
+    },
+    on: client.addListener,
+    off: client.removeListener,
+    async addRoleToUser(
+      guildId: string,
+      user: PartialUser | User,
+      roleId: string
+    ) {
+      await client.rest.put(Routes.guildMemberRole(guildId, user.id, roleId));
+    },
+    async removeUserRole(
+      guildId: string,
+      user: PartialUser | User,
+      roleId: string
+    ) {
+      await client.rest.delete(
+        Routes.guildMemberRole(guildId, user.id, roleId)
+      );
+    },
+  });
+  return new Proxy(client, {
+    get(target: any, prop) {
+      if (prop in extension) return extension[prop as keyof ClientExtension];
+      target[prop];
+    },
+    set(target: any, prop, value) {
+      if (prop in target) target[prop] = value;
+      return true;
+    },
+  }) as ExtendedClient;
+};
+
+export class _BotClient extends Client {
   #token: string;
   #intervalTasks: IntervalTask[];
 
@@ -123,13 +202,12 @@ export class BotClient extends Client {
     console.log(
       `${this.user?.displayName || "bot"} conneted in ${Date.now() - t0} ms`
     );
-    return this;
   }
 
   async disconnect() {
     const t0 = Date.now();
     for (const i of this.#intervalTasks) i.stop();
-    await this.disconnect();
+    await this.destroy();
     console.log(
       `${this.user?.displayName || "bot"} disconneted in ${Date.now() - t0} ms`
     );
