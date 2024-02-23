@@ -122,6 +122,7 @@ export const createBotClient = (
   intervalTasks: IntervalTask[] = []
 ) => {
   let client = new Client(options);
+  const listeners = new Map<string | symbol, Set<(...args: any[]) => void>>();
   const extension: ClientExtension = Object({
     async connect() {
       if (client.isReady()) return;
@@ -137,6 +138,9 @@ export const createBotClient = (
       const t0 = Date.now();
       for (const i of intervalTasks) i.stop();
       client = new Client(options);
+      listeners.forEach((set, eventName) =>
+        set.forEach((l) => client.on(eventName, l))
+      );
       await client.destroy();
       console.log(
         `${client.user?.displayName || "bot"} disconneted in ${
@@ -144,8 +148,19 @@ export const createBotClient = (
         } ms`
       );
     },
-    on: client.addListener,
-    off: client.removeListener,
+    on(eventName: string | symbol, listener: (...args: any[]) => void) {
+      if (!listeners.has(eventName)) listeners.set(eventName, new Set());
+      listeners.get(eventName)?.add(listener);
+      client.addListener(eventName, listener);
+    },
+    off(eventName: string | symbol, listener: (...args: any[]) => void) {
+      const set = listeners.get(eventName);
+      if (set) {
+        set.delete(listener);
+        if (set?.size === 0) listeners.delete(eventName);
+      }
+      client.removeListener(eventName, listener);
+    },
     async addRoleToUser(
       guildId: string,
       user: PartialUser | User,
