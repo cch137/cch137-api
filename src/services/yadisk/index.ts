@@ -99,7 +99,7 @@ async function preview(url: string) {
 //   // if you want to change the source, remember also change the isbn below
 //   const list: PageObj[] = JSON.parse(
 //     fs.readFileSync(
-//       "./data/ls/dirs/Irwin J.,Nelms R. Basic Engineering Circuit Analysis 11ed 2015 9781118539293.json",
+//       "./data/ls/dirs/Boyce W.,DiPrima R. Elementary Differential Equations and Boundary Value Problems 10ed 2012 9780470458310.json",
 //       "utf8"
 //     )
 //   );
@@ -112,9 +112,9 @@ async function preview(url: string) {
 //   function processFile(obj: PageObj, tries: number = 0): Promise<any> {
 //     return new Promise<void>(async (resolve, reject) => {
 //       const { isbn_c_p, link } = obj;
-//       // if (hasFile(isbn_c_p)) {
-//       //   return resolve()
-//       // }
+//       if (hasFile(isbn_c_p)) {
+//         return resolve();
+//       }
 //       console.log("processing:", isbn_c_p);
 //       try {
 //         const response = await preview(link);
@@ -134,7 +134,7 @@ async function preview(url: string) {
 //     });
 //   }
 //   let i = 0;
-//   const p = "./data/ls/files/9781118539293/";
+//   const p = "./data/ls/files/9780470458310/";
 //   try {
 //     fs.mkdirSync(p);
 //   } catch {}
