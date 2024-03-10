@@ -262,4 +262,53 @@ apis.use("/proxy", async (req, res) => {
   }
 });
 
+import dictionary, { isDictionaryItem } from "../services/notion/dictionary";
+apis.get("/nt-dict/random-item", async (req, res) => {
+  try {
+    await dictionary.getRandomItem();
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+apis.post("/nt-dict/create", async (req, res) => {
+  const page = parseForm(req);
+  try {
+    if (!isDictionaryItem(page)) throw new Error("Invalid Item");
+    await dictionary.createItem(page);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+apis.put("/nt-dict/:id", async (req, res) => {
+  const { id } = req.params;
+  const page = parseForm(req);
+  try {
+    if (!isDictionaryItem(page)) throw new Error("Invalid Item");
+    await dictionary.updateItem(id, page);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+apis.get("/nt-dict/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await dictionary.getItem(id);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+apis.delete("/nt-dict/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await dictionary.deleteItem(id);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+
 export default apis;
