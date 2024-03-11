@@ -1,12 +1,9 @@
-import { config as dotenvConfig } from "dotenv";
 import express from "express";
 import http from "http";
 import cors from "cors";
 import { WebSocketServer } from "ws";
 import bodyParser from "@cch137/body-parser";
 import getIp from "@cch137/utils/server/get-ip";
-
-dotenvConfig();
 
 const app = express();
 const server = http.createServer(app);

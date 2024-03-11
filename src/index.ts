@@ -1,10 +1,10 @@
 import { config as dotenvConfig } from "dotenv";
+dotenvConfig();
+
 import { app, server } from "./server";
 import apis from "./routers/apis";
 import wss from "./services/subdom";
 import { run as runBots } from "./bots";
-
-dotenvConfig();
 
 runBots();
 
