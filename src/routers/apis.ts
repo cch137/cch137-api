@@ -263,15 +263,24 @@ apis.use("/proxy", async (req, res) => {
 });
 
 import dictionary, { isDictionaryItem } from "../services/notion/dictionary";
-apis.get("/nt-dict/random-item", async (req, res) => {
+const ntDict = express.Router();
+const { API_KEY } = process.env;
+apis.use("/nt-dict/", ntDict);
+ntDict.use("/", (req, res, next) => {
+  if (req.headers["authorization"] !== API_KEY) {
+    res.status(401).json({});
+    return;
+  }
+  next();
+});
+ntDict.get("/random-item", async (req, res) => {
   try {
-    await dictionary.getRandomItem();
-    res.json({ success: true });
+    res.json(await dictionary.getRandomItem());
   } catch {
     res.status(500).json({ success: false });
   }
 });
-apis.post("/nt-dict/create", async (req, res) => {
+ntDict.post("/create", async (req, res) => {
   const page = parseForm(req);
   try {
     if (!isDictionaryItem(page)) throw new Error("Invalid Item");
@@ -281,7 +290,16 @@ apis.post("/nt-dict/create", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-apis.put("/nt-dict/:id", async (req, res) => {
+ntDict.post("/search", async (req, res) => {
+  const { query, q } = parseForm(req);
+  const _query = String(query || q);
+  try {
+    res.json(await dictionary.searchItem(_query));
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+ntDict.put("/:id", async (req, res) => {
   const { id } = req.params;
   const page = parseForm(req);
   try {
@@ -292,16 +310,15 @@ apis.put("/nt-dict/:id", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-apis.get("/nt-dict/:id", async (req, res) => {
+ntDict.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    await dictionary.getItem(id);
-    res.json({ success: true });
+    res.json(await dictionary.getItem(id));
   } catch {
     res.status(500).json({ success: false });
   }
 });
-apis.delete("/nt-dict/:id", async (req, res) => {
+ntDict.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {
     await dictionary.deleteItem(id);

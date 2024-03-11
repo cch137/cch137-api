@@ -121,6 +121,21 @@ export class Dictionary {
       archived: true,
     });
   }
+
+  async searchItem(query: string) {
+    return await notion.databases.query({
+      filter: {
+        or: [
+          { property: "Content", rich_text: { contains: query } },
+          {
+            property: "Title",
+            rich_text: { contains: query },
+          },
+        ],
+      },
+      database_id: this.dbId,
+    });
+  }
 }
 
 export const DB_ID = "ead1e595673d43c4836d1a2044e8f740";
