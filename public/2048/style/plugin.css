@@ -1,0 +1,109 @@
+body {
+  min-height: 100vh;
+  user-select: none;
+}
+
+p {
+  margin: 0;
+  line-height: 1em !important;
+}
+
+hr {
+  margin: 8px 0;
+}
+
+.game-header {
+  display: flex;
+}
+
+.game-header > a {
+  margin: 0;
+  color: #f9f6f2;
+  background: #8f7a66;
+  padding: 8px 18px;
+  text-decoration: 0;
+  border-radius: 3px;
+  font-size: 1.125em;
+  transition: .2s;
+  line-height: normal;
+  height: auto !important;
+  width: auto !important;
+}
+
+.game-header > a:hover {
+  filter: brightness(0.9);
+}
+
+.game-intro {
+  width: 100% !important;
+  float: none;
+}
+
+#back {
+  padding: 8px;
+}
+
+#back > svg {
+  fill: currentColor;
+  height: 24px;
+  width: 24px;
+}
+
+body,
+.container,
+.heading,
+.game-header > a,
+.game-bottom  {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+h1.title {
+  margin: 0;
+  flex: 1;
+  font-size: 60px;
+}
+
+.game-container {
+  margin-top: 10px;
+}
+
+.game-bottom {
+  margin-top: 40px;
+}
+
+.game-bottom > p {
+  white-space: nowrap;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.hidden {
+  display: none;
+}
+
+.container {
+  transform: scale(0.9);
+  flex-direction: column;
+  min-height: 80vh;
+}
+
+.container > * {
+  width: 100%;
+}
+
+@media screen and (max-width: 520px) {
+  .container {
+    transform: scale(1);
+  }
+  h1.title {
+    font-size: 40px;
+  }
+  .score-container, .best-container {
+    font-size: 20px;
+  }
+}
