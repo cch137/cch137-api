@@ -1,4 +1,3 @@
-import { packData } from "@cch137/utils/shuttle";
 import { askCh4Ai } from "../../bots/curva";
 
 const extractImages = (html: string) => {
@@ -17,19 +16,17 @@ const extractImages = (html: string) => {
 };
 
 export const getCharImages = async (q: string) => {
-  const res0 = await fetch("https://api.cch137.link/proxy", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/uint8array",
-    },
-    body: packData(
-      {
-        input: `http://ccamc.org/cjkv_oaccgd.php?cjkv=${q}&type=oracle`,
-        method: "GET",
+  const res0 = await fetch(
+    `http://ccamc.org/cjkv_oaccgd.php?cjkv=${q}&type=oracle`,
+    {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
+        Host: "ccamc.org",
       },
-      0
-    ),
-  });
+    }
+  );
   const html = await res0.text();
   const zlist = /<div class="zlist".*?>(.*?)<\/div>/s.exec(html)![1];
   const a = encodeURIComponent(
@@ -41,23 +38,16 @@ export const getCharImages = async (q: string) => {
   const i = encodeURIComponent(
     (/<span class="i">([^<]+)<\/span>/g.exec(zlist) || [])[1] || ""
   );
-  const res1 = await fetch("https://api.cch137.link/proxy", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/uint8array",
-    },
-    body: packData(
-      {
-        input: "http://ccamc.org/components/CJKV/get_ziyuan_images_aw.php",
-        method: "POST",
-        body: `a=${a}&t=${t}&i=${i}`,
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
+  const res1 = await fetch(
+    "http://ccamc.org/components/CJKV/get_ziyuan_images_aw.php",
+    {
+      method: "POST",
+      body: `a=${a}&t=${t}&i=${i}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       },
-      0
-    ),
-  });
+    }
+  );
   return extractImages(await res1.text());
 };
 
