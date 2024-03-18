@@ -80,7 +80,6 @@ export const getInfer = async (q: string) => {
           );
           await res.promise;
           const { answer } = res;
-          console.log("raw answer:", answer);
           resolve(
             JSON.parse(
               answer.substring(answer.indexOf("["), answer.lastIndexOf("]") + 1)
@@ -91,9 +90,7 @@ export const getInfer = async (q: string) => {
           reject(e);
         }
       });
-    } catch (e) {
-      console.error("Retrying...", e);
-    }
+    } catch (e) {}
   }
   throw new Error("Tried too many times");
 };
