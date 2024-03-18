@@ -43,10 +43,6 @@ export const getCharImages = async (q: string) => {
   return extractImages(await res1.text());
 };
 
-(async () => {
-  console.log(await getCharImages("牛"));
-})();
-
 export const getInfer = async (q: string) => {
   let i = 3;
   while (i-- > 0) {
