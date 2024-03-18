@@ -189,10 +189,10 @@ apis.get("/ls/i/:chap_problem", async (req, res) => {
   const id = req.query.id || chap_problem;
   if (isbn && chap_problem) {
     const filename = `${isbn}_${chap_problem}.png`;
-    const fp = path.resolve(`./data/ls/files/${isbn}/${filename}`);
-    if (fs.existsSync(fp)) {
-      return res.sendFile(fp);
-    }
+    res.redirect(
+      `https://raw.githubusercontent.com/cch137/ggehc/main/${isbn}/${filename}`
+    );
+    return;
   }
   try {
     const download =
