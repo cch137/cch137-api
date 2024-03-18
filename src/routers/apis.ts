@@ -262,6 +262,26 @@ apis.use("/proxy", async (req, res) => {
   }
 });
 
+import ccmac from "../services/ccmac";
+apis.use("/ccmac-images", async (req, res) => {
+  try {
+    const { q } = parseForm(req);
+    const result = await ccmac.getCharImages(q);
+    res.json(result);
+  } catch (e) {
+    res.status(500).send(e instanceof Error ? e.message : e);
+  }
+});
+apis.use("/ccmac-infer", async (req, res) => {
+  try {
+    const { q } = parseForm(req);
+    const result = await ccmac.getInfer(q);
+    res.json(result);
+  } catch (e) {
+    res.status(500).send(e instanceof Error ? e.message : e);
+  }
+});
+
 import dictionary, { isDictionaryItem } from "../services/notion/dictionary";
 const ntDict = express.Router();
 const { API_KEY } = process.env;

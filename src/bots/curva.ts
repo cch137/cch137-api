@@ -24,7 +24,7 @@ import { config } from "dotenv";
 
 config();
 
-async function askCh4Ai(messages: UniMessage[], model: string) {
+export async function askCh4Ai(messages: UniMessage[], model: string) {
   const res = await fetch(`${process.env.CH4_ORIGIN}/api/ai-chat/ask/bot`, {
     method: "POST",
     body: packDataWithHash<UniOptions>(
