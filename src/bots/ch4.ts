@@ -17,6 +17,9 @@ import {
 import { config } from "dotenv";
 import { bots, getBotByName } from ".";
 
+const ch4GuildId = "730345526360539197";
+const adminRoleId = "1056251454127611975";
+
 config();
 
 const updateCh4StatusTask = IntervalTask.create(
@@ -233,13 +236,25 @@ ch4.on(Events.ClientReady, async () => {
     if (!guild) return;
     if (!interaction.isChatInputCommand()) return;
     try {
+      const roles = interaction.member!.roles;
+      if (
+        Array.isArray(roles) ||
+        (guild?.id === ch4GuildId &&
+          !roles.cache.map((r) => r.id).includes(adminRoleId))
+      ) {
+        interaction.reply({
+          content: errorMessage("No permission"),
+          ephemeral: true,
+        });
+        return;
+      }
       switch (interaction.commandName) {
         case "run": {
           const botId = String(interaction.options.get("bot")?.value || "");
           const bot =
             bots.find((b) => b.id === botId) ||
             getBotByName((await guild.members.fetch(botId)).displayName);
-          if (!bot || bot.id === ch4.id) throw new Error("No permission");
+          if (!bot || bot.id === ch4.id) throw new Error("Not Allowed");
           bot.connect();
           interaction.reply(OK);
           return;
