@@ -262,20 +262,20 @@ apis.use("/proxy", async (req, res) => {
   }
 });
 
-import ccmac from "../services/ccmac";
-apis.use("/ccmac-images", async (req, res) => {
+import ccamc from "../services/ccamc";
+apis.use("/ccamc-images", async (req, res) => {
   try {
     const { q } = parseForm(req);
-    const result = await ccmac.getCharImages(q);
+    const result = await ccamc.getCharImages(q);
     res.json(result);
   } catch (e) {
     res.status(500).send(e instanceof Error ? e.message : e);
   }
 });
-apis.use("/ccmac-infer", async (req, res) => {
+apis.use("/ccamc-infer", async (req, res) => {
   try {
     const { q } = parseForm(req);
-    const result = await ccmac.getInfer(q);
+    const result = await ccamc.getInfer(q);
     res.json(result);
   } catch (e) {
     res.status(500).send(e instanceof Error ? e.message : e);

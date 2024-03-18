@@ -17,15 +17,7 @@ const extractImages = (html: string) => {
 
 export const getCharImages = async (q: string) => {
   const res0 = await fetch(
-    `http://ccamc.org/cjkv_oaccgd.php?cjkv=${q}&type=oracle`,
-    {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
-        Host: "ccamc.org",
-      },
-    }
+    `http://ccamc.org/cjkv_oaccgd.php?cjkv=${q}&type=oracle`
   );
   const html = await res0.text();
   const zlist = /<div class="zlist".*?>(.*?)<\/div>/s.exec(html)![1];
@@ -50,6 +42,10 @@ export const getCharImages = async (q: string) => {
   );
   return extractImages(await res1.text());
 };
+
+(async () => {
+  console.log(await getCharImages("牛"));
+})();
 
 export const getInfer = async (q: string) => {
   let i = 3;
@@ -85,9 +81,9 @@ export const getInfer = async (q: string) => {
   throw new Error("Tried too many times");
 };
 
-export const ccmac = {
+export const ccamc = {
   getCharImages,
   getInfer,
 };
 
-export default ccmac;
+export default ccamc;
