@@ -40,7 +40,12 @@ export const getCharImages = async (q: string) => {
       },
     }
   );
-  return extractImages(await res1.text());
+  return await Promise.all(
+    extractImages(await res1.text()).map(async ({ src, name }) => {
+      const svg = await (await fetch(src)).text();
+      return { svg, name };
+    })
+  );
 };
 
 export const getInfer = async (q: string) => {
