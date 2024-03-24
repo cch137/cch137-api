@@ -169,7 +169,6 @@ import yadisk from "../services/yadisk";
 import ls from "../services/ls";
 const isDisableLS = Number(process.env.STOP_LS);
 apis.get("/ls/list", (req, res) => {
-  if (isDisableLS) return res.status(500).end();
   res.type("application/json");
   try {
     res.send(ls.list);
@@ -178,7 +177,6 @@ apis.get("/ls/list", (req, res) => {
   }
 });
 apis.get("/ls/:fn", (req, res) => {
-  if (isDisableLS) return res.status(500).end();
   res.type("application/json");
   try {
     res.send(ls.get(req.params.fn));
