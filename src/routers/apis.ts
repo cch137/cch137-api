@@ -20,6 +20,45 @@ apis.get("/started", (req, res) => {
   res.send({ t: started });
 });
 
+apis.get("/dir/*", (req, res) => {
+  // @ts-ignore
+  const publicDirname = req.params[0] as string;
+  const actualDirname = `public/${publicDirname}`;
+  if (
+    !fs.existsSync(actualDirname) ||
+    !fs.statSync(actualDirname).isDirectory()
+  )
+    return res.status(404).end();
+  const isTop = publicDirname === "";
+  const dirName = path.dirname(publicDirname);
+  const items = fs
+    .readdirSync(actualDirname)
+    .map((name) => {
+      const fp = `/${publicDirname}/${name}`.replace(/\/{2,}/g, "/");
+      const acFp = `${actualDirname}/${name}`;
+      const isDir = fs.statSync(acFp).isDirectory();
+      const url = isDir ? `/dir${fp}` : fp;
+      if (isDir) name += "/";
+      return {
+        name,
+        url,
+        isDir,
+        html: `<li style="padding:.25rem 0"><a href="${url}"${
+          isDir ? "" : ' target="_blank"'
+        } style="color:#fff;">${name}</a></li>`,
+      };
+    })
+    .sort((a, b) => +b.isDir - +a.isDir);
+  const parentLink = isTop
+    ? ""
+    : `<li style="padding:.25rem 0"><a style="color:#fff;" href="/dir/${dirName}">..</a></li>`;
+  res.send(
+    `<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"><title>${actualDirname}</title></head><body style="background:#000;color:#fff;font-family:consolas;font-size:large;margin:0;padding:2rem;"><ul>${parentLink}${items
+      .map(({ html }) => html)
+      .join("")}</ul></body></html>`
+  );
+});
+
 apis.get("/dashboard", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../pages/dashboard.html"));
 });
