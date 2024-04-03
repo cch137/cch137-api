@@ -232,7 +232,13 @@ player.on(Events.ClientReady, async () => {
       player.on("error", async (e) => {
         const cmdChannel = interaction.channel;
         if (cmdChannel) {
-          await cmdChannel.send(errorMessage(`${e.name}: ${e.message}`));
+          await cmdChannel.send(
+            errorMessage(
+              `${e.name}: ${
+                e.message || "Please try to rejoin the bot to the channel."
+              }`
+            )
+          );
           if (e.message.startsWith("No video id found"))
             this.search(source, interaction);
         }
