@@ -23,11 +23,44 @@ import {
 } from "./utils";
 import { config } from "dotenv";
 import { bots, getBotByName } from ".";
+import 交通部中央氣象署最近地震 from "../services/earthquake";
 
 const ch4GuildId = "730345526360539197";
 const adminRoleId = "1056251454127611975";
 
 config();
+
+const fetchEQReports = IntervalTask.create(
+  (() => {
+    let lastEQReportNo = "";
+    return async (client: Client) => {
+      const reports = await 交通部中央氣象署最近地震();
+      const latestReport = reports.at(0);
+      if (!latestReport) return;
+      const { 編號 } = latestReport;
+      if (lastEQReportNo !== 編號) {
+        const isInit = !lastEQReportNo;
+        lastEQReportNo = 編號;
+        if (isInit) return;
+        const terminalChannel = await client.channels.fetch(terminalChannelId);
+        if (terminalChannel?.type !== ChannelType.GuildText) return;
+        terminalChannel.send({
+          content: `<@&${民國RoleId}> 地震警報`,
+          embeds: [
+            new EmbedBuilder().setFields(
+              Object.entries(latestReport).map(([name, value]) => ({
+                name,
+                value,
+                inline: true,
+              }))
+            ),
+          ],
+        });
+      }
+    };
+  })(),
+  1000
+);
 
 const updateCh4StatusTask = IntervalTask.create(
   (() => {
@@ -143,7 +176,7 @@ const ch4 = createBotClient(
     ],
   },
   process.env.CH4_TOKEN || "",
-  [updateCh4StatusTask]
+  [updateCh4StatusTask, fetchEQReports]
 );
 
 export const guildId = "730345526360539197";
