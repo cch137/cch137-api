@@ -33,16 +33,16 @@ config();
 
 const fetchEQReports = IntervalTask.create(
   (() => {
-    let lastEQReportNo = "";
+    let lastEQReportNo = NaN;
     return async (client: Client) => {
       const reports = await 交通部中央氣象署最近地震();
       const _latestReport = reports.at(0) || null;
       if (!_latestReport) return;
       const { href, ...latestReport } = _latestReport;
-      const { 編號 } = latestReport;
-      if (lastEQReportNo !== 編號) {
-        const isInit = !lastEQReportNo;
-        lastEQReportNo = 編號;
+      const latestReportNo = +latestReport.編號;
+      const isInit = isNaN(lastEQReportNo);
+      if (isInit || lastEQReportNo < latestReportNo) {
+        lastEQReportNo = latestReportNo;
         if (isInit) return;
         const terminalChannel = await client.channels.fetch(terminalChannelId);
         if (terminalChannel?.type !== ChannelType.GuildText) return;
@@ -92,7 +92,7 @@ const fetchEQReports = IntervalTask.create(
       }
     };
   })(),
-  1000
+  5000
 );
 
 const updateCh4StatusTask = IntervalTask.create(
