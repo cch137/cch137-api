@@ -35,8 +35,9 @@ const fetchEQReports = IntervalTask.create(
     let lastEQReportNo = "";
     return async (client: Client) => {
       const reports = await 交通部中央氣象署最近地震();
-      const latestReport = reports.at(0);
-      if (!latestReport) return;
+      const _latestReport = reports.at(0) || null;
+      if (!_latestReport) return;
+      const { href, ...latestReport } = _latestReport;
       const { 編號 } = latestReport;
       if (lastEQReportNo !== 編號) {
         const isInit = !lastEQReportNo;
@@ -45,7 +46,7 @@ const fetchEQReports = IntervalTask.create(
         const terminalChannel = await client.channels.fetch(terminalChannelId);
         if (terminalChannel?.type !== ChannelType.GuildText) return;
         terminalChannel.send({
-          content: `<@&${民國RoleId}> 地震警報`,
+          content: `<@&${民國RoleId}> [地震警報](${href})`,
           embeds: [
             new EmbedBuilder().setFields(
               Object.entries(latestReport).map(([name, value]) => ({
@@ -143,25 +144,23 @@ const processEarthquakeMessage = async (
   const { author, embeds } = message;
   if (author.id !== 地牛記錄小組UserId) return;
   const fields = embeds.map(({ fields }) => fields).flat(2);
-  let isWarning = false;
   for (const field of fields) {
     const { name, value: _value } = field;
     if (!name.includes("最大震度")) continue;
+    // 只有最大震度的縣市會被記錄
     const value = numberFullwidthToHalfwidth(_value);
-    const match = /-?\d+(\.\d+)?/.exec(name) || /-?\d+(\.\d+)?/.exec(value);
+    const match = /-?\d+(\.\d+)?/.exec(value);
     if (!match) continue;
     const number = +match[0];
     if (number < warningLevel) continue;
-    isWarning = true;
-    break;
+    const terminalChannel = await ch4.channels.fetch(terminalChannelId);
+    if (terminalChannel?.type !== ChannelType.GuildText) return;
+    terminalChannel.send({
+      content: `<@&${民國RoleId}>【地震報告】[${value.replace(/\n/, " ")}](${
+        message.url
+      })`,
+    });
   }
-  if (!isWarning) return;
-  const terminalChannel = await ch4.channels.fetch(terminalChannelId);
-  if (terminalChannel?.type !== ChannelType.GuildText) return;
-  terminalChannel.send({
-    content: `<@&${民國RoleId}> 地震報告`,
-    embeds,
-  });
 };
 
 const ch4 = createBotClient(
@@ -288,7 +287,7 @@ ch4.on(Events.ClientReady, async () => {
   ch4.on("messageCreate", async (message) => {
     const { author } = message;
     if (author.bot) {
-      // processEarthquakeMessage(message);
+      processEarthquakeMessage(message);
       return;
     }
     if (!isGuildMessage(message, guild)) {

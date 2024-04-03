@@ -28,13 +28,16 @@ export const 交通部中央氣象署最近地震 = async () => {
   ]
     .map((tr) => {
       const row = $(tr);
-      const cells = [...row.children("th"), ...row.children("td")].map((c) =>
+      const cells = [...row.children("th"), ...row.children("td")];
+      const contents = cells.map((c) =>
         $(c).text().replace(/\s+/g, " ").trim()
       );
+      const href = $(cells[2]).attr("href");
       return {
-        編號: cells[0],
-        震度: cells[1],
-        ...extractEarthquakeData(cells[2]),
+        編號: contents[0],
+        震度: contents[1],
+        ...extractEarthquakeData(contents[2]),
+        href: href || "https://www.cwa.gov.tw/V8/C/E/",
       };
     })
     .filter(({ 編號 }) => !isNaN(+編號))
