@@ -46,7 +46,7 @@ const fetchEQReports = IntervalTask.create(
         const terminalChannel = await client.channels.fetch(terminalChannelId);
         if (terminalChannel?.type !== ChannelType.GuildText) return;
         terminalChannel.send({
-          content: `<@&${民國RoleId}> [地震警報](${href})`,
+          content: `<@&${災害警報RoleId}> [地震報告](${href})`,
           embeds: [
             new EmbedBuilder().setFields(
               Object.entries(latestReport).map(([name, value]) => ({
@@ -156,7 +156,7 @@ const processEarthquakeMessage = async (
     const terminalChannel = await ch4.channels.fetch(terminalChannelId);
     if (terminalChannel?.type !== ChannelType.GuildText) return;
     terminalChannel.send({
-      content: `<@&${民國RoleId}>【地震報告】[${value.replace(/\n/, " ")}](${
+      content: `<@&${災害警報RoleId}>地震報告 [${value.replace(/\n/, " ")}](${
         message.url
       })`,
     });
@@ -187,7 +187,7 @@ const reactionEmoji = "✨";
 const getRoleChannelId = "1138887783927263283";
 const getRoleMessageId = "1138889775487668224";
 const 地牛記錄小組UserId = "1224919332681683167";
-const 民國RoleId = "1224915108573220976";
+const 災害警報RoleId = "1224915108573220976";
 const terminalChannelId = "1209472019691995196";
 
 ch4.on(Events.ClientReady, async () => {
