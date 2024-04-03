@@ -9,6 +9,19 @@ import type {
 } from "discord.js";
 import { codeBlock, Client, Routes, EmbedBuilder } from "discord.js";
 
+export const numberFullwidthToHalfwidth = (s: string) =>
+  s
+    .replace(/１/g, "1")
+    .replace(/２/g, "2")
+    .replace(/３/g, "3")
+    .replace(/４/g, "4")
+    .replace(/５/g, "5")
+    .replace(/６/g, "6")
+    .replace(/７/g, "7")
+    .replace(/８/g, "8")
+    .replace(/９/g, "9")
+    .replace(/０/g, "0");
+
 export const errorMessage = (s: string) => `<:error:1114456717216976936> ${s}`;
 
 export const warningMessage = (s: string) => `⚠️ ${s}`;

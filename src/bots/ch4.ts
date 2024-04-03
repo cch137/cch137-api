@@ -1,6 +1,12 @@
-import type { Interaction, TextBasedChannel, TextChannel } from "discord.js";
+import type {
+  Interaction,
+  Message,
+  TextBasedChannel,
+  TextChannel,
+} from "discord.js";
 import {
   ApplicationCommandOptionType,
+  ChannelType,
   Client,
   EmbedBuilder,
   Events,
@@ -13,6 +19,7 @@ import {
   createBotClient,
   errorMessage,
   OK,
+  numberFullwidthToHalfwidth,
 } from "./utils";
 import { config } from "dotenv";
 import { bots, getBotByName } from ".";
@@ -96,6 +103,34 @@ const updateCh4StatusTask = IntervalTask.create(
   1000
 );
 
+const processEarthquakeMessage = async (
+  message: Message<boolean>,
+  warningLevel = 4
+) => {
+  const { author, embeds } = message;
+  if (author.id !== 地牛記錄小組UserId) return;
+  const fields = embeds.map(({ fields }) => fields).flat(2);
+  let isWarning = false;
+  for (const field of fields) {
+    const { name, value: _value } = field;
+    if (!name.includes("最大震度")) continue;
+    const value = numberFullwidthToHalfwidth(_value);
+    const match = /-?\d+(\.\d+)?/.exec(name) || /-?\d+(\.\d+)?/.exec(value);
+    if (!match) continue;
+    const number = +match[0];
+    if (number < warningLevel) continue;
+    isWarning = true;
+    break;
+  }
+  if (!isWarning) return;
+  const terminalChannel = await ch4.channels.fetch(terminalChannelId);
+  if (terminalChannel?.type !== ChannelType.GuildText) return;
+  terminalChannel.send({
+    content: `<@&${民國RoleId}> 地震報告`,
+    embeds,
+  });
+};
+
 const ch4 = createBotClient(
   {
     intents: [
@@ -119,6 +154,9 @@ const explorerRoleId = "1133371837179506738";
 const reactionEmoji = "✨";
 const getRoleChannelId = "1138887783927263283";
 const getRoleMessageId = "1138889775487668224";
+const 地牛記錄小組UserId = "1224919332681683167";
+const 民國RoleId = "1224915108573220976";
+const terminalChannelId = "1209472019691995196";
 
 ch4.on(Events.ClientReady, async () => {
   if (ch4.user) {
@@ -215,7 +253,9 @@ ch4.on(Events.ClientReady, async () => {
   }
 
   ch4.on("messageCreate", async (message) => {
-    if (message.author.bot) {
+    const { author } = message;
+    if (author.bot) {
+      processEarthquakeMessage(message);
       return;
     }
     if (!isGuildMessage(message, guild)) {
