@@ -1,4 +1,3 @@
-import { readString } from "@cch137/utils/stream";
 import { load } from "cheerio";
 
 const extractEarthquakeData = (input: string) => {
@@ -8,17 +7,15 @@ const extractEarthquakeData = (input: string) => {
   if (!match) return null;
   return {
     時間: match[1],
-    地點: match[2],
+    地點: match[2].replace(/\(/g, "\n`(").replace(/\)/g, ")`"),
     深度: match[3],
     地震規模: match[4],
   };
 };
 
 export const 交通部中央氣象署最近地震 = async () => {
-  const res = await fetch(
-    "https://www.cwa.gov.tw/V8/C/E/MOD/EQ_ROW.html?T=2024040312-3"
-  );
-  const $ = load(`<table>${await readString(res.body)}</table>`);
+  const res = await fetch("https://www.cwa.gov.tw/V8/C/E/MOD/EQ_ROW.html");
+  const $ = load(`<table>${await res.text()}</table>`);
   const table = $([...$("table")][0]);
   const items = [
     ...table.children("thead").children("tr"),

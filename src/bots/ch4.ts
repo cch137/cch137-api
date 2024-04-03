@@ -24,6 +24,7 @@ import {
 import { config } from "dotenv";
 import { bots, getBotByName } from ".";
 import 交通部中央氣象署最近地震 from "../services/earthquake";
+import { load } from "cheerio";
 
 const ch4GuildId = "730345526360539197";
 const adminRoleId = "1056251454127611975";
@@ -45,22 +46,53 @@ const fetchEQReports = IntervalTask.create(
         if (isInit) return;
         const terminalChannel = await client.channels.fetch(terminalChannelId);
         if (terminalChannel?.type !== ChannelType.GuildText) return;
-        terminalChannel.send({
+        const embeds = [
+          new EmbedBuilder().setFields(
+            Object.entries(latestReport).map(([name, value]) => ({
+              name,
+              value,
+              inline: true,
+            }))
+          ),
+        ];
+        const sending = terminalChannel.send({
           content: `<@&${災害警報RoleId}> [地震報告](${href})`,
-          embeds: [
-            new EmbedBuilder().setFields(
-              Object.entries(latestReport).map(([name, value]) => ({
-                name,
-                value,
-                inline: true,
-              }))
-            ),
-          ],
+          embeds,
         });
+        try {
+          const res = await fetch(href);
+          const $ = load(await res.text());
+          const lines = $(".panel.panel-default")
+            .map((i, panel) => {
+              const p = $(panel);
+              const 縣市 = p
+                .find(".panel-title")
+                .text()
+                .trim()
+                .replace("地區最大震度 ", "(");
+              const 區域 = p
+                .find(".span_location")
+                .map((_, l) => $(l).text().trim())
+                .toArray()
+                .join(", ");
+              return 縣市 + "): `" + 區域 + "`";
+            })
+            .toArray();
+          const sent = await sending;
+          sent.edit({
+            content: sent.content,
+            embeds: [
+              new EmbedBuilder().setFields(...sent.embeds[0].fields, {
+                name: "最大震度",
+                value: lines.join("\n"),
+              }),
+            ],
+          });
+        } catch {}
       }
     };
   })(),
-  1000
+  10000
 );
 
 const updateCh4StatusTask = IntervalTask.create(
