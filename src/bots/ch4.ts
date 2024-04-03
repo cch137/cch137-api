@@ -92,7 +92,7 @@ const fetchEQReports = IntervalTask.create(
       }
     };
   })(),
-  10000
+  1000
 );
 
 const updateCh4StatusTask = IntervalTask.create(
