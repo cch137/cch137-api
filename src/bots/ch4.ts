@@ -288,7 +288,7 @@ ch4.on(Events.ClientReady, async () => {
   ch4.on("messageCreate", async (message) => {
     const { author } = message;
     if (author.bot) {
-      processEarthquakeMessage(message);
+      // processEarthquakeMessage(message);
       return;
     }
     if (!isGuildMessage(message, guild)) {
