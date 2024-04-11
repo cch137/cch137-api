@@ -171,6 +171,7 @@ curva.on(Events.ClientReady, async () => {
       listeningChannelIds.has(channel.id) &&
       !answeringChannelIds.has(channel.id);
     if (!isTriggeredByListening && !message.mentions.has(user.id)) return;
+    if (/@everyone/.test(message.content)) return;
     answeringChannelIds.add(channel.id);
     const typing = startTyping(channel);
     let replied = channel.send(createInfoEmbed("Thinking..."));
