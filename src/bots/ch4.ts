@@ -212,6 +212,7 @@ const ch4 = createBotClient(
 
 export const guildId = "730345526360539197";
 const totalMemberChannelId = "1113758792430145547";
+const argonRoleId = "1056267998530375821";
 const newMemberRoleId = "1209327130593202186";
 const memberRoleId = "1106198793935917106";
 const explorerRoleId = "1133371837179506738";
@@ -331,9 +332,39 @@ ch4.on(Events.ClientReady, async () => {
       // NOT A USER
       return;
     }
+    // CHECK FOR VIOLATIONS
+    const menstionedEveryone = /@everyone/.test(content);
+    const sentInvitationLink = /discord.gg/.test(content);
+    if (menstionedEveryone || sentInvitationLink) {
+      const isArgon = message.member.roles.cache
+        .map((r) => r.id)
+        .includes(argonRoleId);
+      if (isArgon) return;
+      message.delete();
+      message.member.timeout(60 * 60000, "sent violation message");
+      const terminalChannel = await ch4.channels.fetch(terminalChannelId);
+      if (terminalChannel?.type !== ChannelType.GuildText) return;
+      const safeContent = content.replace(/@/g, "＠");
+      terminalChannel.send(
+        `<@${user.id}> sent a violation message:\n${safeContent}`
+      );
+    }
     // VERIFY USER
     ch4.addRoleToUser(guild.id, user, memberRoleId);
   });
+
+  // ch4.on("messageDelete", async (message) => {
+  //   if (!message.member) return;
+  //   if (message.member.user.bot) return;
+  //   const { content } = message;
+  //   if (!content) return;
+  //   const terminalChannel = await ch4.channels.fetch(terminalChannelId);
+  //   if (terminalChannel?.type !== ChannelType.GuildText) return;
+  //   const safeContent = content.replace(/@/g, "＠");
+  //   terminalChannel.send(
+  //     `a deleted a message from <@${message.member.user.id}>:\n${safeContent}`
+  //   );
+  // });
 
   ch4.on("interactionCreate", async (interaction: Interaction) => {
     const { guild } = interaction;
