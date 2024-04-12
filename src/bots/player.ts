@@ -25,6 +25,7 @@ import {
 import ytdl, { type VideoDetails } from "ytdl-core";
 import { googleSearch } from "../services/search";
 import { getYouTubeVideoId } from "@cch137/utils/format/youtube-urls";
+import { ytdlGetInfo } from "../services/ytdl";
 
 config();
 
@@ -301,6 +302,20 @@ player.on(Events.ClientReady, async () => {
               await player.search(query, interaction);
               break;
             }
+            case "mp3": {
+              const url = String(interaction.options.get("url")?.value || "");
+              const { title, api } = await ytdlGetInfo(url);
+              const button = new ButtonBuilder()
+                .setLabel("Download MP3")
+                .setURL(`https://api.cch137.link${api}`)
+                .setStyle(ButtonStyle.Link);
+              interaction.reply({
+                content: title,
+                // @ts-ignore
+                components: [new ActionRowBuilder().addComponents(button)],
+              });
+              break;
+            }
             case "set-volume": {
               const value = Number(interaction.options.get("value")?.value);
               player.setVolume(value);
@@ -381,6 +396,18 @@ player.on(Events.ClientReady, async () => {
         {
           name: "query",
           description: "query",
+          type: ApplicationCommandOptionType.String,
+          required: true,
+        },
+      ],
+    });
+    await player!.application!.commands.create({
+      name: "mp3",
+      description: "Download MP3 of a video",
+      options: [
+        {
+          name: "url",
+          description: "video url",
           type: ApplicationCommandOptionType.String,
           required: true,
         },

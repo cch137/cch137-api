@@ -95,6 +95,30 @@ apis.use("/translate-text", async (req, res) => {
   }
 });
 
+import { ytdlGetInfo, ytdlDownloadMp3 } from "../services/ytdl";
+apis.use("/yt-to-mp3/:filename", async (req, res) => {
+  const { src, source, id } = parseForm(req);
+  const url = src || source || `https://youtu.be/${id}`;
+  let filename = req.params.filename;
+  if (!filename.endsWith(".mp3")) {
+    return res.redirect(`/yt-to-mp3/${filename}.mp3?src=${url}`);
+  }
+  try {
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${encodeURI(filename)}`
+    );
+    (await ytdlDownloadMp3(url)).pipe(res);
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
+apis.use("/yt-to-mp3", async (req, res) => {
+  const { src, source } = parseForm(req);
+  const { api } = await ytdlGetInfo(src || source);
+  return res.redirect(api);
+});
+
 import wikipedia from "../services/wikipedia";
 apis.use("/wikipedia", async (req, res) => {
   const { query, q, article, a, title, t, page, p, language, lang, l } =
