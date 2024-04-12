@@ -100,13 +100,11 @@ apis.use("/yt-to-mp3/:filename", async (req, res) => {
   const { src, source, id } = parseForm(req);
   const url = src || source || `https://youtu.be/${id}`;
   let filename = req.params.filename;
-  if (!filename.endsWith(".mp3")) {
-    return res.redirect(`/yt-to-mp3/${filename}.mp3?src=${url}`);
-  }
+  if (!filename.endsWith(".mp3")) filename += ".mp3";
   try {
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${encodeURI(filename)}`
+      `attachment; filename="${encodeURIComponent(filename)}"`
     );
     res.setHeader("Content-Type", "audio/mpeg");
     (await ytdlDownloadMp3(url)).pipe(res);
