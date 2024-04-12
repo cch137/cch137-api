@@ -108,6 +108,7 @@ apis.use("/yt-to-mp3/:filename", async (req, res) => {
       "Content-Disposition",
       `attachment; filename=${encodeURI(filename)}`
     );
+    res.setHeader("Content-Type", "audio/mpeg");
     (await ytdlDownloadMp3(url)).pipe(res);
   } catch (error) {
     res.status(500).json({ error });
