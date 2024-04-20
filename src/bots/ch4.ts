@@ -92,7 +92,7 @@ const fetchEQReports = IntervalTask.create(
       }
     };
   })(),
-  5000
+  10000
 );
 
 const updateCh4StatusTask = IntervalTask.create(
@@ -166,7 +166,7 @@ const updateCh4StatusTask = IntervalTask.create(
       }
     };
   })(),
-  1000
+  10000
 );
 
 const processEarthquakeMessage = async (
