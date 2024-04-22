@@ -333,7 +333,8 @@ ch4.on(Events.ClientReady, async () => {
       return;
     }
     // CHECK FOR VIOLATIONS
-    const menstionedEveryone = /@everyone/.test(content);
+    const menstionedEveryone =
+      /@everyone/.test(content) || /@here/.test(content);
     const sentInvitationLink = /discord.gg/.test(content);
     if (menstionedEveryone || sentInvitationLink) {
       const isArgon = message.member.roles.cache
