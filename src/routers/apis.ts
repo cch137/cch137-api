@@ -254,7 +254,7 @@ apis.get("/ls/i/:chap_problem", async (req, res) => {
   if (isbn && chap_problem) {
     const filename = `${isbn}_${chap_problem}.png`;
     res.redirect(
-      `https://raw.githubusercontent.com/cch137/ggehc/main/${isbn}/${filename}`
+      `https://raw.githubusercontent.com/cch137/ggehc/main/static/${isbn}/${filename}`
     );
     return;
   }
