@@ -310,9 +310,24 @@ apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
 
 import { unpackData } from "@cch137/utils/shuttle";
 import { readStream } from "@cch137/utils/stream";
-apis.use("/proxy", async (req, res) => {
-  const { input, ...init } = unpackData<{ [key: string]: any }>(req.body, 0);
+apis.use("/proxy/:url", async (req, res) => {
   try {
+    console.log("HIIIIIII");
+    const url = req.params.url;
+    const reader = (await fetch(url)).body!.getReader();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (value) res.write(value);
+      if (done) break;
+    }
+  } catch {
+  } finally {
+    res.end();
+  }
+});
+apis.use("/proxy", async (req, res) => {
+  try {
+    const { input, ...init } = unpackData<{ [key: string]: any }>(req.body, 0);
     const _res = await fetch(input, init);
     _res.headers.forEach((v, k) => {
       if (/Set-Cookie/i.test(k)) return;
@@ -347,6 +362,7 @@ apis.use("/ccamc-infer", async (req, res) => {
 });
 
 import dictionary, { isDictionaryItem } from "../services/notion/dictionary";
+import { read } from "pdfkit";
 const ntDict = express.Router();
 const { API_KEY } = process.env;
 apis.use("/nt-dict/", ntDict);
