@@ -227,64 +227,6 @@ apis.delete("/lockers", (req, res) => {
   }
 });
 
-import yadisk from "../services/yadisk";
-import ls from "../services/ls";
-const isDisableLS = Number(process.env.STOP_LS);
-apis.get("/ls/list", (req, res) => {
-  res.type("application/json");
-  try {
-    res.send(ls.list);
-  } catch (err) {
-    res.status(500).send(`${err}`);
-  }
-});
-apis.get("/ls/:fn", (req, res) => {
-  res.type("application/json");
-  try {
-    res.send(ls.get(req.params.fn));
-  } catch (err) {
-    res.status(404).send(`Not Found`);
-  }
-});
-apis.get("/ls/s/:isbn_c_p", async (req, res) => {
-  if (isDisableLS) return res.status(500).end();
-  const isbn_c_p = req.params.isbn_c_p;
-  const [isbn, c, p] = isbn_c_p.split("_");
-  const filename = `${isbn_c_p}.png`;
-  res.redirect(
-    `https://raw.githubusercontent.com/cch137/ggehc/main/static/${isbn}/${filename}`
-  );
-});
-apis.get("/ls/i/:chap_problem", async (req, res) => {
-  if (isDisableLS) return res.status(500).end();
-  const chap_problem = req.params.chap_problem;
-  const isbn = req.query.b || req.query.isbn;
-  const id = req.query.id || chap_problem;
-  if (isbn && chap_problem) {
-    const filename = `${isbn}_${chap_problem}.png`;
-    res.redirect(
-      `https://raw.githubusercontent.com/cch137/ggehc/main/static/${isbn}/${filename}`
-    );
-    return;
-  }
-  try {
-    const download =
-      (req.query.download || req.query.dl || 0).toString() != "0";
-    if (!id) throw "NOT FOUND";
-    const resource = await yadisk.preview(`https://yadi.sk/i/${id}`);
-    res.setHeader(
-      "Content-Disposition",
-      `${download ? "attachment; " : ""}filename="${resource.filename}"`
-    );
-    res.type(resource.type);
-    if (resource.started) res.send(await resource.data);
-    else resource.stream.pipe(res);
-  } catch (err) {
-    res.redirect(`https://disk.yandex.com/i/${id}`);
-    // res.status(404).send(`Not Found`);
-  }
-});
-
 import { fetchWeather, fetchWeatherText } from "../services/weather";
 apis.use("/weather", async (req, res) => {
   const { city, loc, location, unit, lang } = parseForm(req);
