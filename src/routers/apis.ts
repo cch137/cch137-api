@@ -246,6 +246,15 @@ apis.get("/ls/:fn", (req, res) => {
     res.status(404).send(`Not Found`);
   }
 });
+apis.get("/ls/s/:isbn_c_p", async (req, res) => {
+  if (isDisableLS) return res.status(500).end();
+  const isbn_c_p = req.params.isbn_c_p;
+  const [isbn, c, p] = isbn_c_p.split("_");
+  const filename = `${isbn_c_p}.png`;
+  res.redirect(
+    `https://raw.githubusercontent.com/cch137/ggehc/main/static/${isbn}/${filename}`
+  );
+});
 apis.get("/ls/i/:chap_problem", async (req, res) => {
   if (isDisableLS) return res.status(500).end();
   const chap_problem = req.params.chap_problem;
