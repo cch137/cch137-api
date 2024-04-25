@@ -312,7 +312,6 @@ import { unpackData } from "@cch137/utils/shuttle";
 import { readStream } from "@cch137/utils/stream";
 apis.use("/proxy/:url", async (req, res) => {
   try {
-    console.log("HIIIIIII");
     const url = req.params.url;
     const reader = (await fetch(url)).body!.getReader();
     while (true) {
