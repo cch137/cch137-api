@@ -312,8 +312,17 @@ import { unpackData } from "@cch137/utils/shuttle";
 import { readStream } from "@cch137/utils/stream";
 apis.use("/proxy/:url", async (req, res) => {
   try {
-    const url = req.params.url;
-    const reader = (await fetch(url)).body!.getReader();
+    const url = new URL(req.params.url);
+    const reader = (
+      await fetch(url.href, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0",
+          Origin: url.origin,
+          Referer: url.origin,
+        },
+      })
+    ).body!.getReader();
     while (true) {
       const { value, done } = await reader.read();
       if (value) res.write(value);
