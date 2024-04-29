@@ -102,7 +102,7 @@ const updateCh4StatusTask = IntervalTask.create(
       try {
         if (isUpdatingStatus) return;
         isUpdatingStatus = true;
-        const res = await fetch("https://ch4.cch137.link/api/status", {
+        const res = await fetch("https://cch137.link/api/status", {
           method: "POST",
         });
         const result = (await res.json()) as {
