@@ -259,6 +259,21 @@ apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
   res.send(Buffer.from(await ImagesToPDF.convert(id)));
 });
 
+import downloadPPT from "../services/pine/download-ppt";
+apis.use("/pine-ppt-dl/:filename", async (req, res) => {
+  let { filename } = req.params;
+  const { url, acc, pass } = parseForm(req);
+  if (!filename.endsWith(".pdf")) filename += ".pdf";
+  try {
+    const pdf = Buffer.from(await downloadPPT(url, acc, pass));
+    res.type("application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}`);
+    res.send(pdf);
+  } catch {
+    res.status(500).send();
+  }
+});
+
 import { unpackData } from "@cch137/utils/shuttle";
 import { readStream } from "@cch137/utils/stream";
 apis.use("/proxy/:url", async (req, res) => {

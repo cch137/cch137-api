@@ -1,0 +1,27 @@
+<body style="font-family: sans-serif; background: #000; color: #fff; padding: 1rem;">
+  <div>Link has been generated. Thank you!</div>
+  <div>The download will take some time, please be patient.</div>
+  <script>
+    (() => {
+      const input = (hint) => {
+        let ans = '';
+        while (!ans) ans = prompt(hint);
+        return ans;
+      }
+      const url = `/pine-ppt-dl/${decodeURIComponent(input('Filename:'))}?` + new URLSearchParams({
+        url: input('URL'),
+        acc: input('Account'),
+        pass: input('Password'),
+      });
+      const a = document.createElement('a');
+      a.href = url;
+      a.innerText = '[download]';
+      a.target = '_blank';
+      a.style.color = '#888';
+      a.style.fontWeight = 'bold';
+      a.style.fontSize = '2rem';
+      a.style.display = 'block';
+      document.body.appendChild(a);
+    })();
+  </script>
+</body>
