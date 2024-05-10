@@ -267,10 +267,14 @@ apis.use("/pine-ppt-dl/:filename", async (req, res) => {
   try {
     const pdf = Buffer.from(await downloadPPT(url, acc, pass));
     res.type("application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(filename)}`
+    );
     res.send(pdf);
-  } catch {
-    res.status(500).send();
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(e instanceof Error ? e.message : `${e}`);
   }
 });
 

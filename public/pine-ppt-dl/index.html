@@ -8,7 +8,7 @@
         while (!ans) ans = prompt(hint);
         return ans;
       }
-      const url = `/pine-ppt-dl/${decodeURIComponent(input('Filename:'))}?` + new URLSearchParams({
+      const url = `/pine-ppt-dl/${encodeURIComponent(input('Filename:'))}?` + new URLSearchParams({
         url: input('URL'),
         acc: input('Account'),
         pass: input('Password'),
