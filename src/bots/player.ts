@@ -160,14 +160,14 @@ player.on(Events.ClientReady, async () => {
 
     async play(
       source: string,
-      interaction: Interaction,
+      interaction?: Interaction,
       { retried = false, playbackDuration = 0 } = {}
     ): Promise<void> {
       const conn = this.currentConnection;
       if (!conn || !this.currentChannel) {
         if (retried)
           throw new Error("The bot hasn't joined the voice channel yet.");
-        await this.autoJoin(interaction);
+        if (interaction) await this.autoJoin(interaction);
         return await this.play(source, interaction, {
           retried: true,
           playbackDuration,
@@ -182,6 +182,7 @@ player.on(Events.ClientReady, async () => {
         liveBuffer: 1 << 62,
       });
       stream.on("info", (info, mime) => {
+        if (!interaction) return;
         const details = info.videoDetails as VideoDetails;
         const cmdChannel = interaction.channel;
         if (cmdChannel) {
@@ -231,6 +232,7 @@ player.on(Events.ClientReady, async () => {
         this.setVolume(this.currentVolume);
       });
       player.on("error", async (e) => {
+        if (!interaction) return;
         const cmdChannel = interaction.channel;
         if (cmdChannel) {
           await cmdChannel.send(
