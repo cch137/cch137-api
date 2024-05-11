@@ -256,6 +256,13 @@ player.on(Events.ClientReady, async () => {
     }
   }
 
+  // (async () => {
+  //   const p = GuildPlayer.get(await player.guilds.fetch(ch4GuildId));
+  //   await p.join("1113758792430145547");
+  //   p.setVolume(100);
+  //   await p.play("https://www.youtube.com/watch?v=MNJ0vIUj4ww");
+  // })();
+
   try {
     player.on("interactionCreate", async (interaction: Interaction) => {
       const { guild } = interaction;

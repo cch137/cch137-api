@@ -1,6 +1,6 @@
 import { packDataWithHash } from "@cch137/utils/shuttle";
 import type { UniMessage, UniOptions } from "@cch137/utils/ai";
-import wrapStreamResponse from "@cch137/utils/crawl/wrap-stream-response";
+import wrapStreamResponse from "@cch137/utils/fetch-stream/wrap-stream-response";
 import {
   ApplicationCommandOptionType,
   Events,
