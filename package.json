@@ -22,7 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@cch137/body-parser": "^0.0.4",
-    "@cch137/utils": "^0.0.138",
+    "@cch137/utils": "^0.0.139",
     "@discordjs/voice": "^0.16.1",
     "@notionhq/client": "^2.2.14",
     "axios": "^1.6.7",
