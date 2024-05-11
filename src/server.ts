@@ -2,7 +2,7 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import { WebSocketServer } from "ws";
-import bodyParser from "@cch137/body-parser";
+import bodyParser from "@cch137/utils/body-parser";
 import getIp from "@cch137/utils/server/get-ip";
 
 const app = express();
