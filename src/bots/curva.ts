@@ -1,5 +1,4 @@
 import { packDataWithHash } from "@cch137/utils/shuttle";
-import type { UniMessage, UniOptions } from "@cch137/utils/ai";
 import wrapStreamResponse from "@cch137/utils/fetch-stream/wrap-stream-response";
 import {
   ApplicationCommandOptionType,
@@ -23,6 +22,23 @@ import {
 import { config } from "dotenv";
 
 config();
+
+export type UniMessage = {
+  role: string;
+  text: string;
+};
+
+export type UniOptions = {
+  model?: string;
+  messages: UniMessage[];
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  /** Only applicable to Gemini */
+  maxOutputTokens?: number;
+  /** Only applicable to OneApi */
+  disableTopK?: boolean;
+};
 
 export async function askCh4Ai(messages: UniMessage[], model: string) {
   const res = await fetch(`${process.env.CH4_ORIGIN}/api/ai-chat/ask/bot`, {
