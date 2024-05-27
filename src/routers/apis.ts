@@ -339,8 +339,10 @@ apis.use("/ccamc-infer", async (req, res) => {
   }
 });
 
+import { router as wk } from "../services/wakawaka";
+apis.use("/wk", wk);
+
 import dictionary, { isDictionaryItem } from "../services/notion/dictionary";
-import { read } from "pdfkit";
 const ntDict = express.Router();
 const { API_KEY } = process.env;
 apis.use("/nt-dict/", ntDict);
