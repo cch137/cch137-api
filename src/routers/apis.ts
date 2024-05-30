@@ -95,7 +95,7 @@ apis.use("/translate-text", async (req, res) => {
   }
 });
 
-import { ytdlGetInfo, ytdlDownloadMp3 } from "../services/ytdl";
+import { ytdlGetMp3Info, ytdlDownloadMp3 } from "../services/ytdl";
 apis.use("/yt-to-mp3/:filename", async (req, res) => {
   const { src, source, id } = parseForm(req);
   const url = src || source || `https://youtu.be/${id}`;
@@ -114,7 +114,7 @@ apis.use("/yt-to-mp3/:filename", async (req, res) => {
 });
 apis.use("/yt-to-mp3", async (req, res) => {
   const { src, source } = parseForm(req);
-  const { api } = await ytdlGetInfo(src || source);
+  const { api } = await ytdlGetMp3Info(src || source);
   return res.redirect(api);
 });
 

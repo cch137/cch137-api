@@ -1,4 +1,10 @@
-import { Events, Guild, Interaction, VoiceChannel } from "discord.js";
+import {
+  Events,
+  Guild,
+  Interaction,
+  TextBasedChannel,
+  VoiceChannel,
+} from "discord.js";
 import {
   ActionRowBuilder,
   ApplicationCommandOptionType,
@@ -18,14 +24,16 @@ import {
   getVoiceConnection,
   joinVoiceChannel,
   type VoiceConnection,
-  type AudioPlayer,
   type PlayerSubscription,
-  AudioResource,
+  type AudioPlayer,
+  type AudioResource,
+  AudioPlayerStatus,
 } from "@discordjs/voice";
-import ytdl, { type VideoDetails } from "ytdl-core";
+import ytdl from "ytdl-core";
 import { googleSearch } from "../services/search";
 import { getYouTubeVideoId } from "@cch137/utils/format/youtube-urls";
-import { ytdlGetInfo } from "../services/ytdl";
+import { AuthorSummary, ytdlGetInfo, ytdlGetMp3Info } from "../services/ytdl";
+import type { Readable } from "stream";
 
 config();
 
@@ -59,6 +67,151 @@ player.on(Events.ClientReady, async () => {
     }
   }
 
+  class Playing {
+    readonly ps: PlaySource;
+    readonly stream: Readable;
+    readonly player: AudioPlayer;
+    readonly resource: AudioResource;
+    readonly subscription?: PlayerSubscription;
+
+    constructor(source: PlaySource, stream: Readable) {
+      this.ps = source;
+      this.stream = stream;
+      const gp = this.ps.gp;
+
+      // detect conn & voice channel
+      const conn = gp.connection;
+      if (!conn || !gp.voiceChannel)
+        throw new Error("The bot hasn't joined the voice channel yet.");
+
+      const player = createAudioPlayer({
+        behaviors: {
+          noSubscriber: NoSubscriberBehavior.Pause,
+        },
+      });
+      const resource = createAudioResource(stream, { inlineVolume: true });
+      this.player = player;
+      this.resource = resource;
+      player.on("subscribe", () => resource.volume?.setVolume(gp.volume));
+      player.on("error", async (e) => {
+        const channel = this.ps.gp.textChannel;
+        if (!channel) return;
+        const isVideoIdNotFound = e.message.startsWith("No video id found");
+        await channel.send({
+          content: errorMessage(
+            `${e.name}: ${
+              e.message || "Please try to rejoin the bot to the channel."
+            }`
+          ),
+          components: isVideoIdNotFound
+            ? ([
+                new ActionRowBuilder().addComponents(
+                  new ButtonBuilder()
+                    .setCustomId(`/search ${this.ps.source.substring(0, 100)}`)
+                    .setLabel("Search on YouTube")
+                    .setStyle(ButtonStyle.Secondary)
+                ),
+              ] as any)
+            : [],
+        });
+      });
+      player.on("stateChange", async (oldState, newState) => {
+        switch (newState.status) {
+          case AudioPlayerStatus.Idle: {
+            if (gp.loop) {
+              await this.ps.play();
+            } else {
+              const source = gp.playlist.shift();
+              await source?.info();
+              await source?.play();
+            }
+          }
+        }
+      });
+
+      // stop last playing
+      try {
+        const playing = gp.playing;
+        playing?.player.stop();
+        playing?.subscription?.unsubscribe();
+      } catch {}
+
+      // play this playing
+      gp.playing = this;
+      player.play(resource);
+      this.subscription = gp.connection?.subscribe(player);
+    }
+  }
+
+  class PlaySource {
+    readonly id = crypto.randomUUID();
+    readonly gp: GuildPlayer;
+    readonly source: string;
+    readonly title: string;
+    readonly author?: AuthorSummary;
+
+    constructor(
+      gp: GuildPlayer,
+      source: string,
+      title?: string,
+      author?: AuthorSummary
+    ) {
+      this.gp = gp;
+      this.source = source;
+      this.title = title || source;
+      this.author = author;
+    }
+
+    async play(autoSkip = true) {
+      try {
+        const stream = ytdl(this.source, {
+          filter: "audioonly",
+          quality: "highestaudio",
+          dlChunkSize: 0,
+          begin: 0,
+          highWaterMark: 1 << 62,
+          liveBuffer: 1 << 62,
+        });
+        this.gp.playing = new Playing(this, stream);
+      } catch {
+        if (autoSkip) {
+          const source = this.gp.playlist.shift();
+          await source?.info();
+          await source?.play();
+        }
+      }
+    }
+
+    async info() {
+      const channel = this.gp.textChannel;
+      if (!channel) return;
+      const author = this.author;
+      return await channel.send({
+        content: successMessage(
+          `Now playing:\n**Source:** [${this.title}](<${this.source}>)${
+            author ? `\n**Author:** [${author.name}](<${author.url}>)` : ""
+          }`
+        ),
+        components: [
+          new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`/play ${this.source.substring(0, 100)}`)
+                .setLabel("Play")
+                .setStyle(ButtonStyle.Secondary)
+            )
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`/queue ${this.source.substring(0, 100)}`)
+                .setLabel("Queue")
+                .setStyle(ButtonStyle.Secondary)
+            ),
+        ] as any,
+        embeds: [],
+      });
+    }
+  }
+
   class GuildPlayer {
     static manager = new Map<string, GuildPlayer>();
     static get(guild: Guild) {
@@ -66,37 +219,79 @@ player.on(Events.ClientReady, async () => {
       return guildPlayer || new GuildPlayer(guild);
     }
 
-    currentVolume = 100;
-    currentConnection: VoiceConnection | null = null;
-    currentChannel: VoiceChannel | null = null;
-    currentPlayer: AudioPlayer | null = null;
-    currentResource: AudioResource | null = null;
-    currentSubscription: PlayerSubscription | null = null;
+    loop: boolean = false;
+
+    private _volume = 1;
+    get volume() {
+      return this._volume;
+    }
+    set volume(value: number) {
+      value = Math.max(0, Math.min(100, value));
+      this._volume = value;
+      this.playing?.resource.volume?.setVolume(value);
+    }
+
+    connection?: VoiceConnection;
+    voiceChannel?: VoiceChannel;
+    textChannel?: TextBasedChannel;
+
     readonly guild: Guild;
+    playlist: PlaySource[] = [];
+    playing?: Playing;
 
     constructor(guild: Guild) {
       this.guild = guild;
       GuildPlayer.manager.set(guild.id, this);
     }
 
-    async join(channelId: any) {
+    async createPlaySource(source: string) {
+      try {
+        const { title, url, author } = await ytdlGetInfo(source);
+        return new PlaySource(this, url, title, author);
+      } catch {
+        return new PlaySource(this, source);
+      }
+    }
+
+    async queue(source: string) {
+      const src = await this.createPlaySource(source);
+      this.playlist.push(src);
+      return src;
+    }
+
+    async join(interaction: Interaction) {
+      // get channel id (from cmd or user)
+      const channelId =
+        (interaction.isChatInputCommand()
+          ? interaction.options.get("channel")?.value
+          : null) ||
+        (await interaction.guild!.members.fetch(interaction.user.id)).voice
+          .channelId;
       if (typeof channelId !== "string" || !channelId)
         throw new Error("Invalid channel");
+
+      // fetch channel
       const channel = await this.guild.channels.fetch(channelId);
       if (channel?.type !== ChannelType.GuildVoice)
         throw new Error("Channel is not a voice channel");
-      this.currentChannel = channel;
+      this.voiceChannel = channel;
+
+      // delete old connection
       try {
         const oldConnection = getVoiceConnection(this.guild.id);
         if (!oldConnection) throw new Error("No Old Connection");
         oldConnection.destroy();
       } catch {}
+
+      // join voice channel
       const conn = joinVoiceChannel({
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator,
       });
-      this.currentConnection = conn;
+      this.connection = conn;
+
+      // handle disconnect
       conn.on(VoiceConnectionStatus.Disconnected, async () => {
         try {
           await Promise.race([
@@ -107,25 +302,16 @@ player.on(Events.ClientReady, async () => {
           conn.destroy();
         }
       });
+
       return conn;
     }
 
-    async autoJoin(interaction: Interaction) {
-      const targetChannel =
-        (interaction.isChatInputCommand()
-          ? interaction.options.get("channel")?.value
-          : "") ||
-        (await interaction.guild!.members.fetch(interaction.user.id)).voice
-          .channelId;
-      return await this.join(targetChannel);
-    }
-
     leave() {
-      const conn = this.currentConnection || getVoiceConnection(this.guild.id);
+      const conn = this.connection || getVoiceConnection(this.guild.id);
       if (conn) {
         conn.destroy();
-        this.currentConnection = null;
-        this.currentChannel = null;
+        this.connection = void 0;
+        this.voiceChannel = void 0;
       }
     }
 
@@ -161,107 +347,26 @@ player.on(Events.ClientReady, async () => {
     async play(
       source: string,
       interaction?: Interaction,
-      { retried = false, playbackDuration = 0 } = {}
+      autoJoined = false
     ): Promise<void> {
-      const conn = this.currentConnection;
-      if (!conn || !this.currentChannel) {
-        if (retried)
-          throw new Error("The bot hasn't joined the voice channel yet.");
-        if (interaction) await this.autoJoin(interaction);
-        return await this.play(source, interaction, {
-          retried: true,
-          playbackDuration,
-        });
+      const conn = this.connection;
+      if (interaction) {
+        const channel = interaction.channel;
+        if (channel) this.textChannel = channel;
       }
-      const stream = ytdl(source, {
-        filter: "audioonly",
-        quality: "highestaudio",
-        dlChunkSize: 0,
-        begin: playbackDuration,
-        highWaterMark: 1 << 62,
-        liveBuffer: 1 << 62,
-      });
-      stream.on("info", (info, mime) => {
-        if (!interaction) return;
-        const details = info.videoDetails as VideoDetails;
-        const cmdChannel = interaction.channel;
-        if (cmdChannel) {
-          // const thumbnailUrl = details.thumbnails.at(-1)?.url;
-          const { author, title } = details;
-          const {
-            name,
-            channel_url = "",
-            external_channel_url = "",
-          } = author as any;
-          const url = channel_url || external_channel_url;
-          const rows = [
-            new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId(`/play ${source.substring(0, 100)}`)
-                .setLabel("Replay")
-                .setStyle(ButtonStyle.Secondary)
-            ),
-          ];
-          cmdChannel.send({
-            content: successMessage(
-              `Now playing:\n**Source:** [${title}](<https://youtu.be/${
-                details.videoId
-              }>)\n**Author:** [${name || author}](<${
-                channel_url || external_channel_url
-              }>)`
-            ),
-            // files: thumbnailUrl ? [{ attachment: thumbnailUrl }] : [],
-            // @ts-ignore
-            components: rows,
-            embeds: [],
-          });
-        }
-      });
-      if (this.currentPlayer) this.currentPlayer.stop(true);
-      if (this.currentSubscription) this.currentSubscription.unsubscribe();
-      const player = createAudioPlayer({
-        behaviors: {
-          noSubscriber: NoSubscriberBehavior.Pause,
-        },
-      });
-      this.currentPlayer = player;
-      const resource = createAudioResource(stream, { inlineVolume: true });
-      this.currentResource = resource;
-      player.play(resource);
-      player.on("subscribe", () => {
-        this.setVolume(this.currentVolume);
-      });
-      player.on("error", async (e) => {
-        if (!interaction) return;
-        const cmdChannel = interaction.channel;
-        if (cmdChannel) {
-          await cmdChannel.send(
-            errorMessage(
-              `${e.name}: ${
-                e.message || "Please try to rejoin the bot to the channel."
-              }`
-            )
-          );
-          if (e.message.startsWith("No video id found"))
-            this.search(source, interaction);
-        }
-      });
-      this.currentSubscription = conn.subscribe(player) || null;
-    }
-
-    setVolume(value: number) {
-      if (this.currentResource)
-        this.currentResource.volume!.setVolume(value / 100);
-      this.currentVolume = value;
+      if (!conn || !this.voiceChannel) {
+        if (autoJoined)
+          throw new Error("The bot hasn't joined the voice channel yet.");
+        if (interaction) await this.join(interaction);
+        return await this.play(source, interaction, true);
+      }
+      const src = source
+        ? await this.createPlaySource(source)
+        : this.playlist.shift();
+      await src?.info();
+      await src?.play(false);
     }
   }
-
-  // (async () => {
-  //   const p = GuildPlayer.get(await player.guilds.fetch(ch4GuildId));
-  //   await p.join("1113758792430145547");
-  //   p.setVolume(100);
-  //   await p.play("https://www.youtube.com/watch?v=MNJ0vIUj4ww");
-  // })();
 
   try {
     player.on("interactionCreate", async (interaction: Interaction) => {
@@ -291,6 +396,36 @@ player.on(Events.ClientReady, async () => {
             player.play(customId.replace("/play ", "").trim(), interaction);
             return;
           }
+          if (interaction.customId.startsWith("/playlist")) {
+            interaction.reply({
+              content:
+                "**Playlist**\n" +
+                  player.playlist
+                    .map((v, i) => `${i + 1}. [${v.title}](<${v.source}>)`)
+                    .join("\n") || "Playlist is empty",
+            });
+            return;
+          }
+          if (interaction.customId.startsWith("/queue ")) {
+            const replied = interaction.reply(OK);
+            const src = await player.queue(
+              customId.replace("/play ", "").trim()
+            );
+            await (
+              await replied
+            ).edit({
+              content: `Added: [${src.title}](<${src.source}>)`,
+              components: [
+                new ActionRowBuilder().addComponents(
+                  new ButtonBuilder()
+                    .setCustomId(`/playlist`)
+                    .setLabel("Show playlist")
+                    .setStyle(ButtonStyle.Secondary)
+                ),
+              ] as any,
+            });
+            return;
+          }
           throw new Error("Unknown interaction");
         }
         if (isChatInputCommand) {
@@ -299,8 +434,68 @@ player.on(Events.ClientReady, async () => {
               const source = String(
                 interaction.options.get("source")?.value || ""
               );
+              if (!source && player.playing)
+                throw new Error("Source cannot be empty while playing.");
+              await interaction.reply(OK);
               await player.play(source, interaction);
+              break;
+            }
+            case "skip": {
               interaction.reply(OK);
+              await player.play("", interaction);
+              break;
+            }
+            case "queue": {
+              const source = String(
+                interaction.options.get("source")?.value || ""
+              );
+              const replied = interaction.reply(OK);
+              const src = await player.queue(source);
+              await (
+                await replied
+              ).edit({
+                content: `Added: [${src.title}](<${src.source}>)`,
+                components: [
+                  new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                      .setCustomId(`/playlist`)
+                      .setLabel("Show playlist")
+                      .setStyle(ButtonStyle.Secondary)
+                  ),
+                ] as any,
+              });
+              break;
+            }
+            case "stats": {
+              interaction.reply({
+                content: [
+                  `Volume: ${player.volume}`,
+                  `Play mode: ${player.loop ? "loop" : "single"}`,
+                  `Playlist length: ${player.playlist.length}`,
+                ].join("\n"),
+              });
+              break;
+            }
+            case "playlist": {
+              interaction.reply({
+                content:
+                  "**Playlist**\n" +
+                    player.playlist
+                      .map((v, i) => `${i + 1}. [${v.title}](<${v.source}>)`)
+                      .join("\n") || "Playlist is empty",
+              });
+              break;
+            }
+            case "remove": {
+              const index = Number(interaction.options.get("index")?.value);
+              if (typeof index !== "number" || isNaN(index))
+                throw new Error("Index must be a number");
+              const removed = player.playlist.splice(index - 1, 1)[0];
+              interaction.reply({
+                content: removed
+                  ? `Removed: [${removed.title}](<${removed.source}>)`
+                  : "Nothing can be removed.",
+              });
               break;
             }
             case "search": {
@@ -313,7 +508,7 @@ player.on(Events.ClientReady, async () => {
             }
             case "mp3": {
               const url = String(interaction.options.get("url")?.value || "");
-              const { title, api } = await ytdlGetInfo(url);
+              const { title, api } = await ytdlGetMp3Info(url);
               const button = new ButtonBuilder()
                 .setLabel("Download MP3")
                 .setURL(`https://api.cch137.link${api}`)
@@ -327,12 +522,18 @@ player.on(Events.ClientReady, async () => {
             }
             case "set-volume": {
               const value = Number(interaction.options.get("value")?.value);
-              player.setVolume(value);
+              player.volume = value / 100;
+              interaction.reply(OK);
+              break;
+            }
+            case "play-mode": {
+              const mode = String(interaction.options.get("mode")?.value);
+              player.loop = mode === "loop";
               interaction.reply(OK);
               break;
             }
             case "join": {
-              player.autoJoin(interaction);
+              player.join(interaction);
               interaction.reply(OK);
               break;
             }
@@ -382,6 +583,45 @@ player.on(Events.ClientReady, async () => {
           name: "source",
           description: "url / query",
           type: ApplicationCommandOptionType.String,
+        },
+      ],
+    });
+    await player!.application!.commands.create({
+      name: "skip",
+      description: "Skip the current resource.",
+    });
+    await player!.application!.commands.create({
+      name: "stats",
+      description: "show stats",
+    });
+    await player!.application!.commands.create({
+      name: "play-mode",
+      description: "set play mode",
+      options: [
+        {
+          name: "mode",
+          description: "play mode",
+          type: ApplicationCommandOptionType.String,
+          choices: [
+            { name: "Loop", value: "loop" },
+            { name: "Single", value: "single" },
+          ],
+          required: true,
+        },
+      ],
+    });
+    await player!.application!.commands.create({
+      name: "playlist",
+      description: "show playlist",
+    });
+    await player!.application!.commands.create({
+      name: "queue",
+      description: "Add a source to the playlist",
+      options: [
+        {
+          name: "source",
+          description: "url / query",
+          type: ApplicationCommandOptionType.String,
           required: true,
         },
       ],
@@ -393,6 +633,18 @@ player.on(Events.ClientReady, async () => {
         {
           name: "value",
           description: "number between 0 and 100",
+          type: ApplicationCommandOptionType.Number,
+          required: true,
+        },
+      ],
+    });
+    await player!.application!.commands.create({
+      name: "remove",
+      description: "remove item from playlist",
+      options: [
+        {
+          name: "index",
+          description: "Index of the item to remove.",
           type: ApplicationCommandOptionType.Number,
           required: true,
         },
