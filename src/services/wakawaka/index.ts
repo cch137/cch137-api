@@ -2,52 +2,13 @@ import random from "@cch137/utils/random";
 import mongoose, { Schema } from "mongoose";
 import { Router } from "express";
 import parseForm from "../../utils/parseForm";
+import Repo from "../github";
 
-async function _upload(
-  filepath: string,
-  content: Buffer | Uint8Array | string
-) {
-  if (typeof content !== "string") {
-    if (content instanceof Buffer)
-      return _upload(filepath, content.toString("base64"));
-    if (content instanceof Uint8Array)
-      return _upload(filepath, Buffer.from(content).toString("base64"));
-    throw new Error("TypeError: content");
-  }
-  const res = await fetch(
-    `https://api.github.com/repos/cch137/api-files/contents/${filepath}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `token ${process.env.GITHUB_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: "create",
-        committer: { name: "cch137", email: "cheechorngherng@gmail.com" },
-        content,
-      }),
-    }
-  );
-  return await res.json();
-}
-
-const queue = new Set<Promise<any>>();
+const apiFiles = new Repo("cch137", "api-files");
 
 async function upload(filename: string, content: Buffer | Uint8Array | string) {
   const id = crypto.randomUUID();
-  let i = 0;
-  while (i++ < 3) {
-    await Promise.all([...queue]);
-    const p = _upload(`i/${id}/${filename}`, content);
-    try {
-      queue.add(p);
-      const res = await p;
-      if ("content" in res) i = 0;
-    } finally {
-      queue.delete(p);
-    }
-  }
+  await apiFiles.upload(`i/${id}/${filename}`, content);
   return { id, filename };
 }
 
