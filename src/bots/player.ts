@@ -216,7 +216,7 @@ player.on(Events.ClientReady, async () => {
     static manager = new Map<string, GuildPlayer>();
     static get(guild: Guild) {
       const guildPlayer = GuildPlayer.manager.get(guild.id);
-      return guildPlayer || new GuildPlayer(guild);
+      return guildPlayer || new GuildPlayer(guild).leave();
     }
 
     loop: boolean = false;
@@ -313,6 +313,7 @@ player.on(Events.ClientReady, async () => {
         this.connection = void 0;
         this.voiceChannel = void 0;
       }
+      return this;
     }
 
     async search(query: string, interaction: Interaction) {
