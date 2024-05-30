@@ -134,6 +134,7 @@ player.on(Events.ClientReady, async () => {
         const playing = gp.playing;
         playing?.player.stop();
         playing?.subscription?.unsubscribe();
+        playing?.stream.destroy();
       } catch {}
 
       // play this playing
@@ -410,7 +411,7 @@ player.on(Events.ClientReady, async () => {
           if (interaction.customId.startsWith("/queue ")) {
             const replied = interaction.reply(OK);
             const src = await player.queue(
-              customId.replace("/play ", "").trim()
+              customId.replace("/queue ", "").trim()
             );
             await (
               await replied
