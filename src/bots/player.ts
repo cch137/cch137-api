@@ -401,9 +401,9 @@ player.on(Events.ClientReady, async () => {
             interaction.reply({
               content:
                 "**Playlist**\n" +
-                  player.playlist
-                    .map((v, i) => `${i + 1}. [${v.title}](<${v.source}>)`)
-                    .join("\n") || "Playlist is empty",
+                (player.playlist
+                  .map((v, i) => `${i + 1}. [${v.title}](<${v.source}>)`)
+                  .join("\n") || "Playlist is empty"),
             });
             return;
           }
@@ -481,9 +481,9 @@ player.on(Events.ClientReady, async () => {
               interaction.reply({
                 content:
                   "**Playlist**\n" +
-                    player.playlist
-                      .map((v, i) => `${i + 1}. [${v.title}](<${v.source}>)`)
-                      .join("\n") || "Playlist is empty",
+                  (player.playlist
+                    .map((v, i) => `${i + 1}. [${v.title}](<${v.source}>)`)
+                    .join("\n") || "Playlist is empty"),
               });
               break;
             }
