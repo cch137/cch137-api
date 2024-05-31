@@ -132,21 +132,10 @@ player.on(Events.ClientReady, async () => {
       // stop last playing
       try {
         const playing = gp.playing;
-        try {
-          playing?.player.stop();
-        } catch (e) {
-          console.error(e);
-        }
-        try {
-          playing?.subscription?.unsubscribe();
-        } catch (e) {
-          console.error(e);
-        }
-        try {
-          playing?.stream.destroy();
-        } catch (e) {
-          console.error(e);
-        }
+        playing?.player.stop(true);
+        playing?.subscription?.unsubscribe();
+        playing?.stream.destroy();
+        gp.connection?.rejoin();
       } catch (e) {
         console.error(e);
       }
@@ -231,7 +220,7 @@ player.on(Events.ClientReady, async () => {
     static manager = new Map<string, GuildPlayer>();
     static get(guild: Guild) {
       const guildPlayer = GuildPlayer.manager.get(guild.id);
-      return guildPlayer || new GuildPlayer(guild).leave();
+      return guildPlayer || new GuildPlayer(guild);
     }
 
     loop: boolean = false;
@@ -256,6 +245,7 @@ player.on(Events.ClientReady, async () => {
 
     constructor(guild: Guild) {
       this.guild = guild;
+      this.connection = getVoiceConnection(guild.id);
       GuildPlayer.manager.set(guild.id, this);
     }
 
