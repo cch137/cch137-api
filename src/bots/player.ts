@@ -132,10 +132,24 @@ player.on(Events.ClientReady, async () => {
       // stop last playing
       try {
         const playing = gp.playing;
-        playing?.player.stop();
-        playing?.subscription?.unsubscribe();
-        playing?.stream.destroy();
-      } catch {}
+        try {
+          playing?.player.stop();
+        } catch (e) {
+          console.error(e);
+        }
+        try {
+          playing?.subscription?.unsubscribe();
+        } catch (e) {
+          console.error(e);
+        }
+        try {
+          playing?.stream.destroy();
+        } catch (e) {
+          console.error(e);
+        }
+      } catch (e) {
+        console.error(e);
+      }
 
       // play this playing
       gp.playing = this;

@@ -65,8 +65,8 @@ export const getInfer = async (q: string) => {
             [{ role: "user", text: prompt }],
             "gpt-3.5-turbo"
           );
-          await res.promise;
-          const { answer } = res;
+          await res.process;
+          const answer = res.chunks.join("");
           resolve(
             JSON.parse(
               answer.substring(answer.indexOf("["), answer.lastIndexOf("]") + 1)

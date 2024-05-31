@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "cch137's website",
   "main": "./dist/index.js",
+  "type": "commonjs",
   "scripts": {
     "devbuild": "tsc -w",
     "devstart": "nodemon ./dist/index.js",
@@ -21,7 +22,7 @@
   "author": "cch137",
   "license": "ISC",
   "dependencies": {
-    "@cch137/utils": "^0.3.6",
+    "@cch137/utils": "^0.3.8",
     "@discordjs/voice": "^0.17.0",
     "@notionhq/client": "^2.2.15",
     "axios": "^1.7.2",
