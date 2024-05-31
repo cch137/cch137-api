@@ -225,7 +225,7 @@ player.on(Events.ClientReady, async () => {
 
     loop: boolean = false;
 
-    private _volume = 1;
+    private _volume = 0.1;
     get volume() {
       return this._volume;
     }
@@ -475,7 +475,7 @@ player.on(Events.ClientReady, async () => {
             case "stats": {
               interaction.reply({
                 content: [
-                  `Volume: ${player.volume}`,
+                  `Volume: ${Math.round(player.volume * 100)}`,
                   `Play mode: ${player.loop ? "loop" : "single"}`,
                   `Playlist length: ${player.playlist.length}`,
                 ].join("\n"),
