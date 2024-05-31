@@ -31,7 +31,7 @@ import {
 } from "@discordjs/voice";
 import ytdl from "ytdl-core";
 import { googleSearch } from "../services/search";
-import { getYouTubeVideoId } from "@cch137/utils/format/youtube-urls";
+import { getYouTubeVideoId } from "@cch137/utils/extract-urls/youtube";
 import { AuthorSummary, ytdlGetInfo, ytdlGetMp3Info } from "../services/ytdl";
 import type { Readable } from "stream";
 

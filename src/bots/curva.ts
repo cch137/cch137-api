@@ -1,5 +1,5 @@
 import { packDataWithHash } from "@cch137/utils/shuttle";
-import wrapStreamResponse from "@cch137/utils/fetch-stream/wrap-stream-response";
+import fetchStream from "@cch137/utils/fetch-stream";
 import {
   ApplicationCommandOptionType,
   Events,
@@ -41,7 +41,7 @@ export type UniOptions = {
 };
 
 export async function askCh4Ai(messages: UniMessage[], model: string) {
-  const res = await fetch(`${process.env.CH4_ORIGIN}/api/ai-chat/ask/bot`, {
+  return await fetchStream(`${process.env.CH4_ORIGIN}/api/ai-chat/ask/bot`, {
     method: "POST",
     body: packDataWithHash<UniOptions>(
       {
@@ -56,8 +56,8 @@ export async function askCh4Ai(messages: UniMessage[], model: string) {
       4242424242
     ),
     headers: { Authorization: process.env.CURVA_ASK_KEY || "" },
+    keepChunks: true,
   });
-  return wrapStreamResponse(res);
 }
 
 const curva = createBotClient(
@@ -211,8 +211,10 @@ curva.on(Events.ClientReady, async () => {
       let i = 0,
         j = 0,
         r = 0;
-      chunks.$on(async () => {
+      res.once("data", async (c) => {
         typing.stop();
+      });
+      res.on("data", async () => {
         try {
           const l = chunks.length;
           if (r === l) return;

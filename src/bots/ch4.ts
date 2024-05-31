@@ -12,7 +12,7 @@ import {
   Events,
   IntentsBitField,
 } from "discord.js";
-import formatBytes from "@cch137/utils/format/format-bytes";
+import formatBytes from "@cch137/utils/str/format-bytes";
 import {
   isGuildMessage,
   IntervalTask,

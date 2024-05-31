@@ -1,6 +1,6 @@
 import axios from "axios";
 import qs from "qs";
-import math from "@cch137/utils/math";
+import { sum } from "@cch137/utils/number";
 
 interface Cache {
   started: boolean;
@@ -30,7 +30,7 @@ function set_cache(key: string, value: Cache) {
     await value.data;
     // max cache size = 64MB
     while (
-      math.sum(
+      sum(
         ...(await Promise.all(
           caches.map(async (c) => (await c[1].data).length)
         ))

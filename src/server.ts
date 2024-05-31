@@ -2,8 +2,8 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import { WebSocketServer } from "ws";
-import bodyParser from "@cch137/utils/body-parser";
-import getIp from "@cch137/utils/server/get-ip";
+import bodyParser from "@cch137/utils/server/body-parser";
+import getRequestIp from "@cch137/utils/server/get-request-ip";
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +21,7 @@ app.use((req, res, next) => {
       req.method,
       res.statusCode,
       req.originalUrl,
-      `\x1b[34m${getIp(req) || "local"}\x1b[0m`
+      `\x1b[34m${getRequestIp(req) || "local"}\x1b[0m`
     );
   });
   next();
