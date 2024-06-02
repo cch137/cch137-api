@@ -54,8 +54,11 @@ const player = createBotClient(
 );
 
 async function createAudioStream(url: string) {
-  const res = await fetch(url);
-  return Readable.fromWeb(res.body! as any);
+  const controller = new AbortController();
+  const res = await fetch(url, { signal: controller.signal });
+  const readable = Readable.fromWeb(res.body! as any);
+  readable.on("close", () => controller.abort());
+  return readable;
 }
 
 const ch4GuildId = "730345526360539197";
