@@ -129,7 +129,7 @@ player.on(Events.ClientReady, async () => {
         switch (newState.status) {
           case AudioPlayerStatus.Idle: {
             if (gp.loop) {
-              await this.ps.play();
+              if (gp.playing === this) await this.ps.play();
             } else {
               const source = gp.playlist.shift();
               await source?.info();
@@ -141,20 +141,18 @@ player.on(Events.ClientReady, async () => {
 
       // stop last playing
       try {
-        const playing = gp.playing;
-        playing?.player.stop(true);
-        playing?.subscription?.unsubscribe();
-        playing?.stream.destroy();
-        playing?.stream._destroy(new Error(), () => {});
+        const lastPlaying = gp.playing;
+        gp.playing = this;
+        player.play(resource);
+        this.subscription = gp.connection?.subscribe(player);
+        lastPlaying?.player.stop(true);
+        lastPlaying?.subscription?.unsubscribe();
+        lastPlaying?.stream.destroy();
+        lastPlaying?.stream._destroy(new Error(), () => {});
         gp.connection?.rejoin();
       } catch (e) {
         console.error(e);
       }
-
-      // play this playing
-      gp.playing = this;
-      player.play(resource);
-      this.subscription = gp.connection?.subscribe(player);
     }
   }
 
