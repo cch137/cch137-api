@@ -1,6 +1,7 @@
 import {
   Events,
   Guild,
+  GuildBasedChannel,
   Interaction,
   TextBasedChannel,
   VoiceChannel,
@@ -135,6 +136,7 @@ player.on(Events.ClientReady, async () => {
         playing?.player.stop(true);
         playing?.subscription?.unsubscribe();
         playing?.stream.destroy();
+        playing?.stream._destroy(new Error(), () => {});
         gp.connection?.rejoin();
       } catch (e) {
         console.error(e);
@@ -245,7 +247,6 @@ player.on(Events.ClientReady, async () => {
 
     constructor(guild: Guild) {
       this.guild = guild;
-      this.connection = getVoiceConnection(guild.id);
       GuildPlayer.manager.set(guild.id, this);
     }
 
@@ -264,36 +265,15 @@ player.on(Events.ClientReady, async () => {
       return src;
     }
 
-    async join(interaction: Interaction) {
-      // get channel id (from cmd or user)
-      const channelId =
-        (interaction.isChatInputCommand()
-          ? interaction.options.get("channel")?.value
-          : null) ||
-        (await interaction.guild!.members.fetch(interaction.user.id)).voice
-          .channelId;
-      if (typeof channelId !== "string" || !channelId)
-        throw new Error("Invalid channel");
-
-      // fetch channel
-      const channel = await this.guild.channels.fetch(channelId);
+    async joinChannel(channel: GuildBasedChannel | null) {
       if (channel?.type !== ChannelType.GuildVoice)
         throw new Error("Channel is not a voice channel");
-      this.voiceChannel = channel;
-
-      // delete old connection
-      try {
-        const oldConnection = getVoiceConnection(this.guild.id);
-        if (!oldConnection) throw new Error("No Old Connection");
-        oldConnection.destroy();
-      } catch {}
-
-      // join voice channel
       const conn = joinVoiceChannel({
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator,
       });
+      this.voiceChannel = channel;
       this.connection = conn;
 
       // handle disconnect
@@ -309,6 +289,22 @@ player.on(Events.ClientReady, async () => {
       });
 
       return conn;
+    }
+
+    async join(interaction: Interaction) {
+      // get channel id (from cmd or user)
+      const channelId =
+        (interaction.isChatInputCommand()
+          ? interaction.options.get("channel")?.value
+          : null) ||
+        (await interaction.guild!.members.fetch(interaction.user.id)).voice
+          .channelId;
+      if (typeof channelId !== "string" || !channelId)
+        throw new Error("Invalid channel");
+
+      // join voice channel
+      const channel = await this.guild.channels.fetch(channelId);
+      return await this.joinChannel(channel);
     }
 
     leave() {
@@ -350,21 +346,16 @@ player.on(Events.ClientReady, async () => {
       });
     }
 
-    async play(
-      source: string,
-      interaction?: Interaction,
-      autoJoined = false
-    ): Promise<void> {
-      const conn = this.connection;
+    async play(source: string, interaction?: Interaction): Promise<void> {
+      if (!this.connection || !this.voiceChannel) {
+        if (interaction) await this.join(interaction);
+        if (!this.connection || !this.voiceChannel)
+          throw new Error("The bot hasn't joined the voice channel yet.");
+      }
       if (interaction) {
         const channel = interaction.channel;
         if (channel) this.textChannel = channel;
-      }
-      if (!conn || !this.voiceChannel) {
-        if (autoJoined)
-          throw new Error("The bot hasn't joined the voice channel yet.");
-        if (interaction) await this.join(interaction);
-        return await this.play(source, interaction, true);
+        if (interaction.isChatInputCommand()) await interaction?.reply(OK);
       }
       const src = source
         ? await this.createPlaySource(source)
@@ -442,7 +433,6 @@ player.on(Events.ClientReady, async () => {
               );
               if (!source && player.playing)
                 throw new Error("Source cannot be empty while playing.");
-              await interaction.reply(OK);
               await player.play(source, interaction);
               break;
             }
@@ -475,7 +465,7 @@ player.on(Events.ClientReady, async () => {
             case "stats": {
               interaction.reply({
                 content: [
-                  `Volume: ${Math.round(player.volume * 100)}`,
+                  `Volume: ${Math.round(player.volume * 100)}%`,
                   `Play mode: ${player.loop ? "loop" : "single"}`,
                   `Playlist length: ${player.playlist.length}`,
                 ].join("\n"),
