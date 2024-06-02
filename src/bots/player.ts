@@ -34,7 +34,8 @@ import ytdl from "ytdl-core";
 import { googleSearch } from "../services/search";
 import { getYouTubeVideoId } from "@cch137/utils/extract-urls/youtube";
 import { AuthorSummary, ytdlGetInfo, ytdlGetMp3Info } from "../services/ytdl";
-import type { Readable } from "stream";
+import { Readable, Writable } from "stream";
+import fetchStream from "@cch137/utils/fetch-stream";
 
 config();
 
@@ -51,6 +52,11 @@ const player = createBotClient(
   },
   process.env.PLAYER_TOKEN || ""
 );
+
+async function createAudioStream(url: string) {
+  const res = await fetch(url);
+  return Readable.fromWeb(res.body! as any);
+}
 
 const ch4GuildId = "730345526360539197";
 const argonRoleId = "1056267998530375821";
@@ -108,7 +114,7 @@ player.on(Events.ClientReady, async () => {
             ? ([
                 new ActionRowBuilder().addComponents(
                   new ButtonBuilder()
-                    .setCustomId(`/search ${this.ps.source.substring(0, 100)}`)
+                    .setCustomId(`/search ${this.ps.source.substring(0, 92)}`)
                     .setLabel("Search on YouTube")
                     .setStyle(ButtonStyle.Secondary)
                 ),
@@ -155,6 +161,7 @@ player.on(Events.ClientReady, async () => {
     readonly source: string;
     readonly title: string;
     readonly author?: AuthorSummary;
+    readonly isYouTube: boolean;
 
     constructor(
       gp: GuildPlayer,
@@ -164,20 +171,23 @@ player.on(Events.ClientReady, async () => {
     ) {
       this.gp = gp;
       this.source = source;
-      this.title = title || source;
+      this.title = title || "Audio";
       this.author = author;
+      this.isYouTube = Boolean(title);
     }
 
     async play(autoSkip = true) {
       try {
-        const stream = ytdl(this.source, {
-          filter: "audioonly",
-          quality: "highestaudio",
-          dlChunkSize: 0,
-          begin: 0,
-          highWaterMark: 1 << 62,
-          liveBuffer: 1 << 62,
-        });
+        const stream = this.isYouTube
+          ? ytdl(this.source, {
+              filter: "audioonly",
+              quality: "highestaudio",
+              dlChunkSize: 0,
+              begin: 0,
+              highWaterMark: 1 << 62,
+              liveBuffer: 1 << 62,
+            })
+          : await createAudioStream(this.source);
         this.gp.playing = new Playing(this, stream);
       } catch {
         if (autoSkip) {
@@ -202,13 +212,13 @@ player.on(Events.ClientReady, async () => {
           new ActionRowBuilder()
             .addComponents(
               new ButtonBuilder()
-                .setCustomId(`/play ${this.source.substring(0, 100)}`)
+                .setCustomId(`/play ${this.source.substring(0, 94)}`)
                 .setLabel("Play")
                 .setStyle(ButtonStyle.Secondary)
             )
             .addComponents(
               new ButtonBuilder()
-                .setCustomId(`/queue ${this.source.substring(0, 100)}`)
+                .setCustomId(`/queue ${this.source.substring(0, 93)}`)
                 .setLabel("Queue")
                 .setStyle(ButtonStyle.Secondary)
             ),
@@ -329,7 +339,7 @@ player.on(Events.ClientReady, async () => {
         .filter((r) => r.id)
         .map((r) =>
           new ButtonBuilder()
-            .setCustomId(`/play ${r.url.substring(0, 100)}`)
+            .setCustomId(`/play ${r.url.substring(0, 94)}`)
             .setLabel(r.title.substring(0, 75))
             .setStyle(ButtonStyle.Secondary)
         );
