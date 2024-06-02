@@ -84,6 +84,15 @@ player.on(Events.ClientReady, async () => {
     readonly resource: AudioResource;
     readonly subscription?: PlayerSubscription;
 
+    private destroyed = false;
+    destroy() {
+      this.player.stop(true);
+      this.subscription?.unsubscribe();
+      this.stream.destroy();
+      this.stream._destroy(new Error(), () => {});
+      this.destroyed = true;
+    }
+
     constructor(source: PlaySource, stream: Readable) {
       this.ps = source;
       this.stream = stream;
@@ -126,10 +135,11 @@ player.on(Events.ClientReady, async () => {
         });
       });
       player.on("stateChange", async (oldState, newState) => {
+        if (this.destroyed) return;
         switch (newState.status) {
           case AudioPlayerStatus.Idle: {
             if (gp.loop) {
-              if (gp.playing === this) await this.ps.play();
+              await this.ps.play();
             } else {
               const source = gp.playlist.shift();
               await source?.info();
@@ -141,15 +151,10 @@ player.on(Events.ClientReady, async () => {
 
       // stop last playing
       try {
-        const lastPlaying = gp.playing;
+        gp.playing?.destroy();
         gp.playing = this;
         player.play(resource);
         this.subscription = gp.connection?.subscribe(player);
-        lastPlaying?.player.stop(true);
-        lastPlaying?.subscription?.unsubscribe();
-        lastPlaying?.stream.destroy();
-        lastPlaying?.stream._destroy(new Error(), () => {});
-        gp.connection?.rejoin();
       } catch (e) {
         console.error(e);
       }
