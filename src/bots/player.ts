@@ -86,11 +86,11 @@ player.on(Events.ClientReady, async () => {
 
     private destroyed = false;
     destroy() {
+      this.destroyed = true;
       this.player.stop(true);
       this.subscription?.unsubscribe();
       this.stream.destroy();
       this.stream._destroy(new Error(), () => {});
-      this.destroyed = true;
     }
 
     constructor(source: PlaySource, stream: Readable) {
