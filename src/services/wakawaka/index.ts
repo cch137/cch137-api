@@ -28,7 +28,9 @@ export type ListType = {
 export type PageType = {
   name: string;
   enabled: boolean;
-  blocks: string[];
+  type: string;
+  content: string;
+  images: string[];
   expire: Date;
   user: string;
   list: string;
@@ -93,7 +95,9 @@ const Page = mongoose.model<PageType>(
     {
       name: String,
       enabled: Boolean,
-      blocks: [String],
+      type: String,
+      content: String,
+      images: [String],
       expire: Date,
       user: String,
       list: String,
@@ -101,22 +105,6 @@ const Page = mongoose.model<PageType>(
     { versionKey: false }
   ),
   "pages",
-  { overwriteModels: true }
-);
-
-const Block = mongoose.model<BlockType>(
-  "Block",
-  new Schema(
-    {
-      type: String,
-      content: String,
-      user: String,
-      list: String,
-      page: String,
-    },
-    { versionKey: false }
-  ),
-  "blocks",
   { overwriteModels: true }
 );
 
@@ -140,7 +128,6 @@ const lists = {
     return await Promise.all([
       List.deleteOne({ user, _id }),
       Page.deleteMany({ user, list: _id }),
-      Block.deleteMany({ user, list: _id }),
     ]);
   },
 };
@@ -174,35 +161,6 @@ const pages = {
     return await Promise.all([
       List.updateOne({ _id: listId, user }, { $pull: { pages: _id } }),
       Page.deleteOne({ _id, user }),
-      Block.deleteMany({ page: _id, user }),
-    ]);
-  },
-};
-
-const blocks = {
-  Block,
-  async getByPageId(user: Oid, pageIds: Oid) {
-    return await Block.find(
-      { user, page: pageIds },
-      { _id: 1, type: 1, content: 1 }
-    );
-  },
-  async insertMany(user: Oid, pageId: Oid, blocks: BlockType[]) {
-    const items = await Block.insertMany(blocks.map((i) => ({ ...i, user })));
-    const ids = items.map((i) => i._id.toHexString());
-    await Page.updateOne(
-      { _id: pageId, user },
-      { $push: { blocks: { $each: ids } } }
-    );
-    return ids;
-  },
-  async update(user: Oid, _id: Oid, block: BlockType) {
-    return await Block.updateOne({ _id, user }, { $set: block });
-  },
-  async delete(user: Oid, pageId: Oid, _id: Oid) {
-    return await Promise.all([
-      Page.updateOne({ _id: pageId, user }, { $pull: { blocks: _id } }),
-      Block.deleteOne({ _id, user }),
     ]);
   },
 };
@@ -211,7 +169,6 @@ const wk = {
   Session,
   lists,
   pages,
-  blocks,
   async getLists(user: string) {
     return await lists.getLists(user);
   },
@@ -238,7 +195,9 @@ const wk = {
       name,
       enabled: true,
       expire: new Date(),
-      blocks: [],
+      type: "text",
+      content: "",
+      images: [],
       user,
       list,
     });
@@ -249,38 +208,30 @@ const wk = {
   async deletePage(user: Oid, gid: Oid, cid: Oid) {
     await pages.delete(user, gid, cid);
   },
-  async getBlocks(user: string, pageId: string) {
-    const _blocks = await blocks.getByPageId(user, pageId);
-    const page = await pages.get(user, pageId);
-    return page
-      ? page.blocks.map((bId) =>
-          _blocks.find((i) => i._id.toHexString() === bId)
-        )
-      : _blocks;
+  async getPageDetails(user: string, pageId: string) {
+    const page = await Page.findOne(
+      { user, _id: pageId },
+      { _id: 0, type: 1, content: 1, images: 1 }
+    );
+    if (!page) return { error: "not found" };
+    const { type, content, images } = page;
+    return { type, content, images };
   },
-  async createBlocks(
-    user: string,
-    list: string,
-    page: string,
-    _blocks: { type: string; content: string }[]
-  ) {
-    return await blocks.insertMany(
-      user,
-      page,
-      _blocks.map(({ type, content }) => ({
-        type,
-        content,
-        user,
-        list,
-        page,
-      }))
+  async pushImages(user: string, pageId: string, images: any) {
+    if (!(Array.isArray(images) && images.every((i) => typeof i === "string")))
+      return;
+    await Page.updateOne(
+      { _id: pageId, user },
+      { $push: { images: { $each: images } } }
     );
   },
-  async updateBlock(user: Oid, bid: Oid, item: BlockType) {
-    await blocks.update(user, bid, item);
-  },
-  async deleteBlock(user: Oid, cid: string, bid: Oid) {
-    await blocks.delete(user, cid, bid);
+  async pullImages(user: string, pageId: string, images: any) {
+    if (!(Array.isArray(images) && images.every((i) => typeof i === "string")))
+      return;
+    await Page.updateOne(
+      { _id: pageId, user },
+      { $pull: { images: { $each: images } } }
+    );
   },
   async enableCards(user: Oid, gid: Oid) {
     await Promise.all([
@@ -404,27 +355,19 @@ router.delete("/:gid/:cid", async (req, res) => {
 router.get("/:gid/:cid", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  res.send(await wk.getBlocks(user, req.params.cid));
+  res.send(await wk.getPageDetails(user, req.params.cid));
 });
 
-router.post("/:gid/:cid", async (req, res) => {
+router.post("/:gid/:cid/images", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const { type, content, blocks: bs = [] } = parseForm(req);
-  if ((!type || !content) && bs.length === 0) return res.status(400).end();
-  if (type && content) bs.unshift({ type, content });
-  res.send(await wk.createBlocks(user, req.params.gid, req.params.cid, bs));
+  const { images } = parseForm(req);
+  res.send(await wk.pushImages(user, req.params.cid, images));
 });
 
-router.put("/:gid/:cid/:bid", async (req, res) => {
+router.delete("/:gid/:cid/images", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const item = parseForm(req);
-  res.send(await wk.updateBlock(user, req.params.bid, item as any));
-});
-
-router.delete("/:gid/:cid/:bid", async (req, res) => {
-  const user = wk.Session.get(req.headers["authorization"])?.uid;
-  if (!user) return res.status(401).end();
-  res.send(await wk.deleteBlock(user, req.params.cid, req.params.bid));
+  const { images } = parseForm(req);
+  res.send(await wk.pullImages(user, req.params.cid, images));
 });
