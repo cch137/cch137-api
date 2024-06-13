@@ -352,6 +352,16 @@ player.on(Events.ClientReady, async () => {
       }
     }
 
+    async showPlaylist(interaction: Interaction) {
+      if (!interaction.isRepliable()) return;
+      interaction.reply({
+        content:
+          "# Playlist\n" +
+          (this.playlist.map((v, i) => `${i + 1}. ${v.title}`).join("\n") ||
+            "Playlist is empty"),
+      });
+    }
+
     async queue(source: string, replied: Promise<InteractionResponse>) {
       const src = await this.createPlaySource(source);
       this.playlist.push(src);
@@ -576,13 +586,7 @@ player.on(Events.ClientReady, async () => {
             return;
           }
           if (interaction.customId.startsWith("/playlist")) {
-            interaction.reply({
-              content:
-                "# Playlist\n" +
-                (player.playlist
-                  .map((v, i) => `${i + 1}. ${v.title}`)
-                  .join("\n") || "Playlist is empty"),
-            });
+            player.showPlaylist(interaction);
             return;
           }
           if (interaction.customId.startsWith("/queue ")) {
@@ -644,13 +648,7 @@ player.on(Events.ClientReady, async () => {
               break;
             }
             case "playlist": {
-              interaction.reply({
-                content:
-                  "**Playlist**\n" +
-                  (player.playlist
-                    .map((v, i) => `${i + 1}. [${v.title}](<${v.source}>)`)
-                    .join("\n") || "Playlist is empty"),
-              });
+              player.showPlaylist(interaction);
               break;
             }
             case "remove": {
