@@ -6,7 +6,6 @@ import {
   GuildBasedChannel,
   Interaction,
   InteractionResponse,
-  Message,
   TextBasedChannel,
   VoiceChannel,
 } from "discord.js";
@@ -77,15 +76,14 @@ async function getYTVideoSuggestions(url: string) {
       };
     }[]) || []
   )
-    .map(({ endScreenVideoRenderer: i }) =>
-      i && i.videoId !== id
-        ? {
-            url: `https://youtu.be/${i?.videoId}`,
-            title: i?.title?.simpleText,
-            lengthText: i?.lengthText?.simpleText,
-          }
-        : null!
-    )
+    .map(({ endScreenVideoRenderer: i }) => {
+      if (!i || i.videoId === id) return null!;
+      const lengthText = i?.lengthText?.simpleText;
+      return {
+        url: `https://youtu.be/${i?.videoId}`,
+        title: `**${i?.title?.simpleText}**  \`${lengthText}\``,
+      };
+    })
     .filter((i) => i);
 }
 
@@ -354,10 +352,39 @@ player.on(Events.ClientReady, async () => {
       }
     }
 
-    async queue(source: string) {
+    async queue(source: string, replied: Promise<InteractionResponse>) {
       const src = await this.createPlaySource(source);
       this.playlist.push(src);
+      await (
+        await replied
+      ).edit({
+        content: `Added: [${src.title}](<${src.source}>)`,
+        components: wrapButtons(
+          new ButtonBuilder()
+            .setCustomId(`/playlist`)
+            .setLabel("Show playlist")
+            .setStyle(ButtonStyle.Secondary)
+        ),
+      });
       return src;
+    }
+
+    async remove(index: number, interaction: Interaction) {
+      const removed = this.playlist.splice(index - 1, 1)[0];
+      if (!interaction.isRepliable()) return;
+      interaction.reply(
+        removed
+          ? {
+              content: `Removed: [${removed.title}](<${removed.source}>)`,
+              components: wrapButtons(
+                new ButtonBuilder()
+                  .setCustomId(`/playlist`)
+                  .setLabel("Show playlist")
+                  .setStyle(ButtonStyle.Secondary)
+              ),
+            }
+          : "Nothing can be removed."
+      );
     }
 
     async joinChannel(channel: GuildBasedChannel | null) {
@@ -429,20 +456,20 @@ player.on(Events.ClientReady, async () => {
           return;
         }
         await Promise.all(
-          results.map((r) => {
+          results.map(({ title, url }) => {
             return channel?.send({
-              content: `**${r.title}**\n<${r.url}>`,
+              content: `${title}\n<${url}>`,
               components: wrapButtons(
                 new ButtonBuilder()
-                  .setCustomId(`/play ${r.url.substring(0, 94)}`)
+                  .setCustomId(`/play ${url.substring(0, 94)}`)
                   .setLabel("Play")
                   .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
-                  .setCustomId(`/queue ${r.url.substring(0, 93)}`)
+                  .setCustomId(`/queue ${url.substring(0, 93)}`)
                   .setLabel("Queue")
                   .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
-                  .setCustomId(`/more ${r.url.substring(0, 94)}`)
+                  .setCustomId(`/more ${url.substring(0, 94)}`)
                   .setLabel("More")
                   .setStyle(ButtonStyle.Secondary)
               ),
@@ -465,11 +492,15 @@ player.on(Events.ClientReady, async () => {
       this.sendLinks(
         googleSearch(`${query} site:youtube.com`).then((res) =>
           res
-            .map((r) => {
-              const id = getYouTubeVideoId(r.url);
-              return { ...r, id, url: `https://youtu.be/${id}` };
+            .map(({ title, url }) => {
+              const id = getYouTubeVideoId(url);
+              if (!id) return null!;
+              return {
+                title: `**${title}**`,
+                url: `https://youtu.be/${id}`,
+              };
             })
-            .filter((r) => r.id)
+            .filter((i) => i)
         ),
         interaction.channel,
         interaction
@@ -555,21 +586,10 @@ player.on(Events.ClientReady, async () => {
             return;
           }
           if (interaction.customId.startsWith("/queue ")) {
-            const replied = interaction.reply(OK);
-            const src = await player.queue(
-              customId.replace("/queue ", "").trim()
+            await player.queue(
+              customId.replace("/queue ", "").trim(),
+              interaction.reply(OK)
             );
-            await (
-              await replied
-            ).edit({
-              content: `Added: [${src.title}](<${src.source}>)`,
-              components: wrapButtons(
-                new ButtonBuilder()
-                  .setCustomId(`/playlist`)
-                  .setLabel("Show playlist")
-                  .setStyle(ButtonStyle.Secondary)
-              ),
-            });
             return;
           } else if (interaction.customId.startsWith("/volume ")) {
             player.volume100 = Number(customId.replace("/volume ", "").trim());
@@ -602,19 +622,7 @@ player.on(Events.ClientReady, async () => {
               const source = String(
                 interaction.options.get("source")?.value || ""
               );
-              const replied = interaction.reply(OK);
-              const src = await player.queue(source);
-              await (
-                await replied
-              ).edit({
-                content: `Added: [${src.title}](<${src.source}>)`,
-                components: wrapButtons(
-                  new ButtonBuilder()
-                    .setCustomId(`/playlist`)
-                    .setLabel("Show playlist")
-                    .setStyle(ButtonStyle.Secondary)
-                ),
-              });
+              await player.queue(source, interaction.reply(OK));
               break;
             }
             case "more": {
@@ -649,12 +657,7 @@ player.on(Events.ClientReady, async () => {
               const index = Number(interaction.options.get("index")?.value);
               if (typeof index !== "number" || isNaN(index))
                 throw new Error("Index must be a number");
-              const removed = player.playlist.splice(index - 1, 1)[0];
-              interaction.reply({
-                content: removed
-                  ? `Removed: [${removed.title}](<${removed.source}>)`
-                  : "Nothing can be removed.",
-              });
+              player.remove(index, interaction);
               break;
             }
             case "search": {
