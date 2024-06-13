@@ -493,7 +493,7 @@ player.on(Events.ClientReady, async () => {
       const channel = interaction?.channel;
       if (channel) this.textChannel = channel;
       const message = interaction?.isRepliable()
-        ? await interaction?.reply("`Prepairing...`")
+        ? await interaction?.reply("`Preparing...`")
         : void 0;
       const src = source
         ? await this.createPlaySource(source)
