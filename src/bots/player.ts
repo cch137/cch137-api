@@ -443,6 +443,7 @@ player.on(Events.ClientReady, async () => {
       const conn = this.connection || getVoiceConnection(this.guild.id);
       if (conn) {
         conn.destroy();
+        this.playing?.destroy();
         this.connection = void 0;
         this.voiceChannel = void 0;
       }
