@@ -476,10 +476,10 @@ player.on(Events.ClientReady, async () => {
       );
     }
 
-    async more(url: string, interaction?: Interaction) {
+    async more(url: string, interaction: Interaction) {
       this.sendLinks(
         getYTVideoSuggestions(url),
-        interaction?.channel,
+        interaction.channel,
         interaction
       );
     }
@@ -576,7 +576,8 @@ player.on(Events.ClientReady, async () => {
             replyVolume(interaction);
             return;
           } else if (interaction.customId.startsWith("/more ")) {
-            player.more(String(customId.replace("/more ", "").trim()));
+            const url = String(customId.replace("/more ", "").trim());
+            player.more(url, interaction);
             return;
           }
           throw new Error("Unknown interaction");
