@@ -1,8 +1,11 @@
 import {
+  Colors,
+  EmbedBuilder,
   Events,
   Guild,
   GuildBasedChannel,
   Interaction,
+  InteractionResponse,
   TextBasedChannel,
   VoiceChannel,
 } from "discord.js";
@@ -64,6 +67,22 @@ async function createAudioStream(url: string) {
 const ch4GuildId = "730345526360539197";
 const argonRoleId = "1056267998530375821";
 
+function wrapButtons(
+  ...buttons: ButtonBuilder[]
+): ActionRowBuilder<ButtonBuilder>[];
+function wrapButtons(
+  buttons: ButtonBuilder[]
+): ActionRowBuilder<ButtonBuilder>[];
+function wrapButtons(..._buttons: (ButtonBuilder | ButtonBuilder[])[]) {
+  const buttons = _buttons.flat();
+  const rows = [new ActionRowBuilder<ButtonBuilder>()];
+  for (const button of buttons) {
+    if (rows.at(-1)!.components.length >= 5) rows.push(new ActionRowBuilder());
+    if (typeof button === "object") rows.at(-1)!.addComponents(button);
+  }
+  return rows;
+}
+
 player.on(Events.ClientReady, async () => {
   if (player.user) {
     try {
@@ -123,14 +142,12 @@ player.on(Events.ClientReady, async () => {
             }`
           ),
           components: isVideoIdNotFound
-            ? ([
-                new ActionRowBuilder().addComponents(
-                  new ButtonBuilder()
-                    .setCustomId(`/search ${this.ps.source.substring(0, 92)}`)
-                    .setLabel("Search on YouTube")
-                    .setStyle(ButtonStyle.Secondary)
-                ),
-              ] as any)
+            ? wrapButtons(
+                new ButtonBuilder()
+                  .setCustomId(`/search ${this.ps.source.substring(0, 92)}`)
+                  .setLabel("Search on YouTube")
+                  .setStyle(ButtonStyle.Secondary)
+              )
             : [],
         });
       });
@@ -139,11 +156,14 @@ player.on(Events.ClientReady, async () => {
         switch (newState.status) {
           case AudioPlayerStatus.Idle: {
             if (gp.loop) {
-              await this.ps.play();
+              await this.ps.play({ info: false });
             } else {
               const source = gp.playlist.shift();
-              await source?.info();
-              await source?.play();
+              if (source) {
+                await source.play();
+              } else {
+                gp.playing = void 0;
+              }
             }
           }
         }
@@ -182,7 +202,18 @@ player.on(Events.ClientReady, async () => {
       this.isYouTube = Boolean(title);
     }
 
-    async play(autoSkip = true) {
+    async play({
+      message: interactionResponse,
+      autoSkip = true,
+      info: sendInfo = true,
+    }: {
+      message?: InteractionResponse;
+      autoSkip?: boolean;
+      info?: boolean;
+    } = {}) {
+      const message = sendInfo
+        ? await this.sendInfo(interactionResponse)
+        : interactionResponse;
       try {
         const stream = this.isYouTube
           ? ytdl(this.source, {
@@ -196,41 +227,46 @@ player.on(Events.ClientReady, async () => {
           : await createAudioStream(this.source);
         this.gp.playing = new Playing(this, stream);
       } catch {
+        await message?.edit({
+          content: errorMessage(`Error when playing: <${this.source}>`),
+          embeds: [],
+          components: [],
+        });
         if (autoSkip) {
           const source = this.gp.playlist.shift();
-          await source?.info();
           await source?.play();
         }
       }
     }
 
-    async info() {
+    async sendInfo(interactionResponse?: InteractionResponse) {
       const channel = this.gp.textChannel;
       if (!channel) return;
-      const author = this.author;
-      return await channel.send({
-        content: successMessage(
-          `Now playing:\n**Source:** [${this.title}](<${this.source}>)${
-            author ? `\n**Author:** [${author.name}](<${author.url}>)` : ""
-          }`
+      const { title, author, source } = this;
+      const content = {
+        content: `\`Now playing:\``,
+        embeds: [
+          new EmbedBuilder({
+            title,
+            author,
+            fields: [{ name: "source", value: source }],
+            color: Colors.LightGrey,
+          }),
+        ],
+        components: wrapButtons(
+          new ButtonBuilder()
+            .setCustomId(`/play ${source.substring(0, 94)}`)
+            .setLabel("Play")
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId(`/queue ${source.substring(0, 93)}`)
+            .setLabel("Queue")
+            .setStyle(ButtonStyle.Secondary)
         ),
-        components: [
-          new ActionRowBuilder()
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId(`/play ${this.source.substring(0, 94)}`)
-                .setLabel("Play")
-                .setStyle(ButtonStyle.Secondary)
-            )
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId(`/queue ${this.source.substring(0, 93)}`)
-                .setLabel("Queue")
-                .setStyle(ButtonStyle.Secondary)
-            ),
-        ] as any,
-        embeds: [],
-      });
+      };
+      return interactionResponse
+        ? await interactionResponse.edit(content)
+        : await channel.send(content);
     }
   }
 
@@ -251,6 +287,12 @@ player.on(Events.ClientReady, async () => {
       value = Math.max(0, Math.min(100, value));
       this._volume = value;
       this.playing?.resource.volume?.setVolume(value);
+    }
+    get volume100() {
+      return Math.round(this._volume * 100);
+    }
+    set volume100(value: number) {
+      this.volume = value / 100;
     }
 
     connection?: VoiceConnection;
@@ -336,30 +378,46 @@ player.on(Events.ClientReady, async () => {
     async search(query: string, interaction: Interaction) {
       query = query.trim();
       if (!query) throw new Error("Query is required");
+      const replied = interaction.isRepliable()
+        ? interaction?.reply("Searching...")
+        : void 0;
       const res = await googleSearch(`${query} site:youtube.com`);
-      const buttons = res
+      const results = res
         .map((r) => {
           const id = getYouTubeVideoId(r.url);
           return { ...r, id, url: `https://youtu.be/${id}` };
         })
-        .filter((r) => r.id)
-        .map((r) =>
-          new ButtonBuilder()
-            .setCustomId(`/play ${r.url.substring(0, 94)}`)
-            .setLabel(r.title.substring(0, 75))
-            .setStyle(ButtonStyle.Secondary)
-        );
-      const rows: ActionRowBuilder[] = [new ActionRowBuilder()];
-      for (const button of buttons) {
-        if (rows.at(-1)!.components.length >= 5)
-          rows.push(new ActionRowBuilder());
-        rows.at(-1)!.addComponents(button);
+        .filter((r) => r.id);
+      const channel = interaction.channel;
+      if (results.length === 0) {
+        if (replied) replied.then((r) => r.edit(errorMessage("no result")));
+        else channel?.send("no result");
+      } else {
+        try {
+          await Promise.all(
+            results.map((r) => {
+              return channel?.send({
+                content: `**${r.title}**\n<${r.url}>`,
+                components: wrapButtons(
+                  new ButtonBuilder()
+                    .setCustomId(`/play ${r.url.substring(0, 94)}`)
+                    .setLabel("Play")
+                    .setStyle(ButtonStyle.Secondary),
+                  new ButtonBuilder()
+                    .setCustomId(`/queue ${r.url.substring(0, 93)}`)
+                    .setLabel("Queue")
+                    .setStyle(ButtonStyle.Secondary)
+                ),
+              });
+            })
+          );
+          replied?.then((r) => r.edit(successMessage("OK")));
+        } catch {
+          replied?.then((r) =>
+            r.edit(errorMessage("Oops! Something went wrong."))
+          );
+        }
       }
-      interaction.channel!.send({
-        content: `**Search results**`,
-        // @ts-ignore
-        components: rows,
-      });
     }
 
     async play(source: string, interaction?: Interaction): Promise<void> {
@@ -368,16 +426,15 @@ player.on(Events.ClientReady, async () => {
         if (!this.connection || !this.voiceChannel)
           throw new Error("The bot hasn't joined the voice channel yet.");
       }
-      if (interaction) {
-        const channel = interaction.channel;
-        if (channel) this.textChannel = channel;
-        if (interaction.isChatInputCommand()) await interaction?.reply(OK);
-      }
+      const channel = interaction?.channel;
+      if (channel) this.textChannel = channel;
+      const message = interaction?.isRepliable()
+        ? await interaction?.reply("`Prepairing...`")
+        : void 0;
       const src = source
         ? await this.createPlaySource(source)
         : this.playlist.shift();
-      await src?.info();
-      await src?.play(false);
+      await src?.play({ message, autoSkip: false });
     }
   }
 
@@ -402,10 +459,24 @@ player.on(Events.ClientReady, async () => {
       try {
         if (!guild) throw new Error("Guild not found");
         const player = GuildPlayer.get(guild);
+        const replyVolume = (interaction: Interaction) => {
+          if (interaction.isRepliable()) {
+            interaction.reply({
+              content: `${OK}\nCurrent volume: **${player.volume100}%**\nSet volume to:`,
+              components: wrapButtons(
+                [2, 5, 10, 20, 30, 50, 60, 70, 80, 100].map((i) =>
+                  new ButtonBuilder()
+                    .setLabel(`${i}`)
+                    .setStyle(ButtonStyle.Secondary)
+                    .setCustomId(`/volume ${i}`)
+                )
+              ),
+            });
+          }
+        };
         if (isButton) {
           const { customId } = interaction;
           if (interaction.customId.startsWith("/play ")) {
-            interaction.reply(OK);
             player.play(customId.replace("/play ", "").trim(), interaction);
             return;
           }
@@ -428,15 +499,17 @@ player.on(Events.ClientReady, async () => {
               await replied
             ).edit({
               content: `Added: [${src.title}](<${src.source}>)`,
-              components: [
-                new ActionRowBuilder().addComponents(
-                  new ButtonBuilder()
-                    .setCustomId(`/playlist`)
-                    .setLabel("Show playlist")
-                    .setStyle(ButtonStyle.Secondary)
-                ),
-              ] as any,
+              components: wrapButtons(
+                new ButtonBuilder()
+                  .setCustomId(`/playlist`)
+                  .setLabel("Show playlist")
+                  .setStyle(ButtonStyle.Secondary)
+              ),
             });
+            return;
+          } else if (interaction.customId.startsWith("/volume ")) {
+            player.volume100 = Number(customId.replace("/volume ", "").trim());
+            replyVolume(interaction);
             return;
           }
           throw new Error("Unknown interaction");
@@ -453,8 +526,8 @@ player.on(Events.ClientReady, async () => {
               break;
             }
             case "skip": {
+              player.playing?.player.stop(true);
               interaction.reply(OK);
-              await player.play("", interaction);
               break;
             }
             case "queue": {
@@ -467,21 +540,19 @@ player.on(Events.ClientReady, async () => {
                 await replied
               ).edit({
                 content: `Added: [${src.title}](<${src.source}>)`,
-                components: [
-                  new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                      .setCustomId(`/playlist`)
-                      .setLabel("Show playlist")
-                      .setStyle(ButtonStyle.Secondary)
-                  ),
-                ] as any,
+                components: wrapButtons(
+                  new ButtonBuilder()
+                    .setCustomId(`/playlist`)
+                    .setLabel("Show playlist")
+                    .setStyle(ButtonStyle.Secondary)
+                ),
               });
               break;
             }
             case "stats": {
               interaction.reply({
                 content: [
-                  `Volume: ${Math.round(player.volume * 100)}%`,
+                  `Volume: ${player.volume100}%`,
                   `Play mode: ${player.loop ? "loop" : "single"}`,
                   `Playlist length: ${player.playlist.length}`,
                 ].join("\n"),
@@ -514,7 +585,6 @@ player.on(Events.ClientReady, async () => {
               const query = String(
                 interaction.options.get("query")?.value || ""
               );
-              await interaction.reply(OK);
               await player.search(query, interaction);
               break;
             }
@@ -528,19 +598,30 @@ player.on(Events.ClientReady, async () => {
               interaction.reply({
                 content: title,
                 // @ts-ignore
-                components: [new ActionRowBuilder().addComponents(button)],
+                components: wrapButtons(button),
               });
               break;
             }
-            case "set-volume": {
-              const value = Number(interaction.options.get("value")?.value);
-              player.volume = value / 100;
+            case "volume": {
+              player.volume100 = Number(
+                interaction.options.get("value")?.value
+              );
+              replyVolume(interaction);
+              break;
+            }
+            case "playmode": {
+              const mode = String(interaction.options.get("mode")?.value);
+              player.loop = mode === "loop";
               interaction.reply(OK);
               break;
             }
-            case "play-mode": {
-              const mode = String(interaction.options.get("mode")?.value);
-              player.loop = mode === "loop";
+            case "loop": {
+              player.loop = true;
+              interaction.reply(OK);
+              break;
+            }
+            case "single": {
+              player.loop = false;
               interaction.reply(OK);
               break;
             }
@@ -607,20 +688,12 @@ player.on(Events.ClientReady, async () => {
       description: "show stats",
     });
     await player!.application!.commands.create({
-      name: "play-mode",
-      description: "set play mode",
-      options: [
-        {
-          name: "mode",
-          description: "play mode",
-          type: ApplicationCommandOptionType.String,
-          choices: [
-            { name: "Loop", value: "loop" },
-            { name: "Single", value: "single" },
-          ],
-          required: true,
-        },
-      ],
+      name: "loop",
+      description: "set play mode to loop",
+    });
+    await player!.application!.commands.create({
+      name: "single",
+      description: "set play mode to single",
     });
     await player!.application!.commands.create({
       name: "playlist",
@@ -639,13 +712,29 @@ player.on(Events.ClientReady, async () => {
       ],
     });
     await player!.application!.commands.create({
-      name: "set-volume",
+      name: "volume",
       description: "set volume",
       options: [
         {
           name: "value",
           description: "number between 0 and 100",
           type: ApplicationCommandOptionType.Number,
+          required: true,
+        },
+      ],
+    });
+    await player!.application!.commands.create({
+      name: "playmode",
+      description: "set play mode",
+      options: [
+        {
+          name: "mode",
+          description: "play mode",
+          type: ApplicationCommandOptionType.String,
+          choices: [
+            { name: "Loop", value: "loop" },
+            { name: "Single", value: "single" },
+          ],
           required: true,
         },
       ],
