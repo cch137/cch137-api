@@ -6,6 +6,7 @@ import {
   GuildBasedChannel,
   Interaction,
   InteractionResponse,
+  Message,
   TextBasedChannel,
   VoiceChannel,
 } from "discord.js";
@@ -35,10 +36,11 @@ import {
 } from "@discordjs/voice";
 import ytdl from "ytdl-core";
 import { googleSearch } from "../services/search";
-import { getYouTubeVideoId } from "@cch137/utils/extract-urls/youtube";
+import extractYouTubeUrls, {
+  getYouTubeVideoId,
+} from "@cch137/utils/extract-urls/youtube";
 import { AuthorSummary, ytdlGetInfo, ytdlGetMp3Info } from "../services/ytdl";
-import { Readable, Writable } from "stream";
-import fetchStream from "@cch137/utils/fetch-stream";
+import { Readable } from "stream";
 
 config();
 
@@ -55,6 +57,37 @@ const player = createBotClient(
   },
   process.env.PLAYER_TOKEN || ""
 );
+
+async function getYTVideoSuggestions(url: string) {
+  const id = getYouTubeVideoId(url);
+  if (!id) return [];
+  const res = await fetch(`https://www.youtube.com/watch?v=${id}`);
+  const content = await res.text();
+  const regex =
+    /<script[^>]*>\s*var ytInitialData = ({[\s\S]*?});\s*<\/script>/g;
+  const matches = [...content.matchAll(regex)].map((i) => i[1]);
+  return (
+    (JSON.parse(matches ? matches[0] : "{}")?.playerOverlays
+      ?.playerOverlayRenderer?.endScreen?.watchNextEndScreenRenderer
+      ?.results as {
+      endScreenVideoRenderer?: {
+        videoId: string;
+        title: { simpleText: string };
+        lengthText: { simpleText: string };
+      };
+    }[]) || []
+  )
+    .map(({ endScreenVideoRenderer: i }) =>
+      i && i.videoId !== id
+        ? {
+            url: `https://youtu.be/${i?.videoId}`,
+            title: i?.title?.simpleText,
+            lengthText: i?.lengthText?.simpleText,
+          }
+        : null!
+    )
+    .filter((i) => i);
+}
 
 async function createAudioStream(url: string) {
   const controller = new AbortController();
@@ -261,6 +294,10 @@ player.on(Events.ClientReady, async () => {
           new ButtonBuilder()
             .setCustomId(`/queue ${source.substring(0, 93)}`)
             .setLabel("Queue")
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId(`/more ${source.substring(0, 94)}`)
+            .setLabel("More")
             .setStyle(ButtonStyle.Secondary)
         ),
       };
@@ -375,49 +412,76 @@ player.on(Events.ClientReady, async () => {
       return this;
     }
 
+    async sendLinks(
+      _results: Promise<{ title: string; url: string }[]>,
+      channel?: TextBasedChannel | null,
+      interaction?: Interaction
+    ) {
+      const message = interaction?.isRepliable()
+        ? interaction.reply("Searching...")
+        : void 0;
+      try {
+        const results = await _results;
+        if (results.length === 0) {
+          const replied = await message;
+          if (replied) replied.edit(errorMessage("no result"));
+          else channel?.send("no result");
+          return;
+        }
+        await Promise.all(
+          results.map((r) => {
+            return channel?.send({
+              content: `**${r.title}**\n<${r.url}>`,
+              components: wrapButtons(
+                new ButtonBuilder()
+                  .setCustomId(`/play ${r.url.substring(0, 94)}`)
+                  .setLabel("Play")
+                  .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
+                  .setCustomId(`/queue ${r.url.substring(0, 93)}`)
+                  .setLabel("Queue")
+                  .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
+                  .setCustomId(`/more ${r.url.substring(0, 94)}`)
+                  .setLabel("More")
+                  .setStyle(ButtonStyle.Secondary)
+              ),
+            });
+          })
+        );
+        const replied = await message;
+        if (replied) replied?.edit(successMessage("OK"));
+        else channel?.send(successMessage("OK"));
+      } catch {
+        const replied = await message;
+        if (replied) replied?.edit(errorMessage("Oops! Something went wrong."));
+        else channel?.send(successMessage("Oops! Something went wrong."));
+      }
+    }
+
     async search(query: string, interaction: Interaction) {
       query = query.trim();
       if (!query) throw new Error("Query is required");
-      const replied = interaction.isRepliable()
-        ? interaction?.reply("Searching...")
-        : void 0;
-      const res = await googleSearch(`${query} site:youtube.com`);
-      const results = res
-        .map((r) => {
-          const id = getYouTubeVideoId(r.url);
-          return { ...r, id, url: `https://youtu.be/${id}` };
-        })
-        .filter((r) => r.id);
-      const channel = interaction.channel;
-      if (results.length === 0) {
-        if (replied) replied.then((r) => r.edit(errorMessage("no result")));
-        else channel?.send("no result");
-      } else {
-        try {
-          await Promise.all(
-            results.map((r) => {
-              return channel?.send({
-                content: `**${r.title}**\n<${r.url}>`,
-                components: wrapButtons(
-                  new ButtonBuilder()
-                    .setCustomId(`/play ${r.url.substring(0, 94)}`)
-                    .setLabel("Play")
-                    .setStyle(ButtonStyle.Secondary),
-                  new ButtonBuilder()
-                    .setCustomId(`/queue ${r.url.substring(0, 93)}`)
-                    .setLabel("Queue")
-                    .setStyle(ButtonStyle.Secondary)
-                ),
-              });
+      this.sendLinks(
+        googleSearch(`${query} site:youtube.com`).then((res) =>
+          res
+            .map((r) => {
+              const id = getYouTubeVideoId(r.url);
+              return { ...r, id, url: `https://youtu.be/${id}` };
             })
-          );
-          replied?.then((r) => r.edit(successMessage("OK")));
-        } catch {
-          replied?.then((r) =>
-            r.edit(errorMessage("Oops! Something went wrong."))
-          );
-        }
-      }
+            .filter((r) => r.id)
+        ),
+        interaction.channel,
+        interaction
+      );
+    }
+
+    async more(url: string, interaction?: Interaction) {
+      this.sendLinks(
+        getYTVideoSuggestions(url),
+        interaction?.channel,
+        interaction
+      );
     }
 
     async play(source: string, interaction?: Interaction): Promise<void> {
@@ -511,6 +575,9 @@ player.on(Events.ClientReady, async () => {
             player.volume100 = Number(customId.replace("/volume ", "").trim());
             replyVolume(interaction);
             return;
+          } else if (interaction.customId.startsWith("/more ")) {
+            player.more(String(customId.replace("/more ", "").trim()));
+            return;
           }
           throw new Error("Unknown interaction");
         }
@@ -547,6 +614,14 @@ player.on(Events.ClientReady, async () => {
                     .setStyle(ButtonStyle.Secondary)
                 ),
               });
+              break;
+            }
+            case "more": {
+              const source = String(
+                interaction.options.get("source")?.value || ""
+              );
+              if (!source) throw new Error("Source cannot be empty.");
+              await player.more(source, interaction);
               break;
             }
             case "stats": {
@@ -652,6 +727,17 @@ player.on(Events.ClientReady, async () => {
   } catch {}
 
   try {
+    await player!.application!.commands.create({
+      name: "more",
+      description: "get more music!",
+      options: [
+        {
+          name: "source",
+          description: "url / query",
+          type: ApplicationCommandOptionType.String,
+        },
+      ],
+    });
     throw new Error("no command needed to be created");
     await player!.application!.commands.create({
       name: "join",
