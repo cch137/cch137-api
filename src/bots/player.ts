@@ -570,7 +570,7 @@ player.on(Events.ClientReady, async () => {
             interaction.reply({
               content: `${OK}\nCurrent volume: **${player.volume100}%**\nSet volume to:`,
               components: wrapButtons(
-                [2, 5, 10, 20, 30, 50, 60, 70, 80, 100].map((i) =>
+                [2, 5, 10, 15, 20, 30, 40, 50, 75, 100].map((i) =>
                   new ButtonBuilder()
                     .setLabel(`${i}`)
                     .setStyle(ButtonStyle.Secondary)
