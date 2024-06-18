@@ -25,6 +25,7 @@ import { config } from "dotenv";
 import { bots, getBotByName } from ".";
 import 交通部中央氣象署最近地震 from "../services/earthquake";
 import { load } from "cheerio";
+import getMcStat from "../services/minecraft";
 
 const ch4GuildId = "730345526360539197";
 const adminRoleId = "1056251454127611975";
@@ -405,6 +406,19 @@ ch4.on(Events.ClientReady, async () => {
           interaction.reply(OK);
           return;
         }
+        case "mc": {
+          const replying = interaction.reply("Pinging...");
+          const stat = await getMcStat();
+          const replied = await replying;
+          if (stat) {
+            replied.edit(
+              `Players: ${stat.players.online}/${stat.players.max}\nDescription: ${stat.description}`
+            );
+          } else {
+            replied.edit("Server is offline.");
+          }
+          return;
+        }
       }
       throw new Error("Unknown command");
     } catch (e) {
@@ -415,6 +429,10 @@ ch4.on(Events.ClientReady, async () => {
   });
 
   try {
+    await ch4.application!.commands.create({
+      name: "mc",
+      description: "check mc server",
+    });
     throw new Error("no command needed to be created");
     await ch4.application!.commands.create({
       name: "run",
