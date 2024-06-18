@@ -373,6 +373,21 @@ ch4.on(Events.ClientReady, async () => {
     if (!guild) return;
     if (!interaction.isChatInputCommand()) return;
     try {
+      switch (interaction.commandName) {
+        case "mc": {
+          const replying = interaction.reply("Pinging...");
+          const stat = await getMcStat();
+          const replied = await replying;
+          if (stat) {
+            replied.edit(
+              `Players: ${stat.players.online}/${stat.players.max}\nDescription: ${stat.description}`
+            );
+          } else {
+            replied.edit("Server is offline.");
+          }
+          return;
+        }
+      }
       const roles = interaction.member!.roles;
       if (
         Array.isArray(roles) ||
@@ -404,19 +419,6 @@ ch4.on(Events.ClientReady, async () => {
           if (!bot || bot.id === ch4.id) throw new Error("No permission");
           bot.disconnect();
           interaction.reply(OK);
-          return;
-        }
-        case "mc": {
-          const replying = interaction.reply("Pinging...");
-          const stat = await getMcStat();
-          const replied = await replying;
-          if (stat) {
-            replied.edit(
-              `Players: ${stat.players.online}/${stat.players.max}\nDescription: ${stat.description}`
-            );
-          } else {
-            replied.edit("Server is offline.");
-          }
           return;
         }
       }
