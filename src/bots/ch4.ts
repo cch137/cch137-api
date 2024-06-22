@@ -12,7 +12,7 @@ import {
   Events,
   IntentsBitField,
 } from "discord.js";
-import formatBytes from "@cch137/utils/str/format-bytes";
+import formatBytes from "@cch137/utils/str/format-bytes.js";
 import {
   isGuildMessage,
   IntervalTask,
@@ -20,12 +20,12 @@ import {
   errorMessage,
   OK,
   numberFullwidthToHalfwidth,
-} from "./utils";
+} from "./utils.js";
 import { config } from "dotenv";
-import { bots, getBotByName } from ".";
-import 交通部中央氣象署最近地震 from "../services/earthquake";
+import { bots, getBotByName } from "./index.js";
+import 交通部中央氣象署最近地震 from "../services/earthquake/index.js";
 import { load } from "cheerio";
-import getMcStat from "../services/minecraft";
+import getMcStat from "../services/minecraft/index.js";
 
 const ch4GuildId = "730345526360539197";
 const adminRoleId = "1056251454127611975";

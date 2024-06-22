@@ -1,7 +1,7 @@
 import { load } from "cheerio";
 
-import createFetcher from "./downloader";
-import { ImagesToPDF } from "../pdf-tools";
+import createFetcher from "./downloader.js";
+import { ImagesToPDF } from "../pdf-tools/index.js";
 
 function parsePhpsessid(res: Response, def: string = "") {
   const setCookie = res.headers.get("Set-Cookie");

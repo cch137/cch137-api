@@ -1,19 +1,18 @@
 import { config as dotenvConfig } from "dotenv";
 dotenvConfig();
 
-import { app, server } from "./server";
-import apis from "./routers/apis";
-import wss from "./services/subdom";
-import { run as runBots } from "./bots";
+import app from "./app.js";
+import apis from "./routers/apis.js";
+import wss from "./services/subdom/index.js";
+import { run as runBots } from "./bots/index.js";
 
 runBots();
 
-app.use("/", apis);
-app.use("*", (req, res) => res.status(404).end());
+app.use(apis);
 
 const port = process.env.PORT || 3000;
 
-server.listen(port, () => {
+app.listen(port, () => {
   console.log(`Server is listening to http://localhost:${port}`);
   if (wss) return 0;
 });

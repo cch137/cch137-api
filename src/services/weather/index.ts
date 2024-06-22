@@ -1,6 +1,6 @@
 import { load as cheerioLoad } from "cheerio";
-import { cheerioToTextNodes, type TextNode } from "../../utils/cheerio";
-import googleTranslate from "../google-translate";
+import { cheerioToTextNodes, type TextNode } from "../../utils/cheerio.js";
+import googleTranslate from "../google-translate/index.js";
 
 type TemperatureUnit =
   | "c"

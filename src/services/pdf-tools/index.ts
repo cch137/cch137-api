@@ -1,6 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
-import random from "@cch137/utils/random";
+import random from "@cch137/utils/random/index.js";
 
 export class ImagesToPDF {
   readonly id: string;

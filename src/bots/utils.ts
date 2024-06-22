@@ -167,7 +167,7 @@ export const createBotClient = (
     on(eventName: string | symbol, listener: (...args: any[]) => void) {
       if (!listeners.has(eventName)) listeners.set(eventName, new Set());
       listeners.get(eventName)?.add(listener);
-      client.addListener(eventName, listener);
+      client.on(eventName, listener);
     },
     off(eventName: string | symbol, listener: (...args: any[]) => void) {
       const set = listeners.get(eventName);
@@ -175,7 +175,7 @@ export const createBotClient = (
         set.delete(listener);
         if (set?.size === 0) listeners.delete(eventName);
       }
-      client.removeListener(eventName, listener);
+      client.off(eventName, listener);
     },
     async addRoleToUser(
       guildId: string,
@@ -243,9 +243,6 @@ export class _BotClient extends Client {
       `${this.user?.displayName || "bot"} disconneted in ${Date.now() - t0} ms`
     );
   }
-
-  on = this.addListener;
-  off = this.removeListener;
 
   async addRoleToUser(
     guildId: string,

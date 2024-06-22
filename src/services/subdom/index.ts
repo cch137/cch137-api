@@ -1,5 +1,5 @@
-import { wss } from "../../server";
-import random from "@cch137/utils/random";
+import app from "../../app.js";
+import random from "@cch137/utils/random/index.js";
 
 const players = new Map<number, Player>();
 
@@ -27,7 +27,9 @@ class Player {
   }
 }
 
-wss.on("connection", (socket, req) => {
+const wss = app.wss;
+
+app.ws("/", (socket, req) => {
   const player = new Player();
   function broadcastUintArray(uintArray: number[]) {
     const buffer = Buffer.from(uintArray);

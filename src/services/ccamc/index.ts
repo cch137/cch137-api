@@ -1,4 +1,4 @@
-import { askCh4Ai } from "../../bots/curva";
+import { askCh4Ai } from "../../bots/curva.js";
 
 const extractImages = (html: string) => {
   const images = [];

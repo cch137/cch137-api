@@ -1,57 +1,57 @@
-import random from "@cch137/utils/random";
+import random from "@cch137/utils/random/index.js";
 
 const defaultAge = 5 * 60 * 1000;
 
 interface LockerOptions {
   privateKey?: string;
   maxTries?: number;
-  age?: number; /** MS */
-  expired?: number; /** Timestamp */
+  age?: number /** MS */;
+  expired?: number /** Timestamp */;
 }
 
 interface OptLockerOptions extends LockerOptions {
   maxTries: number;
 }
 
-const lockers = new Map<string, Locker>()
+const lockers = new Map<string, Locker>();
 
-function generateLockerId (): string {
-  let key: string | undefined = undefined
+function generateLockerId(): string {
+  let key: string | undefined = undefined;
   while (key === undefined || lockers.has(key)) {
-    key = random.base64(64)
+    key = random.base64(64);
   }
-  return key
+  return key;
 }
 
-function calcExpired (created?: number, age?: number, expired?: number) {
-  if (typeof expired === 'number') {
-    return expired
+function calcExpired(created?: number, age?: number, expired?: number) {
+  if (typeof expired === "number") {
+    return expired;
   }
-  if (typeof created !== 'number') {
-    created = Date.now()
+  if (typeof created !== "number") {
+    created = Date.now();
   }
-  if (typeof age === 'number') {
-    return created + age
+  if (typeof age === "number") {
+    return created + age;
   }
-  return created + defaultAge
+  return created + defaultAge;
 }
 
-function toOptions (options: LockerOptions): OptLockerOptions {
+function toOptions(options: LockerOptions): OptLockerOptions {
   if (options.maxTries === undefined) {
-    options.maxTries = 1
+    options.maxTries = 1;
   }
-  return options as OptLockerOptions
+  return options as OptLockerOptions;
 }
 
 class Locker {
-  readonly id: string
-  readonly createdAt: number
-  #privateKey: any
-  #item: any
-  #expiredAt: number
-  #maxTries: number
+  readonly id: string;
+  readonly createdAt: number;
+  #privateKey: any;
+  #item: any;
+  #expiredAt: number;
+  #maxTries: number;
 
-  constructor (item: any, options: LockerOptions = {}) {
+  constructor(item: any, options: LockerOptions = {}) {
     this.id = generateLockerId();
     this.createdAt = Date.now();
     const { privateKey, age, expired, maxTries } = toOptions(options);
@@ -59,89 +59,81 @@ class Locker {
     this.#privateKey = privateKey;
     this.#expiredAt = calcExpired(this.createdAt, age, expired);
     this.#maxTries = maxTries;
-    lockers.set(this.id, this)
+    lockers.set(this.id, this);
   }
 
-  get isExpired (): boolean {
-    return this.#expiredAt < Date.now()
+  get isExpired(): boolean {
+    return this.#expiredAt < Date.now();
   }
 
-  #checkIsExpired () {
+  #checkIsExpired() {
     if (this.isExpired) {
-      throw new Error('Locker has expired')
+      throw new Error("Locker has expired");
     }
   }
 
-  #validPrivateKey (privateKey?: string) {
+  #validPrivateKey(privateKey?: string) {
     if (this.#maxTries <= 0) {
-      throw new Error('Exceeded the maximum tries.')
+      throw new Error("Exceeded the maximum tries.");
     }
-    this.#maxTries--
+    this.#maxTries--;
     if (this.#privateKey && this.#privateKey !== privateKey) {
-      throw new Error('Invalid private key')
+      throw new Error("Invalid private key");
     }
   }
 
-  get (privateKey?: string) {
-    this.#checkIsExpired()
-    this.#validPrivateKey(privateKey)
-    return this.#item
+  get(privateKey?: string) {
+    this.#checkIsExpired();
+    this.#validPrivateKey(privateKey);
+    return this.#item;
   }
 
-  put (newItem: any, privateKey?: string) {
-    this.#checkIsExpired()
-    this.#validPrivateKey(privateKey)
-    const oldItem = this.#item
-    this.#item = newItem
-    return oldItem
+  put(newItem: any, privateKey?: string) {
+    this.#checkIsExpired();
+    this.#validPrivateKey(privateKey);
+    const oldItem = this.#item;
+    this.#item = newItem;
+    return oldItem;
   }
 
-  clear (privateKey?: string) {
-    return this.put(undefined, privateKey)
+  clear(privateKey?: string) {
+    return this.put(undefined, privateKey);
   }
 
-  destroy () {
-    return lockers.delete(this.id)
+  destroy() {
+    return lockers.delete(this.id);
   }
 
-  expire () {
-    this.#expiredAt = Date.now()
-    return this
+  expire() {
+    this.#expiredAt = Date.now();
+    return this;
   }
 
-  addAge (ageMs: number) {
-    this.#expiredAt = calcExpired(this.#expiredAt, ageMs)
-    return this
+  addAge(ageMs: number) {
+    this.#expiredAt = calcExpired(this.#expiredAt, ageMs);
+    return this;
   }
 }
 
 const lockerManager = {
-  addItem (item: any, options?: LockerOptions) {
-    const { id } = new Locker(item, options)
-    return { id }
+  addItem(item: any, options?: LockerOptions) {
+    const { id } = new Locker(item, options);
+    return { id };
   },
-  getItem (id: string, privateKey?: string) {
-    const locker = lockers.get(id)
-    return locker === undefined
-      ? undefined
-      : locker.get(privateKey)
+  getItem(id: string, privateKey?: string) {
+    const locker = lockers.get(id);
+    return locker === undefined ? undefined : locker.get(privateKey);
   },
-  putItem (id: string, newItem: any, privateKey?: string) {
-    const locker = lockers.get(id)
-    return locker === undefined
-      ? undefined
-      : locker.put(newItem, privateKey)
+  putItem(id: string, newItem: any, privateKey?: string) {
+    const locker = lockers.get(id);
+    return locker === undefined ? undefined : locker.put(newItem, privateKey);
   },
-  destroyItem (id: string) {
-    const locker = lockers.get(id)
-    return locker === undefined
-      ? false
-      : locker.destroy()
+  destroyItem(id: string) {
+    const locker = lockers.get(id);
+    return locker === undefined ? false : locker.destroy();
   },
-}
+};
 
-export type {
-  LockerOptions
-}
+export type { LockerOptions };
 
-export default lockerManager
+export default lockerManager;

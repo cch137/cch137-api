@@ -17,7 +17,7 @@ import {
   ChannelType,
   IntentsBitField,
 } from "discord.js";
-import { createBotClient, OK, errorMessage, successMessage } from "./utils";
+import { createBotClient, OK, errorMessage, successMessage } from "./utils.js";
 import { config } from "dotenv";
 import {
   NoSubscriberBehavior,
@@ -34,11 +34,15 @@ import {
   AudioPlayerStatus,
 } from "@discordjs/voice";
 import ytdl from "ytdl-core";
-import { googleSearch } from "../services/search";
+import { googleSearch } from "../services/search/index.js";
 import extractYouTubeUrls, {
   getYouTubeVideoId,
-} from "@cch137/utils/extract-urls/youtube";
-import { AuthorSummary, ytdlGetInfo, ytdlGetMp3Info } from "../services/ytdl";
+} from "@cch137/utils/extract-urls/youtube.js";
+import {
+  AuthorSummary,
+  ytdlGetInfo,
+  ytdlGetMp3Info,
+} from "../services/ytdl/index.js";
 import { Readable } from "stream";
 
 config();

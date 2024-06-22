@@ -1,5 +1,5 @@
-import { packDataWithHash } from "@cch137/utils/shuttle";
-import fetchStream from "@cch137/utils/fetch-stream";
+import { packDataWithHash } from "@cch137/utils/shuttle/index.js";
+import fetchStream from "@cch137/utils/fetch-stream/index.js";
 import {
   ApplicationCommandOptionType,
   Events,
@@ -18,7 +18,7 @@ import {
   createWarningEmbed,
   startTyping,
   toCodeBlocks,
-} from "./utils";
+} from "./utils.js";
 import { config } from "dotenv";
 
 config();
@@ -313,7 +313,7 @@ curva.on(Events.ClientReady, async () => {
       case "calc": {
         try {
           const expression = String(options.get("expression")?.value || "");
-          const solution = `${new Mexp().eval(expression, [], {})}`;
+          const solution = `${new Mexp.default().eval(expression, [], {})}`;
           interaction.reply(codeBlock(solution));
         } catch {
           interaction.reply(

@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { JetRequest } from "@cch137/jet/index.js";
 import type { ParsedQs } from "qs";
 
 type ParsedQsValue = string | ParsedQs | string[] | ParsedQs[] | undefined;
@@ -17,8 +17,11 @@ const tryParseQsToJSON = (q: ParsedQsValue): any => {
   return q;
 };
 
-const parseForm = <T extends { [key: string]: any }>(req: Request) => {
-  const { query, body: _body } = req;
+const parseForm = <T extends { [key: string]: any }>(req: JetRequest) => {
+  const { body: _body } = req;
+  const searchParams = req._url.searchParams;
+  const query: { [key: string]: any } = {};
+  [...searchParams.entries()].forEach(([k, v]) => (query[k] = v));
   const body: Partial<T> = typeof _body === "object" ? { ..._body } : {};
   for (const key in query) {
     if (key in body) continue;

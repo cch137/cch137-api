@@ -1,5 +1,5 @@
 import { Client } from "@notionhq/client";
-import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints.js";
 
 const notion = new Client({
   auth: process.env.NOTION_TOKEN,

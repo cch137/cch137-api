@@ -1,6 +1,6 @@
-import ch4 from "./ch4";
-import curva from "./curva";
-import player from "./player";
+import ch4 from "./ch4.js";
+import curva from "./curva.js";
+import player from "./player.js";
 import { config as dotenv } from "dotenv";
 
 export { ch4, curva, player };

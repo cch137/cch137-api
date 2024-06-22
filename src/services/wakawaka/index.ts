@@ -1,8 +1,8 @@
-import random from "@cch137/utils/random";
+import random from "@cch137/utils/random/index.js";
 import mongoose, { Schema } from "mongoose";
-import { Router } from "express";
-import parseForm from "../../utils/parseForm";
-import Repo from "../github";
+import Jet from "@cch137/jet/index.js";
+import parseForm from "../../utils/parseForm.js";
+import Repo from "../github/index.js";
 
 const apiFiles = new Repo("cch137", "api-files");
 
@@ -256,7 +256,7 @@ const wk = {
 
 export default wk;
 
-export const router = Router();
+export const router = new Jet.Router();
 
 router.post("/session", async (req, res) => {
   const { uid, key } = parseForm(req);

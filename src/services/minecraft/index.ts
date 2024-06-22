@@ -1,4 +1,4 @@
-import MinecraftServerListPing from "./MinecraftServerListPing";
+import MinecraftServerListPing from "./MinecraftServerListPing.js";
 
 export default async function getMcStat() {
   try {

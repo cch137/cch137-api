@@ -1,11 +1,11 @@
 import path from "path";
 import fs from "fs";
-import express from "express";
-import parseForm from "../utils/parseForm";
+import Jet from "@cch137/jet/index.js";
+import parseForm from "../utils/parseForm.js";
 
-const apis = express.Router();
+const apis = new Jet.Router();
 
-apis.use("/", express.static("public/"));
+apis.static("/", "public/");
 
 apis.get("/", (req, res) => {
   res.send({ t: Date.now() });
@@ -59,11 +59,14 @@ apis.get("/dir/*", (req, res) => {
   );
 });
 
-apis.get("/dashboard", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "../pages/dashboard.html"));
-});
+// apis.get("/dashboard", (req, res) => {
+//   res.sendFile(path.resolve(__dirname, "../pages/dashboard.html"));
+// });
 
-import { convertCurrency, getCurrencyList } from "../services/currency";
+import {
+  convertCurrency,
+  getCurrencyList,
+} from "../services/currency/index.js";
 apis.use("/currency", async (req, res) => {
   const { from, to } = parseForm(req);
   res.send({ rate: await convertCurrency(from, to) });
@@ -77,7 +80,7 @@ apis.use("/currency-list", async (req, res) => {
   res.send(await getCurrencyList());
 });
 
-import googleTranslate from "../services/google-translate";
+import googleTranslate from "../services/google-translate/index.js";
 apis.use("/translate", async (req, res) => {
   const { text, from, to } = parseForm(req);
   try {
@@ -95,7 +98,7 @@ apis.use("/translate-text", async (req, res) => {
   }
 });
 
-import { ytdlGetMp3Info, ytdlDownloadMp3 } from "../services/ytdl";
+import { ytdlGetMp3Info, ytdlDownloadMp3 } from "../services/ytdl/index.js";
 apis.use("/yt-to-mp3/:filename", async (req, res) => {
   const { src, source, id } = parseForm(req);
   const url = src || source || `https://youtu.be/${id}`;
@@ -118,7 +121,7 @@ apis.use("/yt-to-mp3", async (req, res) => {
   return res.redirect(api);
 });
 
-import wikipedia from "../services/wikipedia";
+import wikipedia from "../services/wikipedia/index.js";
 apis.use("/wikipedia", async (req, res) => {
   const { query, q, article, a, title, t, page, p, language, lang, l } =
     parseForm(req);
@@ -130,7 +133,7 @@ apis.use("/wikipedia", async (req, res) => {
   res.send(await wikipedia(searchTerm, langCode));
 });
 
-import { fetchWebpage } from "../services/crawl";
+import { fetchWebpage } from "../services/crawl/index.js";
 apis.use("/crawl", async (req, res) => {
   const { url } = parseForm(req);
   if (!url) return res.status(400).send({ error: "Invalid body" });
@@ -158,7 +161,7 @@ import {
   googleSearch,
   googleSearchSummary,
   googleSearchSummaryV2,
-} from "../services/search";
+} from "../services/search/index.js";
 apis.use("/google-search", async (req, res) => {
   const { query } = parseForm(req);
   if (!query) return res.status(400).send({ error: "Invalid body" });
@@ -183,7 +186,9 @@ apis.use("/ddg-search-summary", async (req, res) => {
   res.send(await ddgSearchSummary(showUrl, query));
 });
 
-import lockerManager, { type LockerOptions } from "../services/lockers";
+import lockerManager, {
+  type LockerOptions,
+} from "../services/lockers/index.js";
 apis.put("/lockers", (req, res) => {
   const {
     id,
@@ -227,7 +232,7 @@ apis.delete("/lockers", (req, res) => {
   }
 });
 
-import { fetchWeather, fetchWeatherText } from "../services/weather";
+import { fetchWeather, fetchWeatherText } from "../services/weather/index.js";
 apis.use("/weather", async (req, res) => {
   const { city, loc, location, unit, lang } = parseForm(req);
   const _city = city || loc || location;
@@ -242,7 +247,7 @@ apis.use("/weather-text", async (req, res) => {
   res.send(await fetchWeatherText(_city, { unit, lang }));
 });
 
-import { ImagesToPDF } from "../services/pdf-tools";
+import { ImagesToPDF } from "../services/pdf-tools/index.js";
 apis.use("/images-to-pdf/create-task", async (req, res) => {
   res.json({ id: ImagesToPDF.createTask().id });
 });
@@ -259,7 +264,7 @@ apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
   res.send(Buffer.from(await ImagesToPDF.convert(id)));
 });
 
-import downloadPPT from "../services/pine/download-ppt";
+import downloadPPT from "../services/pine/download-ppt.js";
 apis.use("/pine-ppt-dl/:filename", async (req, res) => {
   let { filename } = req.params;
   const { url, acc, pass } = parseForm(req);
@@ -278,8 +283,8 @@ apis.use("/pine-ppt-dl/:filename", async (req, res) => {
   }
 });
 
-import { unpackData } from "@cch137/utils/shuttle";
-import { readStream } from "@cch137/utils/stream";
+import { unpackData } from "@cch137/utils/shuttle/index.js";
+import { readStream } from "@cch137/utils/stream/index.js";
 apis.use("/proxy/:url", async (req, res) => {
   try {
     const url = new URL(req.params.url);
@@ -319,7 +324,7 @@ apis.use("/proxy", async (req, res) => {
   }
 });
 
-import ccamc from "../services/ccamc";
+import ccamc from "../services/ccamc/index.js";
 apis.use("/ccamc-images", async (req, res) => {
   try {
     const { q } = parseForm(req);
@@ -339,14 +344,14 @@ apis.use("/ccamc-infer", async (req, res) => {
   }
 });
 
-import { router as wk } from "../services/wakawaka";
+import { router as wk } from "../services/wakawaka/index.js";
 apis.use("/wk", wk);
 
-import dictionary, { isDictionaryItem } from "../services/notion/dictionary";
-const ntDict = express.Router();
+import dictionary, { isDictionaryItem } from "../services/notion/dictionary.js";
+const ntDict = new Jet.Router();
 const { API_KEY } = process.env;
 apis.use("/nt-dict/", ntDict);
-ntDict.use("/", (req, res, next) => {
+ntDict.use((req, res, next) => {
   if (req.headers["authorization"] !== API_KEY) {
     res.status(401).json({});
     return;
