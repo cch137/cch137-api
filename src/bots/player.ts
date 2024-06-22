@@ -34,10 +34,7 @@ import {
   AudioPlayerStatus,
 } from "@discordjs/voice";
 import ytdl from "ytdl-core";
-import { googleSearch } from "../services/search/index.js";
-import extractYouTubeUrls, {
-  getYouTubeVideoId,
-} from "@cch137/utils/extract-urls/youtube.js";
+import { getYouTubeVideoId } from "@cch137/utils/extract-urls/youtube.js";
 import {
   AuthorSummary,
   ytdlGetInfo,
@@ -61,6 +58,12 @@ const player = createBotClient(
   process.env.PLAYER_TOKEN || ""
 );
 
+type YTVideoRendererData = {
+  videoId: string;
+  title: { simpleText: string; runs: { text: string }[] };
+  lengthText: { simpleText: string };
+};
+
 async function getYTVideoSuggestions(url: string) {
   const id = getYouTubeVideoId(url);
   if (!id) return [];
@@ -73,19 +76,39 @@ async function getYTVideoSuggestions(url: string) {
     (JSON.parse(matches ? matches[0] : "{}")?.playerOverlays
       ?.playerOverlayRenderer?.endScreen?.watchNextEndScreenRenderer
       ?.results as {
-      endScreenVideoRenderer?: {
-        videoId: string;
-        title: { simpleText: string };
-        lengthText: { simpleText: string };
-      };
+      endScreenVideoRenderer?: YTVideoRendererData;
     }[]) || []
   )
     .map(({ endScreenVideoRenderer: i }) => {
       if (!i || i.videoId === id) return null!;
-      const lengthText = i?.lengthText?.simpleText;
       return {
         url: `https://youtu.be/${i?.videoId}`,
-        title: `**${i?.title?.simpleText}**  \`${lengthText}\``,
+        title: `**${i?.title?.simpleText}**  \`${i?.lengthText?.simpleText}\``,
+      };
+    })
+    .filter((i) => i);
+}
+
+async function getYTVideoSearch(query: string) {
+  const res = await fetch(
+    `https://www.youtube.com/results?search_query=${query}`
+  );
+  const content = await res.text();
+  const regex =
+    /<script[^>]*>\s*var ytInitialData = ({[\s\S]*?});\s*<\/script>/g;
+  const matches = [...content.matchAll(regex)].map((i) => i[1]);
+  return (
+    (JSON.parse(matches ? matches[0] : "{}")?.contents
+      ?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer
+      ?.contents[0]?.itemSectionRenderer?.contents as {
+      videoRenderer: YTVideoRendererData;
+    }[]) || []
+  )
+    .map(({ videoRenderer: i }) => {
+      if (!i) return null!;
+      return {
+        url: `https://youtu.be/${i?.videoId}`,
+        title: `**${i?.title?.runs[0]?.text}**  \`${i?.lengthText?.simpleText}\``,
       };
     })
     .filter((i) => i);
@@ -505,22 +528,7 @@ player.on(Events.ClientReady, async () => {
     async search(query: string, interaction: Interaction) {
       query = query.trim();
       if (!query) throw new Error("Query is required");
-      this.sendLinks(
-        googleSearch(`${query} site:youtube.com`).then((res) =>
-          res
-            .map(({ title, url }) => {
-              const id = getYouTubeVideoId(url);
-              if (!id) return null!;
-              return {
-                title: `**${title}**`,
-                url: `https://youtu.be/${id}`,
-              };
-            })
-            .filter((i) => i)
-        ),
-        interaction.channel,
-        interaction
-      );
+      this.sendLinks(getYTVideoSearch(query), interaction.channel, interaction);
     }
 
     async more(url: string, interaction: Interaction) {
