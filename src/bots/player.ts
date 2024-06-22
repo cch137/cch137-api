@@ -419,6 +419,7 @@ player.on(Events.ClientReady, async () => {
             entersState(conn, VoiceConnectionStatus.Signalling, 5_000),
             entersState(conn, VoiceConnectionStatus.Connecting, 5_000),
           ]);
+          this.leave();
         } catch (error) {
           conn.destroy();
         }
