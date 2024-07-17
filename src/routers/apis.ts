@@ -123,6 +123,15 @@ apis.use("/yt-to-mp3", async (req, res) => {
   const { api } = await ytdlGetMp3Info(src || source);
   return res.redirect(api);
 });
+apis.use("/yt-to-mp3-info", async (req, res) => {
+  const { src, source } = parseForm(req);
+  try {
+    const info = await ytdlGetMp3Info(src || source);
+    return res.json(info);
+  } catch {
+    res.status(500).end();
+  }
+});
 
 import wikipedia from "../services/wikipedia/index.js";
 apis.use("/wikipedia", async (req, res) => {
