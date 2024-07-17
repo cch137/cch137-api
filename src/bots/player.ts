@@ -33,7 +33,7 @@ import {
   type AudioResource,
   AudioPlayerStatus,
 } from "@discordjs/voice";
-import ytdl from "ytdl-core";
+import ytdl from "@distube/ytdl-core";
 import { getYouTubeVideoId } from "@cch137/utils/extract-urls/youtube.js";
 import {
   AuthorSummary,
@@ -365,7 +365,7 @@ player.on(Events.ClientReady, async () => {
     playlist: PlaySource[] = [];
     playing?: Playing;
 
-    constructor(guild: Guild) {
+    private constructor(guild: Guild) {
       this.guild = guild;
       GuildPlayer.manager.set(guild.id, this);
     }
@@ -743,6 +743,7 @@ player.on(Events.ClientReady, async () => {
   } catch {}
 
   try {
+    throw new Error("no command needed to be created");
     await player!.application!.commands.create({
       name: "more",
       description: "get more music!",
@@ -754,7 +755,6 @@ player.on(Events.ClientReady, async () => {
         },
       ],
     });
-    throw new Error("no command needed to be created");
     await player!.application!.commands.create({
       name: "join",
       description: "join a channel",

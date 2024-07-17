@@ -1,8 +1,8 @@
 import random from "@cch137/utils/random/index.js";
-import mongoose, { Schema } from "mongoose";
 import Jet from "@cch137/jet/index.js";
 import parseForm from "../../utils/parseForm.js";
 import Repo from "../github/index.js";
+import { study } from "../mongooses/index.js";
 
 const apiFiles = new Repo("cch137", "api-files");
 
@@ -11,11 +11,6 @@ async function upload(filename: string, content: Buffer | Uint8Array | string) {
   await apiFiles.upload(`i/${id}/${filename}`, content);
   return { id, filename };
 }
-
-mongoose
-  .connect(process.env.MONGODB_URI!)
-  .then(() => console.log("connected to mongodb"))
-  .catch(() => console.log("error connecting to mongodb"));
 
 export type ListType = {
   name: string;
@@ -73,9 +68,9 @@ class Session {
   }
 }
 
-const List = mongoose.model<ListType>(
+const List = study.model<ListType>(
   "List",
-  new Schema(
+  new study.Schema(
     {
       name: String,
       enabled: Boolean,
@@ -89,9 +84,9 @@ const List = mongoose.model<ListType>(
   { overwriteModels: true }
 );
 
-const Page = mongoose.model<PageType>(
+const Page = study.model<PageType>(
   "Page",
-  new Schema(
+  new study.Schema(
     {
       name: String,
       enabled: Boolean,

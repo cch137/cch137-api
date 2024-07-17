@@ -1,4 +1,5 @@
-import ytdl from "ytdl-core";
+import ytdl from "@distube/ytdl-core";
+// @distube/ytdl-core 是 ytdl-core 的分支並且提供更穩定的功能，ytdl-core 似乎已經停止更新了。
 
 export type InfoSummary = {
   id: string;

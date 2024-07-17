@@ -7,6 +7,9 @@ const apis = new Jet.Router();
 
 apis.static("/", "public/");
 
+// import { router as auth } from "../services/auth/index.js";
+// apis.use(auth);
+
 apis.get("/", (req, res) => {
   res.send({ t: Date.now() });
 });
