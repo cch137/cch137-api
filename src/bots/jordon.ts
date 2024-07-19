@@ -27,7 +27,7 @@ const systemPrompt = fs
   .readFileSync("public/jordon/system-prompt.txt", "utf8")
   .toString();
 
-const groq = new Groq({ apiKey: process.env.GROQ_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 async function getGroqChatCompletion(
   context: Groq.Chat.Completions.ChatCompletionMessageParam[]
