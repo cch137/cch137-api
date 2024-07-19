@@ -37,6 +37,7 @@
     "discord.js": "^14.15.2",
     "dotenv": "^16.4.5",
     "ffmpeg-static": "^5.2.0",
+    "groq-sdk": "^0.5.0",
     "he": "^1.2.0",
     "iconv-lite": "^0.6.3",
     "jimp": "^0.22.12",
