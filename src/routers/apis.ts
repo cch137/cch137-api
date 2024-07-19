@@ -66,23 +66,6 @@ apis.get("/dir/*", (req, res) => {
 //   res.sendFile(path.resolve(__dirname, "../pages/dashboard.html"));
 // });
 
-import {
-  convertCurrency,
-  getCurrencyList,
-} from "../services/currency/index.js";
-apis.use("/currency", async (req, res) => {
-  const { from, to } = parseForm(req);
-  res.send({ rate: await convertCurrency(from, to) });
-});
-apis.use("/currency-text", async (req, res) => {
-  const { from, to } = parseForm(req);
-  const rate = await convertCurrency(from, to);
-  res.send(`1 ${from} = ${rate} ${to}`);
-});
-apis.use("/currency-list", async (req, res) => {
-  res.send(await getCurrencyList());
-});
-
 import googleTranslate from "../services/google-translate/index.js";
 apis.use("/translate", async (req, res) => {
   const { text, from, to } = parseForm(req);
