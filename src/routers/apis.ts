@@ -410,14 +410,8 @@ ntDict.delete("/:id", async (req, res) => {
 
 import createEntangleServer from "@cch137/entangle/server.js";
 import { completions } from "../services/groq/index.js";
-apis.ws(
-  "groq",
-  (soc) => {
-    completions[createEntangleServer.Handle](soc);
-  },
-  (soc, req) => {
-    return req.headers["authorization"] === process.env.CURVA_ASK_KEY;
-  }
-);
+apis.ws("groq", (soc) => {
+  completions[createEntangleServer.Handle](soc);
+});
 
 export default apis;
