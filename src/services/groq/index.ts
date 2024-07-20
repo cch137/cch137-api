@@ -1,13 +1,8 @@
 import { config } from "dotenv";
 import createEntangleServer from "@cch137/entangle/server.js";
 
-import type {
-  ChatCompletionCreateParamsBase,
-  ChatCompletionCreateParamsNonStreaming,
-  ChatCompletionCreateParamsStreaming,
-} from "groq-sdk/resources/chat/completions.mjs";
+import type { ChatCompletionCreateParamsNonStreaming } from "groq-sdk/resources/chat/completions.mjs";
 import type { APIPromise } from "groq-sdk/core.mjs";
-import type { Stream } from "groq-sdk/lib/streaming.mjs";
 import Groq from "groq-sdk";
 
 config();
@@ -32,6 +27,7 @@ export const completions = createEntangleServer<GroqProxy>(
   },
   {
     permissions: [{ key: "create", readable: true, writable: false }],
+    salts: JSON.parse(process.env.GROQ_SALTS!),
   }
 );
 
