@@ -2,7 +2,8 @@ import { Events, IntentsBitField } from "discord.js";
 import { isGuildMessage, createBotClient } from "./utils.js";
 import { config } from "dotenv";
 import fs from "fs";
-import Groq from "groq-sdk";
+import type Groq from "groq-sdk";
+import groq from "../services/groq/index.js";
 
 const ch4GuildId = "730345526360539197";
 const adminRoleId = "1056251454127611975";
@@ -26,8 +27,6 @@ const jordon = createBotClient(
 const systemPrompt = fs
   .readFileSync("public/jordon/system-prompt.txt", "utf8")
   .toString();
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 async function getGroqChatCompletion(
   context: Groq.Chat.Completions.ChatCompletionMessageParam[]
