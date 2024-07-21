@@ -23,7 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "@cch137/auth": "^0.1.4",
-    "@cch137/entangle": "^0.0.18",
+    "@cch137/entangle": "^0.0.20",
     "@cch137/env": "^0.0.4",
     "@cch137/jet": "^0.1.13",
     "@cch137/shuttle": "^0.2.4",
