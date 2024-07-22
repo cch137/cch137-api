@@ -32,6 +32,7 @@ async function getGroqChatCompletion(
   context: Groq.Chat.Completions.ChatCompletionMessageParam[]
 ) {
   const completion = await groq.chat.completions.create({
+    temperature: 1,
     messages: [
       {
         role: "system",
