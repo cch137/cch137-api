@@ -1,3 +1,6 @@
+import { config as dotenvConfig } from "dotenv";
+dotenvConfig();
+
 import Jet from "@cch137/jet/index.js";
 import cors from "cors";
 import getRequestIp from "@cch137/utils/server/get-request-ip.js";

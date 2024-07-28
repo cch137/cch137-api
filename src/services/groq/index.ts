@@ -1,11 +1,8 @@
-import { config } from "dotenv";
 import createEntangleServer from "@cch137/entangle/server.js";
 
 import type { ChatCompletionCreateParamsNonStreaming } from "groq-sdk/resources/chat/completions.mjs";
 import type { APIPromise } from "groq-sdk/core.mjs";
 import Groq from "groq-sdk";
-
-config();
 
 export const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 

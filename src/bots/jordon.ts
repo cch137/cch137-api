@@ -1,14 +1,8 @@
 import { Events, IntentsBitField } from "discord.js";
 import { isGuildMessage, createBotClient } from "./utils.js";
-import { config } from "dotenv";
 import fs from "fs";
 import type Groq from "groq-sdk";
 import groq from "../services/groq/index.js";
-
-const ch4GuildId = "730345526360539197";
-const adminRoleId = "1056251454127611975";
-
-config();
 
 const jordon = createBotClient(
   {

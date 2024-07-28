@@ -19,9 +19,6 @@ import {
   startTyping,
   toCodeBlocks,
 } from "./utils.js";
-import { config } from "dotenv";
-
-config();
 
 export type UniMessage = {
   role: string;

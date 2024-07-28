@@ -18,7 +18,6 @@ import {
   IntentsBitField,
 } from "discord.js";
 import { createBotClient, OK, errorMessage, successMessage } from "./utils.js";
-import { config } from "dotenv";
 import {
   NoSubscriberBehavior,
   VoiceConnectionStatus,
@@ -35,14 +34,8 @@ import {
 } from "@discordjs/voice";
 import ytdl from "@distube/ytdl-core";
 import { getYouTubeVideoId } from "@cch137/utils/extract-urls/youtube.js";
-import {
-  AuthorSummary,
-  ytdlGetInfo,
-  ytdlGetMp3Info,
-} from "../services/ytdl/index.js";
+import YTDL from "@cch137/ytdl";
 import { Readable } from "stream";
-
-config();
 
 const player = createBotClient(
   {
@@ -244,14 +237,14 @@ player.on(Events.ClientReady, async () => {
     readonly gp: GuildPlayer;
     readonly source: string;
     readonly title: string;
-    readonly author?: AuthorSummary;
+    readonly author?: { name: string; url: string };
     readonly isYouTube: boolean;
 
     constructor(
       gp: GuildPlayer,
       source: string,
       title?: string,
-      author?: AuthorSummary
+      author?: { name: string; url: string }
     ) {
       this.gp = gp;
       this.source = source;
@@ -372,7 +365,9 @@ player.on(Events.ClientReady, async () => {
 
     async createPlaySource(source: string) {
       try {
-        const { title, url, author } = await ytdlGetInfo(source);
+        const info = await YTDL.info(source);
+        if (!info) throw new Error("No Info");
+        const { title, url, author } = info;
         return new PlaySource(this, url, title, author);
       } catch {
         return new PlaySource(this, source);
@@ -677,20 +672,6 @@ player.on(Events.ClientReady, async () => {
                 interaction.options.get("query")?.value || ""
               );
               await player.search(query, interaction);
-              break;
-            }
-            case "mp3": {
-              const url = String(interaction.options.get("url")?.value || "");
-              const { title, api } = await ytdlGetMp3Info(url);
-              const button = new ButtonBuilder()
-                .setLabel("Download MP3")
-                .setURL(`https://api.cch137.link${api}`)
-                .setStyle(ButtonStyle.Link);
-              interaction.reply({
-                content: title,
-                // @ts-ignore
-                components: wrapButtons(button),
-              });
               break;
             }
             case "volume": {

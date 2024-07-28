@@ -1,9 +1,4 @@
-import type {
-  Interaction,
-  Message,
-  TextBasedChannel,
-  TextChannel,
-} from "discord.js";
+import type { Interaction, TextBasedChannel } from "discord.js";
 import {
   ApplicationCommandOptionType,
   ChannelType,
@@ -19,16 +14,12 @@ import {
   errorMessage,
   OK,
 } from "./utils.js";
-import { config } from "dotenv";
 import { bots, getBotByName } from "./index.js";
 import 交通部中央氣象署最近地震 from "../services/earthquake/index.js";
 import { load } from "cheerio";
-import getMcStat from "../services/minecraft/index.js";
 
 const ch4GuildId = "730345526360539197";
 const adminRoleId = "1056251454127611975";
-
-config();
 
 const fetchEQReports = IntervalTask.create(
   (() => {
@@ -271,21 +262,6 @@ ch4.on(Events.ClientReady, async () => {
     if (!guild) return;
     if (!interaction.isChatInputCommand()) return;
     try {
-      switch (interaction.commandName) {
-        case "mc": {
-          const replying = interaction.reply("Pinging...");
-          const stat = await getMcStat();
-          const replied = await replying;
-          if (stat) {
-            replied.edit(
-              `Players: ${stat.players.online}/${stat.players.max}\nDescription: ${stat.description}`
-            );
-          } else {
-            replied.edit("Server is offline.");
-          }
-          return;
-        }
-      }
       const roles = interaction.member!.roles;
       if (
         Array.isArray(roles) ||
@@ -329,11 +305,11 @@ ch4.on(Events.ClientReady, async () => {
   });
 
   try {
+    throw new Error("no command needed to be created");
     await ch4.application!.commands.create({
       name: "mc",
       description: "check mc server",
     });
-    throw new Error("no command needed to be created");
     await ch4.application!.commands.create({
       name: "run",
       description: "run bot",

@@ -1,46 +1,119 @@
-import ytdl from "@distube/ytdl-core";
-// @distube/ytdl-core 是 ytdl-core 的分支並且提供更穩定的功能，ytdl-core 似乎已經停止更新了。
+import fs from "fs";
+import path from "path";
+import Jet from "@cch137/jet";
+import YTDL from "@cch137/ytdl";
 
-export type InfoSummary = {
-  id: string;
-  title: string;
-  url: string;
-  author: AuthorSummary;
-};
+export const router = new Jet.Router();
 
-export type AuthorSummary = {
-  name: string;
-  url: string;
-};
+function toSafeFilename(value: string) {
+  return value.replace(/[\/:*?"<>|\\\x00-\x1F]/g, "_");
+}
 
-export const ytdlGetInfo = async (source: string): Promise<InfoSummary> => {
-  const {
-    videoDetails: { title, videoId: id, author },
-  } = await ytdl.getInfo(source);
-  const { name, channel_url, external_channel_url } = author;
-  return {
-    id,
-    title,
-    url: `https://youtu.be/${id}`,
-    author: {
-      name,
-      url: channel_url || external_channel_url || "",
-    },
-  };
-};
+router.get("/info", async (req, res) => {
+  if (!(req.method === "GET" || req.method === "POST"))
+    return res.status(200).end();
 
-export const ytdlGetMp3Info = async (source: string) => {
-  const { title, id } = await ytdlGetInfo(source);
-  return {
-    id,
-    title,
-    api: `/yt-to-mp3/${encodeURIComponent(title)}.mp3?id=${id}`,
-  };
-};
+  const _source =
+    req._url.searchParams.get("src") ||
+    req.body?.["src"] ||
+    req._url.searchParams.get("source") ||
+    req.body?.["source"];
+  const id = req._url.searchParams.get("id") || req.body?.["id"];
 
-export const ytdlDownloadMp3 = async (source: string) => {
-  return ytdl(source, {
-    filter: "audioonly",
-    quality: "highestaudio",
-  });
-};
+  const source = _source || (id ? `https://youtu.be/${id}` : null);
+
+  if (!source || typeof source !== "string") return res.status(400).end();
+
+  try {
+    return res.json(await YTDL.info(source));
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
+
+router.use("/download", async (req, res) => {
+  if (!(req.method === "GET" || req.method === "POST"))
+    return res.status(200).end();
+
+  const _source =
+    req._url.searchParams.get("src") ||
+    req.body?.["src"] ||
+    req._url.searchParams.get("source") ||
+    req.body?.["source"];
+  const id = req._url.searchParams.get("id") || req.body?.["id"];
+  const downloadId = req._url.searchParams.get("d") || req.body?.["d"];
+  let format = req._url.searchParams.get("f") || req.body?.["f"] || "mp3";
+  let filename =
+    req._url.searchParams.get("filename") || req.body?.["filename"];
+
+  if (downloadId && typeof downloadId === "string") {
+    const dirname = `caches/ytdl/${downloadId}/`;
+
+    if (!fs.existsSync(dirname)) {
+      res.status(404).end();
+      return;
+    }
+
+    if (!filename || !fs.existsSync(dirname + filename)) {
+      filename = fs.readdirSync(dirname)[0];
+      if (!filename) {
+        res.status(404).end();
+        return;
+      }
+    }
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(filename)}"`
+    );
+    res.setHeader("Content-Type", "video/mp4");
+
+    fs.createReadStream(dirname + filename).pipe(res);
+
+    return;
+  }
+
+  const source = _source || (id ? `https://youtu.be/${id}` : null);
+
+  if (!source || typeof source !== "string") return res.status(400).end();
+
+  if (!filename || typeof filename !== "string") {
+    const info = await YTDL.info(source);
+    if (!info) return res.status(500).end();
+    filename = info?.title;
+  }
+
+  if (typeof format === "string") format = format.toLowerCase();
+
+  if (!filename.endsWith(`.${format}`)) filename += `.${format}`;
+  filename = toSafeFilename(filename);
+
+  if (format === "mp4") {
+    try {
+      const uuid = crypto.randomUUID();
+      const cacheFilepath = `caches/ytdl/${uuid}/${filename}`;
+      try {
+        fs.mkdirSync(path.dirname(cacheFilepath), { recursive: true });
+      } catch {}
+      YTDL.mp4(source, { output: cacheFilepath })
+        .stream.on("close", () => {
+          res.redirect(`/youtube/download?d=${uuid}`);
+        })
+        .on("error", () => res.status(500).end());
+    } catch {
+      res.status(500).end();
+    }
+    return;
+  }
+
+  try {
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(filename)}"`
+    );
+    res.setHeader("Content-Type", "audio/mpeg");
+    YTDL.mp3(source).stream.pipe(res);
+  } catch {
+    res.status(500).end();
+  }
+});
