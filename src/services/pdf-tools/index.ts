@@ -9,7 +9,7 @@ export class ImagesToPDF {
   converted?: Promise<Uint8Array>;
 
   constructor() {
-    this.id = random.base64(16);
+    this.id = random.base64url(16);
     ImagesToPDF.tasks.set(this.id, this);
     this.alive();
   }

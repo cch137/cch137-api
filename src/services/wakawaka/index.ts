@@ -61,7 +61,7 @@ class Session {
   readonly expire: number;
   constructor(uid: string) {
     this.uid = uid;
-    this.sid = random.base64(32);
+    this.sid = random.base64url(32);
     // expire after 1 hour
     this.expire = Date.now() + 60 * 60 * 1000;
     Session.sessions.set(this.sid, this);
