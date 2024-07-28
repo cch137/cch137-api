@@ -9,6 +9,12 @@ function toSafeFilename(value: string) {
   return value.replace(/[\/:*?"<>|\\\x00-\x1F]/g, "_");
 }
 
+export function Booleanish(value: any) {
+  if (typeof value !== "string") return Boolean(value);
+  if (value === "false" || value === "0") return false;
+  return true;
+}
+
 router.get("/info", async (req, res) => {
   if (!(req.method === "GET" || req.method === "POST"))
     return res.status(200).end();
@@ -19,13 +25,16 @@ router.get("/info", async (req, res) => {
     req._url.searchParams.get("source") ||
     req.body?.["source"];
   const id = req._url.searchParams.get("id") || req.body?.["id"];
+  const full = Booleanish(
+    req._url.searchParams.get("full") || req.body?.["full"]
+  );
 
   const source = _source || (id ? `https://youtu.be/${id}` : null);
 
   if (!source || typeof source !== "string") return res.status(400).end();
 
   try {
-    return res.json(await YTDL.info(source));
+    res.json(await YTDL.info(source, full));
   } catch (error) {
     res.status(500).json({ error });
   }
