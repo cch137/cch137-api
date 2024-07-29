@@ -8,16 +8,13 @@ const app = new Jet();
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
-  if (req.method?.toUpperCase() === "OPTIONS") {
-    res.setHeader("Content-Length", "0");
-    res.status(204).end();
-  } else {
-    next();
-  }
+  res.setHeader("Access-Control-Allow-Methods", "*");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  next();
 });
+
+app.options((req, res) => res.status(204).end());
 
 app.use(Jet.bodyParser);
 
