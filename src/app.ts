@@ -2,12 +2,17 @@ import { config as dotenvConfig } from "dotenv";
 dotenvConfig();
 
 import Jet from "@cch137/jet/index.js";
-import cors from "cors";
 import getRequestIp from "@cch137/utils/server/get-request-ip.js";
 
 const app = new Jet();
 
-app.use(cors());
+app.use((_req, res, next) => {
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  next();
+});
 
 app.use(Jet.bodyParser);
 
