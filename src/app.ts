@@ -6,12 +6,17 @@ import getRequestIp from "@cch137/utils/server/get-request-ip.js";
 
 const app = new Jet();
 
-app.use((_req, res, next) => {
+app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
-  next();
+  if (req.method?.toUpperCase() === "OPTIONS") {
+    res.setHeader("Content-Length", "0");
+    res.status(204).end();
+  } else {
+    next();
+  }
 });
 
 app.use(Jet.bodyParser);
