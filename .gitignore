@@ -1,7 +1,6 @@
 dist/
 caches/
 node_modules/
-package-lock.json
 
 # dotenv environment variable files
 .env
