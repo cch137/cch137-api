@@ -153,6 +153,9 @@ apis.use("/pine-ppt-dl/:filename", async (req, res) => {
 import { router as wk } from "../services/wakawaka/index.js";
 apis.use("/wk", wk);
 
+import { router as gha } from "../services/github-assets/index.js";
+apis.use("/gh", gha);
+
 import createEntangleServer from "@cch137/entangle/server.js";
 import { completions } from "../services/groq/index.js";
 apis.ws("groq", (soc) => {
