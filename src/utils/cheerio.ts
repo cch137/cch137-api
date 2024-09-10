@@ -1,4 +1,5 @@
-import { CheerioAPI, type Cheerio, type Element } from "cheerio";
+import { CheerioAPI, type Cheerio } from "cheerio";
+import { type Element } from "domhandler";
 
 export type TextNode = string | TextNode[];
 

@@ -186,6 +186,7 @@ player.on(Events.ClientReady, async () => {
         const channel = this.ps.gp.textChannel;
         if (!channel) return;
         const isVideoIdNotFound = e.message.startsWith("No video id found");
+        if (!("send" in channel)) return;
         await channel.send({
           content: errorMessage(
             `${e.name}: ${
@@ -321,7 +322,9 @@ player.on(Events.ClientReady, async () => {
       };
       return interactionResponse
         ? await interactionResponse.edit(content)
-        : await channel.send(content);
+        : "send" in channel
+        ? await channel.send(content)
+        : null;
     }
   }
 
@@ -486,11 +489,12 @@ player.on(Events.ClientReady, async () => {
         if (results.length === 0) {
           const replied = await message;
           if (replied) replied.edit(errorMessage("no result"));
-          else channel?.send("no result");
+          else if (channel && "send" in channel) channel?.send("no result");
           return;
         }
         await Promise.all(
           results.map(({ title, url }) => {
+            if (!(channel && "send" in channel)) return;
             return channel?.send({
               content: `${title}\n<${url}>`,
               components: wrapButtons(
@@ -512,11 +516,13 @@ player.on(Events.ClientReady, async () => {
         );
         const replied = await message;
         if (replied) replied?.edit(successMessage("OK"));
-        else channel?.send(successMessage("OK"));
+        else if (channel && "send" in channel)
+          channel?.send(successMessage("OK"));
       } catch {
         const replied = await message;
         if (replied) replied?.edit(errorMessage("Oops! Something went wrong."));
-        else channel?.send(successMessage("Oops! Something went wrong."));
+        else if (channel && "send" in channel)
+          channel?.send(successMessage("Oops! Something went wrong."));
       }
     }
 
@@ -711,7 +717,11 @@ player.on(Events.ClientReady, async () => {
         }
       } catch (e) {
         console.error(e);
-        if (interaction.replied)
+        if (
+          interaction.replied &&
+          interaction.channel &&
+          "send" in interaction.channel
+        )
           interaction.channel?.send(
             errorMessage(e instanceof Error ? e.message : "Unknown Error")
           );

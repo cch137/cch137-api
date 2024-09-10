@@ -49,6 +49,7 @@ export const replyWithCodeBlocks = async (
 };
 
 export const startTyping = (channel: TextBasedChannel) => {
+  if (!("sendTyping" in channel)) return;
   let typing = channel.sendTyping();
   const interval = setInterval(() => (typing = channel.sendTyping()), 1000);
   return {

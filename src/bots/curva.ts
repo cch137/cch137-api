@@ -188,6 +188,7 @@ curva.on(Events.ClientReady, async () => {
     if (/@here/.test(message.content)) return;
     answeringChannelIds.add(channel.id);
     const typing = startTyping(channel);
+    if (!("send" in channel)) return;
     let replied = channel.send(createInfoEmbed("Thinking..."));
     try {
       const messages = await channel.messages.fetch({ limit: 16 });
@@ -209,7 +210,7 @@ curva.on(Events.ClientReady, async () => {
         j = 0,
         r = 0;
       res.once("data", async (c) => {
-        typing.stop();
+        if (typing) typing.stop();
       });
       res.on("data", async () => {
         try {
@@ -229,9 +230,9 @@ curva.on(Events.ClientReady, async () => {
               .join("")
               .replace(/@everyone/g, "everyone")
               .replace(/@here/g, "here");
-            replied = (await replied).channel
-              .send({ content })
-              .then((m) => ((j = l), m)) as
+            const channel = (await replied).channel;
+            if (!("send" in channel)) return;
+            replied = channel.send({ content }).then((m) => ((j = l), m)) as
               | Promise<Message<false>>
               | Promise<Message<true>>;
           } else {
@@ -245,7 +246,7 @@ curva.on(Events.ClientReady, async () => {
       });
     } finally {
       answeringChannelIds.delete(channel.id);
-      typing.stop();
+      if (typing) typing.stop();
     }
   });
 
@@ -303,8 +304,10 @@ curva.on(Events.ClientReady, async () => {
         });
         const blocks = toCodeBlocks(await res.text());
         await interaction.reply(blocks.shift() as string);
-        while (blocks.length)
-          await interaction.channel?.send(blocks.shift() as string);
+        while (blocks.length) {
+          if (!("send" in interaction.channel)) break;
+          await interaction.channel.send(blocks.shift() as string);
+        }
         break;
       }
       case "calc": {
