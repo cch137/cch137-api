@@ -30,10 +30,24 @@ const encodeContent = (content: RawContent) => {
   throw new Error("TypeError: content");
 };
 
-const trimFilepath = (filepath: string) => {
+export function resolveApiPath(repo: Repo, filepath: string): string;
+export function resolveApiPath(
+  author: string,
+  repoName: string,
+  filepath: string
+): string;
+export function resolveApiPath(
+  arg1: Repo | string,
+  arg2: string,
+  filepath?: string
+) {
+  if (arg1 instanceof Repo) return resolveApiPath(arg1.author, arg1.name, arg2);
+  if (typeof filepath !== "string") throw new Error("TypeError: filepath");
   while (filepath.startsWith("/")) filepath = filepath.slice(1);
-  return filepath;
-};
+  return `https://api.github.com/repos/${arg1}/${arg2}/contents/${
+    filepath || ""
+  }`;
+}
 
 export default class Repo {
   private static headers = {
@@ -50,10 +64,14 @@ export default class Repo {
     }
   })();
 
-  readonly apiBaseUrl: string;
+  static resolveApiPath = resolveApiPath;
 
-  constructor(user: string, repo: string) {
-    this.apiBaseUrl = `https://api.github.com/repos/${user}/${repo}/contents/`;
+  readonly author: string;
+  readonly name: string;
+
+  constructor(author: string, name: string) {
+    this.author = author;
+    this.name = name;
   }
 
   private lastTask: Promise<any> = new Promise((r) => r(0));
@@ -73,7 +91,7 @@ export default class Repo {
 
   private async get(path: string) {
     try {
-      const res = await fetch(this.apiBaseUrl + trimFilepath(path), {
+      const res = await fetch(resolveApiPath(this, path), {
         method: "GET",
         headers: Repo.headers,
       });
@@ -101,7 +119,7 @@ export default class Repo {
 
   async upload(path: string, content: RawContent) {
     return this.addTask(async () => {
-      const res = await fetch(this.apiBaseUrl + trimFilepath(path), {
+      const res = await fetch(resolveApiPath(this, path), {
         method: "PUT",
         headers: Repo.headers,
         body: JSON.stringify({
@@ -120,7 +138,7 @@ export default class Repo {
     return this.addTask(async () => {
       const sha = (await this.getFile(path))?.sha;
       if (!sha) throw new Error("File not found");
-      const res = await fetch(this.apiBaseUrl + trimFilepath(path), {
+      const res = await fetch(resolveApiPath(this, path), {
         method: "PUT",
         headers: Repo.headers,
         body: JSON.stringify({
@@ -140,7 +158,7 @@ export default class Repo {
     return this.addTask(async () => {
       const file = await this.getFile(path);
       if (!file) throw new Error("Not a file");
-      const res = await fetch(this.apiBaseUrl + trimFilepath(path), {
+      const res = await fetch(resolveApiPath(this, path), {
         method: "DELETE",
         headers: Repo.headers,
         body: JSON.stringify({
