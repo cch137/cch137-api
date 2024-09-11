@@ -1,26 +1,49 @@
-import Jet from "@cch137/jet";
+import Jet, { type JetRequest } from "@cch137/jet";
 import Repo from "../github/index.js";
 import parseForm from "../../utils/parseForm.js";
 
-const tw113_recordings = new Repo("cch137", "113-recordings");
+const repos = new Map(
+  ["113-recordings", "1122-linux-materials"].map((repo) => [
+    repo,
+    new Repo("cch137", repo),
+  ])
+);
 
 export const router = new Jet.Router();
 
-router.use("/113-recordings", async (req, res) => {
-  const { key } = parseForm(req);
-  if (key !== process.env.CURVA_ASK_KEY) {
-    res.status(401).end();
-    return;
-  }
-  const items = ((await tw113_recordings.ls("./assets/")) || [])
-    .filter((i) => i.type === "file")
-    .map(({ name, size, download_url }) => ({
-      name,
-      size,
-      url: download_url,
-    }))
-    .sort();
-  res.send(items);
+const isAuth = (req: JetRequest) => {
+  return (
+    req._url.searchParams.get("key") === process.env.CURVA_ASK_KEY ||
+    req.body?.key === process.env.CURVA_ASK_KEY
+  );
+};
+
+router.use(async (req, res, next) => {
+  if (!isAuth(req)) return res.status(401).end();
+  next();
 });
 
-export default tw113_recordings;
+router.use("/repos", async (_, res) => {
+  res.send([...repos.keys()]);
+});
+
+router.use("/ls", async (req, res) => {
+  const { repo, path } = parseForm(req);
+  res.send(
+    ((await repos.get(repo)?.ls(path)) || [])
+      .map(({ name, size, download_url, type }) => ({
+        name,
+        size,
+        url: download_url,
+        type,
+      }))
+      .sort()
+  );
+});
+
+router.use("/f", async (req, res) => {
+  const { repo, path } = parseForm(req);
+  res.send(await repos.get(repo)!.getFile(path));
+});
+
+export default repos;
