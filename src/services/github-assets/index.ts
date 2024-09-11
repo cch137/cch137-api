@@ -43,7 +43,7 @@ router.use("/ls", async (req, res) => {
 
 router.use("/f", async (req, res) => {
   const { repo, path } = parseForm(req);
-  res.send(await repos.get(repo)!.getFile(path));
+  res.send(await repos.get(repo)?.getFile(path));
 });
 
 export default repos;
