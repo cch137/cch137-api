@@ -1,4 +1,6 @@
-type GHObjectBase<DIR extends boolean> = {
+export type GHType = "dir" | "file";
+
+export type GHObject<T extends GHType = GHType> = {
   name: string;
   path: string;
   sha: string;
@@ -6,22 +8,17 @@ type GHObjectBase<DIR extends boolean> = {
   url: string;
   html_url: string;
   git_url: string;
-  download_url: DIR extends true ? null : string;
-  type: DIR extends true ? "dir" : "file";
+  download_url: T extends "dir" ? null : string;
+  type: T;
 };
-type GHRawObjectBase<DIR extends boolean> = GHObjectBase<DIR> & {
+
+type GHRawObject<T extends GHType = GHType> = GHObject<T> & {
   _links: {
     self: string;
     git: string;
     html: string;
   };
 };
-export type GHDirRawObject = GHRawObjectBase<true>;
-export type GHFileRawObject = GHRawObjectBase<false>;
-export type GHRawObjects = (GHDirRawObject | GHFileRawObject)[];
-export type GHDirObject = GHObjectBase<true>;
-export type GHFileObject = GHObjectBase<false>;
-export type GHObjects = (GHDirObject | GHFileObject)[];
 
 type RawContent = Buffer | Uint8Array | string;
 
@@ -82,25 +79,24 @@ export default class Repo {
       });
       const data = await res.json();
       if ("message" in data) throw new Error(data.message);
-      return data as GHFileRawObject | GHRawObjects;
+      return data as GHRawObject<"file"> | GHRawObject[];
     } catch {
       return null;
     }
   }
 
-  async ls(path: string): Promise<GHObjects | null> {
+  async ls(path: string): Promise<GHObject[] | null> {
     const data = await this.get(path);
     if (data && !Array.isArray(data)) return null;
     return data ? data.map(({ _links, ...i }) => i) : data;
   }
 
-  async getFile(path: string): Promise<GHFileObject | null> {
+  async getFile(path: string): Promise<GHObject<"file"> | null> {
     const data = await this.get(path);
     if (!data) return data;
     if (Array.isArray(data)) return null;
     const { _links, ...o } = data;
-    if (o.type === "file") return o;
-    return null;
+    return o;
   }
 
   async upload(path: string, content: RawContent) {
