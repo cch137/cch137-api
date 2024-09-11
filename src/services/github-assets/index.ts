@@ -27,7 +27,7 @@ router.use("/repos", async (_, res) => {
   res.send([...repos.keys()]);
 });
 
-router.use("/ls", async (req, res) => {
+router.use("/d", async (req, res) => {
   const { repo, path } = parseForm(req);
   const items = await repos.get(repo)?.ls(path);
   if (!items) return res.send(null);
