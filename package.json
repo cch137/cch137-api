@@ -25,7 +25,7 @@
     "@cch137/auth": "^0.1.27",
     "@cch137/entangle": "^0.0.24",
     "@cch137/env": "^0.0.4",
-    "@cch137/jet": "^0.1.14",
+    "@cch137/jet": "^0.1.15",
     "@cch137/random": "^0.1.2",
     "@cch137/read-stream": "^0.1.2",
     "@cch137/shuttle": "^0.2.8",
