@@ -30,23 +30,21 @@ const encodeContent = (content: RawContent) => {
   throw new Error("TypeError: content");
 };
 
-export function resolveApiPath(repo: Repo, filepath: string): string;
+export function resolveApiPath(repo: Repo, filepath?: string): string;
 export function resolveApiPath(
   author: string,
   repoName: string,
-  filepath: string
+  filepath?: string
 ): string;
 export function resolveApiPath(
   arg1: Repo | string,
-  arg2: string,
-  filepath?: string
+  arg2: string = "",
+  filepath: string = ""
 ) {
   if (arg1 instanceof Repo) return resolveApiPath(arg1.author, arg1.name, arg2);
   if (typeof filepath !== "string") throw new Error("TypeError: filepath");
   while (filepath.startsWith("/")) filepath = filepath.slice(1);
-  return `https://api.github.com/repos/${arg1}/${arg2}/contents/${
-    filepath || ""
-  }`;
+  return `https://api.github.com/repos/${arg1}/${arg2}/contents/${filepath}`;
 }
 
 export default class Repo {
