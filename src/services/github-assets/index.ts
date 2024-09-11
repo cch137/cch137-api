@@ -29,8 +29,10 @@ router.use("/repos", async (_, res) => {
 
 router.use("/ls", async (req, res) => {
   const { repo, path } = parseForm(req);
+  const items = await repos.get(repo)?.ls(path);
+  if (!items) return res.send(null);
   res.send(
-    ((await repos.get(repo)?.ls(path)) || [])
+    items
       .map(({ name, size, download_url, type }) => ({
         name,
         size,
