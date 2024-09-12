@@ -1,6 +1,7 @@
 import Jet, { type JetRequest } from "@cch137/jet";
 import Repo from "../github/index.js";
 import parseForm from "../../utils/parseForm.js";
+import Shuttle from "@cch137/utils/shuttle/index.js";
 
 const repos = new Map(
   ["113-recordings", "1122-linux-materials"].map((repo) => [
@@ -46,6 +47,40 @@ router.use("/d", async (req, res) => {
 router.use("/f", async (req, res) => {
   const { repo, path } = parseForm(req);
   res.send(await repos.get(repo)?.getFile(path));
+});
+
+router.post("/action", async (req, res) => {
+  const { repo, path, content } = Shuttle.unpack<{
+    repo: any;
+    path: any;
+    content: any;
+  }>(req.body);
+  if (typeof repo !== "string") return res.status(400).end();
+  if (typeof path !== "string") return res.status(400).end();
+  if (!(content instanceof Uint8Array)) return res.status(400).end();
+  res.send(await repos.get(repo)?.upload(path, content));
+});
+
+router.put("/action", async (req, res) => {
+  const { repo, path, content } = Shuttle.unpack<{
+    repo: any;
+    path: any;
+    content: any;
+  }>(req.body);
+  if (typeof repo !== "string") return res.status(400).end();
+  if (typeof path !== "string") return res.status(400).end();
+  if (!(content instanceof Uint8Array)) return res.status(400).end();
+  res.send(await repos.get(repo)?.edit(path, content));
+});
+
+router.delete("/action", async (req, res) => {
+  const { repo, path } = Shuttle.unpack<{
+    repo: any;
+    path: any;
+  }>(req.body);
+  if (typeof repo !== "string") return res.status(400).end();
+  if (typeof path !== "string") return res.status(400).end();
+  res.send(await repos.get(repo)?.delete(path));
 });
 
 export default repos;
