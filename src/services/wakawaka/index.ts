@@ -8,7 +8,7 @@ const apiFiles = new Repo("cch137", "api-files");
 
 async function upload(filename: string, content: Buffer | Uint8Array | string) {
   const id = crypto.randomUUID();
-  await apiFiles.upload(`i/${id}/${filename}`, content);
+  await apiFiles.create(`i/${id}/${filename}`, content);
   return { id, filename };
 }
 

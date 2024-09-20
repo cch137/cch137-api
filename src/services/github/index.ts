@@ -87,7 +87,7 @@ export default class Repo {
     );
   }
 
-  private async get(path: string) {
+  async _get(path: string) {
     try {
       const res = await fetch(resolveApiPath(this, path), {
         method: "GET",
@@ -101,27 +101,44 @@ export default class Repo {
     }
   }
 
-  async ls(path: string): Promise<GHObject[] | null> {
+  async get(path: string) {
+    const data = await this._get(path);
+    if (!data) return null;
+    if (Array.isArray(data)) {
+      data.forEach((i) => Reflect.deleteProperty(i, "_links"));
+      return data as GHObject[];
+    }
+    if (data) {
+      Reflect.deleteProperty(data, "_links");
+      return data as GHObject<"file">;
+    }
+    return null;
+  }
+
+  async getDirectory(path: string): Promise<GHObject[] | null> {
     const data = await this.get(path);
-    if (data && !Array.isArray(data)) return null;
-    return data ? data.map(({ _links, ...i }) => i) : data;
+    if (Array.isArray(data)) return data;
+    return null;
   }
 
   async getFile(path: string): Promise<GHObject<"file"> | null> {
     const data = await this.get(path);
-    if (!data) return data;
-    if (Array.isArray(data)) return null;
-    const { _links, ...o } = data;
-    return o;
+    if (data && !Array.isArray(data)) return data;
+    return null;
   }
 
-  async upload(path: string, content: RawContent) {
+  async create(
+    path: string,
+    content: RawContent,
+    options?: { message?: string }
+  ): Promise<any>;
+  async create(path: string, content: RawContent, { message = "create" } = {}) {
     return this.addTask(async () => {
       const res = await fetch(resolveApiPath(this, path), {
         method: "PUT",
         headers: Repo.headers,
         body: JSON.stringify({
-          message: "create",
+          message,
           committer: Repo.comitter,
           content: encodeContent(content),
         }),
@@ -132,7 +149,12 @@ export default class Repo {
     });
   }
 
-  async edit(path: string, content: RawContent) {
+  async update(
+    path: string,
+    content: RawContent,
+    options?: { message?: string }
+  ): Promise<any>;
+  async update(path: string, content: RawContent, { message = "update" } = {}) {
     return this.addTask(async () => {
       const sha = (await this.getFile(path))?.sha;
       if (!sha) throw new Error("File not found");
@@ -140,7 +162,7 @@ export default class Repo {
         method: "PUT",
         headers: Repo.headers,
         body: JSON.stringify({
-          message: "edit",
+          message,
           committer: Repo.comitter,
           content: encodeContent(content),
           sha,
@@ -152,7 +174,8 @@ export default class Repo {
     });
   }
 
-  async delete(path: string) {
+  async delete(path: string, options?: { message?: string }): Promise<any>;
+  async delete(path: string, { message = "delete" } = {}) {
     return this.addTask(async () => {
       const file = await this.getFile(path);
       if (!file) throw new Error("Not a file");
@@ -160,7 +183,7 @@ export default class Repo {
         method: "DELETE",
         headers: Repo.headers,
         body: JSON.stringify({
-          message: "delete",
+          message,
           committer: Repo.comitter,
           sha: file.sha,
         }),

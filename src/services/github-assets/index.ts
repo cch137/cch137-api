@@ -28,9 +28,14 @@ router.use("/repos", async (_, res) => {
   res.send([...repos.keys()]);
 });
 
+router.use("/get", async (req, res) => {
+  const { repo, path } = parseForm(req);
+  res.send(await repos.get(repo)?.get(path));
+});
+
 router.use("/d", async (req, res) => {
   const { repo, path } = parseForm(req);
-  const items = await repos.get(repo)?.ls(path);
+  const items = await repos.get(repo)?.getDirectory(path);
   if (!items) return res.send(null);
   res.send(
     items
@@ -58,7 +63,7 @@ router.post("/action", async (req, res) => {
   if (typeof repo !== "string") return res.status(400).end();
   if (typeof path !== "string") return res.status(400).end();
   if (!(content instanceof Uint8Array)) return res.status(400).end();
-  res.send(await repos.get(repo)?.upload(path, content));
+  res.send(await repos.get(repo)?.create(path, content));
 });
 
 router.put("/action", async (req, res) => {
@@ -70,7 +75,7 @@ router.put("/action", async (req, res) => {
   if (typeof repo !== "string") return res.status(400).end();
   if (typeof path !== "string") return res.status(400).end();
   if (!(content instanceof Uint8Array)) return res.status(400).end();
-  res.send(await repos.get(repo)?.edit(path, content));
+  res.send(await repos.get(repo)?.update(path, content));
 });
 
 router.delete("/action", async (req, res) => {
