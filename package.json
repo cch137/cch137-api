@@ -22,7 +22,6 @@
   "author": "cch137",
   "license": "ISC",
   "dependencies": {
-    "@cch137/auth": "^0.1.27",
     "@cch137/entangle": "^0.0.24",
     "@cch137/env": "^0.0.4",
     "@cch137/jet": "^0.1.15",
