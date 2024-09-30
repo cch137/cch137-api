@@ -1,16 +1,68 @@
-/**
- * Code forked from:
- * https://github.com/vitalets/google-translate-api/
- * https://www.npmjs.com/package/@saipulanuar/google-translate-api
- */
-
 import qs from "qs";
+
+let secrets = {
+  fSid: "",
+  bl: "",
+  lastUpdated: 0,
+  isUpdating: false,
+};
 
 const extractKey = (key: string, content: string) => {
   const re = new RegExp(`"${key}":".*?"`);
   const result = re.exec(content);
   if (result) return result[0].replace(`"${key}":"`, "").slice(0, -1);
   return "";
+};
+
+const fetchSecrets = async (origin: string) => {
+  try {
+    const originContent = await (await fetch(origin)).text();
+    return {
+      fSid: extractKey("FdrFJe", originContent),
+      bl: extractKey("cfb2h", originContent),
+      lastUpdated: Date.now(),
+    };
+  } catch (e) {
+    throw new Error("Failed to fetch secrets");
+  }
+};
+
+const updateSecrets = async (origin: string, force: boolean = false) => {
+  const now = Date.now();
+  const elapsed = (now - secrets.lastUpdated) / 1000 / 60; // minutes
+
+  // If secrets are being updated or have been updated recently (less than 5 minutes ago), do nothing.
+  if (secrets.isUpdating || (elapsed < 5 && !force)) {
+    return secrets;
+  }
+
+  secrets.isUpdating = true;
+
+  try {
+    if (elapsed >= 15 || force) {
+      secrets = {
+        ...secrets,
+        ...(await fetchSecrets(origin)),
+        isUpdating: false,
+      };
+      return secrets;
+    }
+
+    // Asynchronous update if within 5-15 minutes.
+    setTimeout(async () => {
+      try {
+        const newSecrets = await fetchSecrets(origin);
+        secrets = { ...secrets, ...newSecrets, isUpdating: false };
+      } catch {
+        secrets.isUpdating = false; // Ensure isUpdating is reset even on failure
+      }
+    }, 0);
+
+    return secrets;
+  } catch {
+    secrets.isUpdating = false; // Reset isUpdating on failure
+    throw new Error("Failed to update secrets");
+  }
 };
 
 export type TranslateApiResponse = {
@@ -35,6 +87,7 @@ export type TranslateApiOptions = {
   to?: string;
   tld?: string;
   autoCorrect?: boolean;
+  forceUpdate?: boolean;
 };
 
 export default async function googleTranslate(
@@ -46,22 +99,21 @@ export default async function googleTranslate(
     to = "en",
     tld = "com",
     autoCorrect: _autoCorrect,
+    forceUpdate,
   } = options;
+  if (forceUpdate) secrets.lastUpdated = 0;
   const autoCorrect =
     _autoCorrect === undefined ? false : Boolean(_autoCorrect);
   const origin = `https://translate.google.${tld}`;
 
-  // according to translate.google.com constant rpcids seems to have different values with different POST body format.
-  // * MkEWBc - returns translation
-  // * AVdN8 - return suggest
-  // * exi25c - return some technical info
-  const rpcids = "MkEWBc";
-  const originContent = await (await fetch(origin)).text();
+  // Get or update secrets as necessary
+  await updateSecrets(origin);
+
   const data = {
-    rpcids,
+    rpcids: "MkEWBc",
     "source-path": "/",
-    "f.sid": extractKey("FdrFJe", originContent),
-    bl: extractKey("cfb2h", originContent),
+    "f.sid": secrets.fSid,
+    bl: secrets.bl,
     hl: "en-US",
     "soc-app": 1,
     "soc-platform": 1,
@@ -69,11 +121,11 @@ export default async function googleTranslate(
     _reqid: Math.floor(1000 + Math.random() * 9000),
     rt: "c",
   };
-  // format for freq below is only for rpcids = MkEWBc
+
   const freq = [
     [
       [
-        rpcids,
+        "MkEWBc",
         JSON.stringify([[text, from, to, autoCorrect], [null]]),
         null,
         "generic",
@@ -130,18 +182,12 @@ export default async function googleTranslate(
     json[1][0][0][5] === undefined || json[1][0][0][5] === null
       ? json[1][0][0][0]
       : (json[1][0][0][5] as any as string[])
-          .map(function (obj: any) {
-            return obj[0];
-          })
+          .map((obj: any) => obj[0])
           .filter(Boolean)
-          // Google api seems to split text per sentences by <dot><space>
-          // So we join text back with spaces.
-          // See: https://github.com/vitalets/google-translate-api/issues/73
           .join(" ");
 
   result.pronunciation = json[1][0][0][1];
 
-  // From language
   if (json[0] && json[0][1] && json[0][1][1]) {
     result.from.language.didYouMean = true;
     result.from.language.iso = json[0][1][1][0];
@@ -151,7 +197,6 @@ export default async function googleTranslate(
     result.from.language.iso = json[1][3];
   }
 
-  // Did you mean & autocorrect
   if (json[0] && json[0][1] && json[0][1][0]) {
     result.from.text.value = json[0][1][0][0][1]
       .replace(/<b>(<i>)?/g, "[")
