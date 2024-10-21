@@ -1,10 +1,12 @@
 import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
+import { pdf as pdfToImages } from "pdf-to-img";
+import JSZip from "jszip";
 import random from "@cch137/random";
 
 export class ImagesToPDF {
   readonly id: string;
-  #files = new Map<number, Uint8Array>();
+  private readonly files: Uint8Array[] = [];
   #killTimeout?: NodeJS.Timeout;
   converted?: Promise<Uint8Array>;
 
@@ -14,20 +16,14 @@ export class ImagesToPDF {
     this.alive();
   }
 
-  alive() {
+  private alive() {
     clearTimeout(this.#killTimeout);
     this.#killTimeout = setTimeout(() => this.kill(), 15 * 60000);
   }
 
-  kill() {
+  private kill() {
     clearTimeout(this.#killTimeout);
     ImagesToPDF.tasks.delete(this.id);
-  }
-
-  get files() {
-    return [...this.#files.keys()]
-      .sort()
-      .map((i) => this.#files.get(i) as Uint8Array);
   }
 
   upload(index: number, file: Uint8Array) {
@@ -35,7 +31,7 @@ export class ImagesToPDF {
     if (typeof index !== "number") return;
     if (!(file instanceof Uint8Array)) return;
     this.alive();
-    this.#files.set(index, file);
+    this.files[index] = file;
   }
 
   async convert() {
@@ -43,8 +39,8 @@ export class ImagesToPDF {
     if (this.converted) return await this.converted;
     this.converted = new Promise<Uint8Array>(async (resolve, reject) => {
       const doc = await PDFDocument.create();
-      const { files } = this;
-      this.#files.clear();
+      const files = this.files.filter(Boolean);
+      this.files.splice(0);
       for (const file of files) {
         try {
           const image = sharp(file).jpeg();
@@ -94,5 +90,20 @@ export class ImagesToPDF {
     if (!task)
       return await new Promise<Uint8Array>((r) => r(new Uint8Array([])));
     return await task.convert();
+  }
+}
+
+export class PDFToImages {
+  static async convert(
+    input: string | Uint8Array | Buffer | NodeJS.ReadableStream
+  ) {
+    let i = 1;
+    const document = await pdfToImages(input, { scale: 2 });
+
+    const zip = new JSZip();
+
+    for await (const image of document) zip.file(`${i++}.png`, image);
+
+    return await zip.generateAsync({ type: "uint8array" });
   }
 }

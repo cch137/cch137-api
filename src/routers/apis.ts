@@ -114,7 +114,7 @@ apis.use("/weather-text", async (req, res) => {
   res.send(await fetchWeatherText(_city, { unit, lang }));
 });
 
-import { ImagesToPDF } from "../services/pdf-tools/index.js";
+import { ImagesToPDF, PDFToImages } from "../services/pdf-tools/index.js";
 apis.use("/images-to-pdf/create-task", async (req, res) => {
   res.json({ id: ImagesToPDF.createTask().id });
 });
@@ -129,6 +129,16 @@ apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
     return res.redirect(`/images-to-pdf/convert/${id}/${filename}.pdf`);
   res.type("application/pdf");
   res.send(Buffer.from(await ImagesToPDF.convert(id)));
+});
+apis.use("/pdf-to-images/convert/:filename", async (req, res) => {
+  let { filename } = req.params;
+  if (!filename.endsWith(".zip")) filename += ".zip";
+  res.type("application/zip");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${encodeURIComponent(filename)}`
+  );
+  res.send(Buffer.from(await PDFToImages.convert(req.body)));
 });
 
 import downloadPPT from "../services/pine/download-ppt.js";
