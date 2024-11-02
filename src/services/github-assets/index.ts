@@ -4,7 +4,7 @@ import parseForm from "../../utils/parseForm.js";
 import Shuttle from "@cch137/utils/shuttle/index.js";
 
 const repos = new Map(
-  ["113-recordings", "1122-linux-materials"].map((repo) => [
+  ["113-recordings", "1122-linux-materials", "gaia"].map((repo) => [
     repo,
     new Repo("cch137", repo),
   ])
