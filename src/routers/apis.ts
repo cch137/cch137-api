@@ -166,6 +166,9 @@ apis.use("/wk", wk);
 import { router as gha } from "../services/github-assets/index.js";
 apis.use("/gh", gha);
 
+import { router as notion } from "../services/notion/index.js";
+apis.use("/notion", notion);
+
 import createEntangleServer from "@cch137/entangle/server.js";
 import { completions } from "../services/groq/index.js";
 apis.ws("groq", (soc) => {
