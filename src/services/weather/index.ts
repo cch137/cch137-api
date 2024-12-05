@@ -1,6 +1,9 @@
 import { load as cheerioLoad } from "cheerio";
 import { cheerioToTextNodes, type TextNode } from "../../utils/cheerio.js";
 import googleTranslate from "../google-translate/index.js";
+// import index2 from "./index2.js";
+
+// console.log(index2);
 
 type TemperatureUnit =
   | "c"
