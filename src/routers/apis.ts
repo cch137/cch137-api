@@ -100,6 +100,19 @@ apis.use("/wikipedia", async (req, res) => {
 });
 
 import { fetchWeather, fetchWeatherText } from "../services/weather/index.js";
+import { fetchWeatherFromOpenWeather } from "../services/weather/index2.js";
+apis.use("/weather2", async (req, res) => {
+  const { lat, lon } = parseForm(req);
+  try {
+    const coor =
+      typeof lat === "number" && typeof lon === "number"
+        ? { lon, lat }
+        : undefined;
+    res.json(await fetchWeatherFromOpenWeather(coor));
+  } catch {
+    res.status(500).end();
+  }
+});
 apis.use("/weather", async (req, res) => {
   const { city, loc, location, unit, lang } = parseForm(req);
   const _city = city || loc || location;
