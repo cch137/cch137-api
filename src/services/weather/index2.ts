@@ -99,10 +99,14 @@ type OpenWeatherSummary = {
     max: number;
   };
   weather: {
+    /** Weather condition ID */
+    id: number;
     /** Main weather condition */
     main: string;
     /** Detailed weather description */
     description: string;
+    /** Weather icon ID */
+    icon: string;
   };
   wind: {
     /** Wind speed in meters per second */
@@ -362,8 +366,10 @@ export async function fetchWeatherFromOpenWeather(
       max: res.main.temp_max,
     },
     weather: {
+      id: res.weather[0].id,
       main: res.weather[0].main,
       description: res.weather[0].description,
+      icon: res.weather[0].icon,
     },
     wind: {
       speed: res.wind.speed,
