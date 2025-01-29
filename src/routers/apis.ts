@@ -104,13 +104,16 @@ import { fetchWeatherFromOpenWeather } from "../services/weather/index2.js";
 apis.use("/weather2", async (req, res) => {
   const { lat, lon, lang } = parseForm(req);
   try {
-    const coor =
-      typeof lat === "number" && typeof lon === "number"
-        ? { lon, lat, lang }
-        : {};
-    res.json(await fetchWeatherFromOpenWeather({ ...coor, lang }));
+    if (lat !== undefined && typeof lat !== "number")
+      throw new Error("Invalid Param");
+    if (lon !== undefined && typeof lon !== "number")
+      throw new Error("Invalid Param");
+    if (lang !== undefined && typeof lang !== "string")
+      throw new Error("Invalid Param");
+
+    res.json(await fetchWeatherFromOpenWeather({ lon, lat, lang }));
   } catch {
-    res.status(500).end();
+    res.status(400).end();
   }
 });
 apis.use("/weather", async (req, res) => {

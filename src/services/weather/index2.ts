@@ -339,11 +339,9 @@ export async function fetchWeatherFromOpenWeather({
   lat = 24.9683,
   lon = 121.1922,
   lang,
-  lang,
 }: {
   lat?: number;
   lon?: number;
-  lang?: string;
   lang?: string;
 } = {}) {
   /** OpenWeatherMap API key from environment variables */
