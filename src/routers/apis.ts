@@ -105,7 +105,9 @@ apis.use("/weather2", async (req, res) => {
   const { lat, lon, lang } = parseForm(req);
   try {
     const coor =
-      typeof lat === "number" && typeof lon === "number" ? { lon, lat } : {};
+      typeof lat === "number" && typeof lon === "number"
+        ? { lon, lat, lang }
+        : {};
     res.json(await fetchWeatherFromOpenWeather({ ...coor, lang }));
   } catch {
     res.status(500).end();
