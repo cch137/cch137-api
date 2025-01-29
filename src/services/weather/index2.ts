@@ -339,9 +339,11 @@ export async function fetchWeatherFromOpenWeather(
   {
     lat,
     lon,
+    lang,
   }: {
     lat: number;
     lon: number;
+    lang?: string;
   } = {
     lat: 24.9683,
     lon: 121.1922,
@@ -351,7 +353,9 @@ export async function fetchWeatherFromOpenWeather(
   const openWeatherKey = process.env.API_KEY_OPEN_WEATHER;
 
   /** Construct the OpenWeatherMap API URL with query parameters */
-  const url = `https://api.openweathermap.org/data/2.5/weather?appid=${openWeatherKey}&lat=${lat}&lon=${lon}&units=metric`;
+  const url = `https://api.openweathermap.org/data/2.5/weather?appid=${openWeatherKey}&lat=${lat}&lon=${lon}&units=metric${
+    lang ? `&lang=${lang}` : ""
+  }`;
 
   /** Fetch the current weather data from OpenWeatherMap */
   const res = (await (await fetch(url)).json()) as OpenWeatherFullResponse;
