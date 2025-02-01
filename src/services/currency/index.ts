@@ -4,7 +4,6 @@ const router = new Jet.Router();
 
 let timestamp = NaN;
 let rates: Record<string, number> | null = null;
-let cacheString = JSON.stringify({ timestamp, rates });
 
 let itv: NodeJS.Timeout | null = null;
 
@@ -25,28 +24,43 @@ const updateData = async (force = false) => {
     const { timestamp: resTimestamp, rates: resRates } = await res.json();
     timestamp = resTimestamp;
     rates = resRates;
-    cacheString = JSON.stringify({ timestamp, rates });
-    return cacheString;
+    return { timestamp, rates };
   } catch {}
   return null;
+};
+
+const getRates = (
+  keys: null | string[],
+  srcRates?: Record<string, number> | null
+) => {
+  srcRates ??= rates;
+  if (!keys || !srcRates) return srcRates;
+  const resRates: Record<string, number> = {};
+  for (const key of keys) resRates[key] = srcRates[key];
+  return resRates;
 };
 
 updateData();
 
 router.use("/xe", async (req, res) => {
-  const { force } = Jet.getParams(req);
+  const { force, f: filterString } = Jet.getParams(req);
+  const filterKeys =
+    filterString && typeof filterString === "string"
+      ? filterString.split(",")
+      : null;
   if (force) {
     try {
-      return res
-        .status(200)
-        .type("json")
-        .send(await updateData());
+      const result = await updateData();
+      if (!result) throw new Error("No data");
+      return res.status(200).json({
+        timestamp: result.timestamp,
+        rates: getRates(filterKeys, result.rates),
+      });
     } catch {}
   }
   res
     .status(rates ? 200 : 503)
-    .type("json")
-    .send(cacheString);
+    .json({ timestamp, rates: getRates(filterKeys) });
 });
 
 export default router;
