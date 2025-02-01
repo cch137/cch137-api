@@ -1,14 +1,9 @@
-import path from "path";
-import fs from "fs";
 import Jet from "@cch137/jet/index.js";
 import parseForm from "../utils/parseForm.js";
 
 const apis = new Jet.Router();
 
 apis.static("/", "public/");
-
-// import { router as auth } from "../services/auth/index.js";
-// apis.use(auth);
 
 apis.get("/", (req, res) => {
   res.send({ t: Date.now() });
@@ -22,49 +17,6 @@ const started = Date.now();
 apis.get("/started", (req, res) => {
   res.send({ t: started });
 });
-
-apis.get("/dir/*", (req, res) => {
-  // @ts-ignore
-  const publicDirname = req.params[0] as string;
-  const actualDirname = `public/${publicDirname}`;
-  if (
-    !fs.existsSync(actualDirname) ||
-    !fs.statSync(actualDirname).isDirectory()
-  )
-    return res.status(404).end();
-  const isTop = publicDirname === "";
-  const dirName = path.dirname(publicDirname);
-  const items = fs
-    .readdirSync(actualDirname)
-    .map((name) => {
-      const fp = `/${publicDirname}/${name}`.replace(/\/{2,}/g, "/");
-      const acFp = `${actualDirname}/${name}`;
-      const isDir = fs.statSync(acFp).isDirectory();
-      const url = isDir ? `/dir${fp}` : fp;
-      if (isDir) name += "/";
-      return {
-        name,
-        url,
-        isDir,
-        html: `<li style="padding:.25rem 0"><a href="${url}"${
-          isDir ? "" : ' target="_blank"'
-        } style="color:#fff;">${name}</a></li>`,
-      };
-    })
-    .sort((a, b) => +b.isDir - +a.isDir);
-  const parentLink = isTop
-    ? ""
-    : `<li style="padding:.25rem 0"><a style="color:#fff;" href="/dir/${dirName}">..</a></li>`;
-  res.send(
-    `<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"><title>${actualDirname}</title></head><body style="background:#000;color:#fff;font-family:consolas;font-size:large;margin:0;padding:2rem;"><ul>${parentLink}${items
-      .map(({ html }) => html)
-      .join("")}</ul></body></html>`
-  );
-});
-
-// apis.get("/dashboard", (req, res) => {
-//   res.sendFile(path.resolve(__dirname, "../pages/dashboard.html"));
-// });
 
 import googleTranslate from "../services/google-translate/index.js";
 apis.use("/translate", async (req, res) => {
@@ -99,8 +51,7 @@ apis.use("/wikipedia", async (req, res) => {
   res.send(await wikipedia(searchTerm, langCode));
 });
 
-import { fetchWeather, fetchWeatherText } from "../services/weather/index.js";
-import { fetchWeatherFromOpenWeather } from "../services/weather/index2.js";
+import { fetchWeatherFromOpenWeather } from "../services/weather/index.js";
 apis.use("/weather2", async (req, res) => {
   const { lat, lon, lang } = parseForm(req);
   try {
@@ -115,19 +66,6 @@ apis.use("/weather2", async (req, res) => {
   } catch {
     res.status(400).end();
   }
-});
-apis.use("/weather", async (req, res) => {
-  const { city, loc, location, unit, lang } = parseForm(req);
-  const _city = city || loc || location;
-  if (!_city) return res.status(400).send({ error: "Invalid body" });
-  res.json(await fetchWeather(_city, { unit, lang }));
-});
-apis.use("/weather-text", async (req, res) => {
-  const { city, loc, location, unit, lang } = parseForm(req);
-  const _city = city || loc || location;
-  if (!_city) return res.status(400).send({ error: "Invalid body" });
-  res.type("text/plain; charset=utf-8");
-  res.send(await fetchWeatherText(_city, { unit, lang }));
 });
 
 import { ImagesToPDF, PDFToImages } from "../services/pdf-tools/index.js";
