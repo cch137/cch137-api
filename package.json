@@ -24,7 +24,7 @@
   "dependencies": {
     "@cch137/entangle": "^0.0.24",
     "@cch137/env": "^0.0.4",
-    "@cch137/jet": "^0.1.15",
+    "@cch137/jet": "^0.2.2",
     "@cch137/random": "^0.1.2",
     "@cch137/read-stream": "^0.1.2",
     "@cch137/shuttle": "^0.2.8",
@@ -36,7 +36,7 @@
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
     "crypto-js": "^4.2.0",
-    "discord.js": "^14.16.1",
+    "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "email-validator": "^2.0.4",
     "ffmpeg-static": "^5.2.0",

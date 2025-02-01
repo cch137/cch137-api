@@ -19,15 +19,11 @@ router.get("/info", async (req, res) => {
   if (!(req.method === "GET" || req.method === "POST"))
     return res.status(200).end();
 
-  const _source =
-    req._url.searchParams.get("src") ||
-    req.body?.["src"] ||
-    req._url.searchParams.get("source") ||
-    req.body?.["source"];
-  const id = req._url.searchParams.get("id") || req.body?.["id"];
-  const full = Booleanish(
-    req._url.searchParams.get("full") || req.body?.["full"]
-  );
+  const { src: s1, source: s2, id: s3, full: s4 } = Jet.getParams(req);
+
+  const _source = s1 || s2;
+  const id = s3;
+  const full = Booleanish(s4);
 
   const source = _source || (id ? `https://youtu.be/${id}` : null);
 
@@ -44,16 +40,20 @@ router.use("/download", async (req, res) => {
   if (!(req.method === "GET" || req.method === "POST"))
     return res.status(200).end();
 
-  const _source =
-    req._url.searchParams.get("src") ||
-    req.body?.["src"] ||
-    req._url.searchParams.get("source") ||
-    req.body?.["source"];
-  const id = req._url.searchParams.get("id") || req.body?.["id"];
-  const downloadId = req._url.searchParams.get("d") || req.body?.["d"];
-  let format = req._url.searchParams.get("f") || req.body?.["f"] || "mp3";
-  let filename =
-    req._url.searchParams.get("filename") || req.body?.["filename"];
+  const {
+    src: s1,
+    source: s2,
+    id: s3,
+    d: s4,
+    f: s5,
+    filename: s6,
+  } = Jet.getParams(req);
+
+  const _source = s1 || s2;
+  const id = s3;
+  const downloadId = s4;
+  let format = s5 || "mp3";
+  let filename = s6;
 
   if (downloadId && typeof downloadId === "string") {
     const dirname = `caches/ytdl/${downloadId}/`;

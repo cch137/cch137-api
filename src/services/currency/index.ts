@@ -1,10 +1,10 @@
 import Jet from "@cch137/jet";
-import parseForm from "../../utils/parseForm.js";
 
 const router = new Jet.Router();
 
 let timestamp = NaN;
 let rates: Record<string, number> | null = null;
+let cacheString = JSON.stringify({ timestamp, rates });
 
 let itv: NodeJS.Timeout | null = null;
 
@@ -25,7 +25,8 @@ const updateData = async (force = false) => {
     const { timestamp: resTimestamp, rates: resRates } = await res.json();
     timestamp = resTimestamp;
     rates = resRates;
-    return { timestamp, rates };
+    cacheString = JSON.stringify({ timestamp, rates });
+    return cacheString;
   } catch {}
   return null;
 };
@@ -33,14 +34,19 @@ const updateData = async (force = false) => {
 updateData();
 
 router.use("/xe", async (req, res) => {
-  const { force } = parseForm(req);
+  const { force } = Jet.getParams(req);
   if (force) {
     try {
-      return res.status(200).json(await updateData());
+      return res
+        .status(200)
+        .type("json")
+        .send(await updateData());
     } catch {}
   }
-  if (rates) res.status(200).json({ timestamp, rates });
-  else res.status(503).json({ error: "No data" });
+  res
+    .status(rates ? 200 : 503)
+    .type("json")
+    .send(cacheString);
 });
 
 export default router;

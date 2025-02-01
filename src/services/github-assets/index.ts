@@ -1,6 +1,5 @@
 import Jet, { type JetRequest } from "@cch137/jet";
 import Repo from "../github/index.js";
-import parseForm from "../../utils/parseForm.js";
 import Shuttle from "@cch137/utils/shuttle/index.js";
 
 const repos = new Map(["gaia"].map((repo) => [repo, new Repo("cch137", repo)]));
@@ -8,10 +7,8 @@ const repos = new Map(["gaia"].map((repo) => [repo, new Repo("cch137", repo)]));
 export const router = new Jet.Router();
 
 const isAuth = (req: JetRequest) => {
-  return (
-    req._url.searchParams.get("key") === process.env.CURVA_ASK_KEY ||
-    req.body?.key === process.env.CURVA_ASK_KEY
-  );
+  const { key } = Jet.getParams(req);
+  return key === process.env.CURVA_ASK_KEY;
 };
 
 router.use(async (req, res, next) => {
@@ -24,12 +21,12 @@ router.use("/repos", async (_, res) => {
 });
 
 router.use("/get", async (req, res) => {
-  const { repo, path } = parseForm(req);
+  const { repo, path } = Jet.getParams(req);
   res.send(await repos.get(repo)?.get(path));
 });
 
 router.use("/d", async (req, res) => {
-  const { repo, path } = parseForm(req);
+  const { repo, path } = Jet.getParams(req);
   const items = await repos.get(repo)?.getDirectory(path);
   if (!items) return res.send(null);
   res.send(
@@ -45,7 +42,7 @@ router.use("/d", async (req, res) => {
 });
 
 router.use("/f", async (req, res) => {
-  const { repo, path } = parseForm(req);
+  const { repo, path } = Jet.getParams(req);
   res.send(await repos.get(repo)?.getFile(path));
 });
 

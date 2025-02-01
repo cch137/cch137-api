@@ -1,5 +1,5 @@
 import { Client } from "@notionhq/client";
-import Jet from "@cch137/jet/index.js";
+import Jet from "@cch137/jet";
 
 export const router = new Jet.Router();
 

@@ -1,5 +1,4 @@
-import Jet from "@cch137/jet/index.js";
-import parseForm from "../utils/parseForm.js";
+import Jet from "@cch137/jet";
 
 const apis = new Jet.Router();
 
@@ -23,7 +22,7 @@ apis.use("/currency", currency);
 
 import googleTranslate from "../services/google-translate/index.js";
 apis.use("/translate", async (req, res) => {
-  const { text, from, to } = parseForm(req);
+  const { text, from, to } = Jet.getParams(req);
   try {
     res.status(200).json(await googleTranslate(text, { from, to }));
   } catch (error) {
@@ -31,7 +30,7 @@ apis.use("/translate", async (req, res) => {
   }
 });
 apis.use("/translate-text", async (req, res) => {
-  const { text, from, to } = parseForm(req);
+  const { text, from, to } = Jet.getParams(req);
   try {
     res.status(200).json((await googleTranslate(text, { from, to })).text);
   } catch (error) {
@@ -45,7 +44,7 @@ apis.use("/youtube", ytdlRouter);
 import wikipedia from "../services/wikipedia/index.js";
 apis.use("/wikipedia", async (req, res) => {
   const { query, q, article, a, title, t, page, p, language, lang, l } =
-    parseForm(req);
+    Jet.getParams(req);
   const searchTerm: string =
     a || q || p || t || query || article || page || title;
   const langCode: string | undefined = l || lang || language;
@@ -56,7 +55,7 @@ apis.use("/wikipedia", async (req, res) => {
 
 import { fetchWeatherFromOpenWeather } from "../services/weather/index.js";
 apis.use("/weather2", async (req, res) => {
-  const { lat, lon, lang } = parseForm(req);
+  const { lat, lon, lang } = Jet.getParams(req);
   try {
     if (lat !== undefined && typeof lat !== "number")
       throw new Error("Invalid Param");
@@ -101,7 +100,7 @@ apis.use("/pdf-to-images/convert/:filename", async (req, res) => {
 import downloadPPT from "../services/pine/download-ppt.js";
 apis.use("/pine-ppt-dl/:filename", async (req, res) => {
   let { filename } = req.params;
-  const { url, acc, pass } = parseForm(req);
+  const { url, acc, pass } = Jet.getParams(req);
   if (!filename.endsWith(".pdf")) filename += ".pdf";
   try {
     const pdf = Buffer.from(await downloadPPT(url, acc, pass));
@@ -128,7 +127,7 @@ apis.use("/notion", notion);
 
 import createEntangleServer from "@cch137/entangle/server.js";
 import { completions } from "../services/groq/index.js";
-apis.ws("groq", (soc) => {
+apis.ws("/groq", (soc) => {
   completions[createEntangleServer.Handle](soc);
 });
 
