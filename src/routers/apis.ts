@@ -18,6 +18,9 @@ apis.get("/started", (req, res) => {
   res.send({ t: started });
 });
 
+import currency from "../services/currency/index.js";
+apis.use("/currency", currency);
+
 import googleTranslate from "../services/google-translate/index.js";
 apis.use("/translate", async (req, res) => {
   const { text, from, to } = parseForm(req);
