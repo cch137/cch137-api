@@ -31,7 +31,7 @@
     "@cch137/utils": "^0.3.9",
     "@cch137/ytdl": "^0.2.8",
     "@discordjs/voice": "^0.18.0",
-    "@distube/ytdl-core": "^4.15.8",
+    "@distube/ytdl-core": "^4.16.0",
     "@notionhq/client": "^2.2.15",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
