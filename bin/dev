@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e  # Exit on error
+
+rm -rf dist  # Remove dist folder
+
+tsc --watch &  # Start TypeScript compiler in the background
+tsc_pid=$!
+
+cleanup() {
+  echo "stopping tsc (pid: $tsc_pid)"
+  kill "$tsc_pid" 2>/dev/null
+}
+trap cleanup EXIT  # Ensure tsc is stopped on script exit
+
+echo "waiting for tsc to start..."
+tsc
+sleep 1
+node --watch ./dist/index.js --dev  # Run Node.js in the foreground
