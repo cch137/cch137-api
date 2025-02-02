@@ -22,7 +22,7 @@
   "dependencies": {
     "@cch137/entangle": "^0.0.24",
     "@cch137/format-utils": "^0.0.2",
-    "@cch137/jet": "^0.2.4",
+    "@cch137/jet": "^0.2.6",
     "@cch137/random": "^0.1.2",
     "@cch137/shuttle": "^0.2.8",
     "@discordjs/voice": "^0.18.0",
