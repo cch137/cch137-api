@@ -1,5 +1,3 @@
-import { packDataWithHash } from "@cch137/utils/shuttle/index.js";
-import fetchStream from "@cch137/utils/fetch-stream/index.js";
 import {
   ApplicationCommandOptionType,
   Events,
@@ -36,26 +34,6 @@ export type UniOptions = {
   /** Only applicable to OneApi */
   disableTopK?: boolean;
 };
-
-export async function askCh4Ai(messages: UniMessage[], model: string) {
-  return await fetchStream(`${process.env.CH4_ORIGIN}/api/ai-chat/ask/bot`, {
-    method: "POST",
-    body: packDataWithHash<UniOptions>(
-      {
-        messages,
-        temperature: 0,
-        topP: 1,
-        topK: 1,
-        model,
-      },
-      256,
-      4141414141,
-      4242424242
-    ),
-    headers: { Authorization: process.env.CURVA_ASK_KEY || "" },
-    keepChunks: true,
-  });
-}
 
 const curva = createBotClient(
   {
@@ -193,57 +171,6 @@ curva.on(Events.ClientReady, async () => {
     try {
       const messages = await channel.messages.fetch({ limit: 16 });
       channel.messages.cache.clear();
-      const res = await askCh4Ai(
-        messages
-          .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-          .map((m) => {
-            const isBot = m.author.id === user.id;
-            return {
-              role: isBot ? "model" : "user",
-              text: `<@${m.author.id}> : ${m.content}`,
-            } as UniMessage;
-          }),
-        "gemini-pro"
-      );
-      const { chunks } = res;
-      let i = 0,
-        j = 0,
-        r = 0;
-      res.once("data", async (c) => {
-        if (typing) typing.stop();
-      });
-      res.on("data", async () => {
-        try {
-          const l = chunks.length;
-          if (r === l) return;
-          r = l;
-          let content = chunks
-            .slice(i)
-            .join("")
-            .replace(/@everyone/g, "everyone")
-            .replace(/@here/g, "here")
-            .replace(/^<@[0-9]*>( :)?(:)?/, "");
-          if (content.length > 2000) {
-            i = j;
-            content = chunks
-              .slice(i)
-              .join("")
-              .replace(/@everyone/g, "everyone")
-              .replace(/@here/g, "here");
-            const channel = (await replied).channel;
-            if (!("send" in channel)) return;
-            replied = channel.send({ content }).then((m) => ((j = l), m)) as
-              | Promise<Message<false>>
-              | Promise<Message<true>>;
-          } else {
-            replied = (await replied)
-              .edit({ content, embeds: [] })
-              .then((m) => ((j = l), m)) as
-              | Promise<Message<false>>
-              | Promise<Message<true>>;
-          }
-        } catch {}
-      });
     } finally {
       answeringChannelIds.delete(channel.id);
       if (typing) typing.stop();

@@ -2,7 +2,7 @@ import { config as dotenvConfig } from "dotenv";
 dotenvConfig();
 
 import Jet from "@cch137/jet";
-import getRequestIp from "@cch137/utils/server/get-request-ip.js";
+import getRequestIp from "@cch137/format-utils/server.js";
 
 const app = new Jet();
 

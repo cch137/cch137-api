@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import env from "@cch137/env";
+import { config as env } from "dotenv";
 
 env();
 

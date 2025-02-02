@@ -1,4 +1,4 @@
-import random from "@cch137/utils/random/index.js";
+import random from "@cch137/random";
 import Jet from "@cch137/jet";
 import Repo from "../github/index.js";
 import { study } from "../mongooses/index.js";

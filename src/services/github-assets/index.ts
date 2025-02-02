@@ -1,6 +1,5 @@
 import Jet, { type JetRequest } from "@cch137/jet";
 import Repo from "../github/index.js";
-import Shuttle from "@cch137/utils/shuttle/index.js";
 
 const repos = new Map(["gaia"].map((repo) => [repo, new Repo("cch137", repo)]));
 
@@ -46,38 +45,38 @@ router.use("/f", async (req, res) => {
   res.send(await repos.get(repo)?.getFile(path));
 });
 
-router.post("/action", async (req, res) => {
-  const { repo, path, content } = Shuttle.unpack<{
-    repo: any;
-    path: any;
-    content: any;
-  }>(req.body);
-  if (typeof repo !== "string") return res.status(400).end();
-  if (typeof path !== "string") return res.status(400).end();
-  if (!(content instanceof Uint8Array)) return res.status(400).end();
-  res.send(await repos.get(repo)?.create(path, content));
-});
+// router.post("/action", async (req, res) => {
+//   const { repo, path, content } = Shuttle.unpack<{
+//     repo: any;
+//     path: any;
+//     content: any;
+//   }>(req.body);
+//   if (typeof repo !== "string") return res.status(400).end();
+//   if (typeof path !== "string") return res.status(400).end();
+//   if (!(content instanceof Uint8Array)) return res.status(400).end();
+//   res.send(await repos.get(repo)?.create(path, content));
+// });
 
-router.put("/action", async (req, res) => {
-  const { repo, path, content } = Shuttle.unpack<{
-    repo: any;
-    path: any;
-    content: any;
-  }>(req.body);
-  if (typeof repo !== "string") return res.status(400).end();
-  if (typeof path !== "string") return res.status(400).end();
-  if (!(content instanceof Uint8Array)) return res.status(400).end();
-  res.send(await repos.get(repo)?.update(path, content));
-});
+// router.put("/action", async (req, res) => {
+//   const { repo, path, content } = Shuttle.unpack<{
+//     repo: any;
+//     path: any;
+//     content: any;
+//   }>(req.body);
+//   if (typeof repo !== "string") return res.status(400).end();
+//   if (typeof path !== "string") return res.status(400).end();
+//   if (!(content instanceof Uint8Array)) return res.status(400).end();
+//   res.send(await repos.get(repo)?.update(path, content));
+// });
 
-router.delete("/action", async (req, res) => {
-  const { repo, path } = Shuttle.unpack<{
-    repo: any;
-    path: any;
-  }>(req.body);
-  if (typeof repo !== "string") return res.status(400).end();
-  if (typeof path !== "string") return res.status(400).end();
-  res.send(await repos.get(repo)?.delete(path));
-});
+// router.delete("/action", async (req, res) => {
+//   const { repo, path } = Shuttle.unpack<{
+//     repo: any;
+//     path: any;
+//   }>(req.body);
+//   if (typeof repo !== "string") return res.status(400).end();
+//   if (typeof path !== "string") return res.status(400).end();
+//   res.send(await repos.get(repo)?.delete(path));
+// });
 
 export default repos;
