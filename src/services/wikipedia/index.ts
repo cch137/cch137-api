@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { detectLanguage } from "@cch137/format-utils/detect-languages.js";
+import { detectLanguage } from "@cch137/format-utils/detect-languages";
 
 const defaultApiUrl: string = "https://en.wikipedia.org/w/api.php";
 

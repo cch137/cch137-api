@@ -33,7 +33,7 @@ import {
   AudioPlayerStatus,
 } from "@discordjs/voice";
 import ytdl from "@distube/ytdl-core";
-import { getYouTubeVideoId } from "@cch137/format-utils/youtube.js";
+import { getYouTubeVideoId } from "@cch137/format-utils/youtube";
 import { YTDL } from "../services/ytdl/index.js";
 import { Readable } from "stream";
 
