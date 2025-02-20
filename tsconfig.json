@@ -111,6 +111,6 @@
   "ts-node": {
     "transpileOnly": true,
     "files": true,
-    "experimentalResolver": true
+    "experimentalResolver": false
   }
 }
