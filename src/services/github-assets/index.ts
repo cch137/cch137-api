@@ -5,8 +5,10 @@ const repos = new Map(["gaia"].map((repo) => [repo, new Repo("cch137", repo)]));
 
 export const router = new Jet.Router();
 
+router.use(Jet.mergeQuery());
+
 const isAuth = (req: JetRequest) => {
-  const { key } = Jet.getParams(req);
+  const { key } = req.query;
   return key === process.env.CURVA_ASK_KEY;
 };
 
@@ -20,12 +22,16 @@ router.use("/repos", async (_, res) => {
 });
 
 router.use("/get", async (req, res) => {
-  const { repo, path } = Jet.getParams(req);
+  const { repo, path } = req.query;
+  if (typeof path !== "string" || typeof repo !== "string")
+    return res.status(400).end();
   res.send(await repos.get(repo)?.get(path));
 });
 
 router.use("/d", async (req, res) => {
-  const { repo, path } = Jet.getParams(req);
+  const { repo, path } = req.query;
+  if (typeof path !== "string" || typeof repo !== "string")
+    return res.status(400).end();
   const items = await repos.get(repo)?.getDirectory(path);
   if (!items) return res.send(null);
   res.send(
@@ -41,7 +47,9 @@ router.use("/d", async (req, res) => {
 });
 
 router.use("/f", async (req, res) => {
-  const { repo, path } = Jet.getParams(req);
+  const { repo, path } = req.query;
+  if (typeof path !== "string" || typeof repo !== "string")
+    return res.status(400).end();
   res.send(await repos.get(repo)?.getFile(path));
 });
 

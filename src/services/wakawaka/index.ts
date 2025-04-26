@@ -252,8 +252,10 @@ export default wk;
 
 export const router = new Jet.Router();
 
+router.use(Jet.mergeQuery());
+
 router.post("/session", async (req, res) => {
-  const { uid, key } = Jet.getParams(req);
+  const { uid, key } = req.query;
   if (key !== process.env.CURVA_ASK_KEY) return res.status(401).json({});
   if (typeof uid !== "string" || !uid) return res.status(401).json({});
   res.type("text").send(wk.Session.create(uid).sid);
@@ -265,7 +267,7 @@ router.post("/image", async (req, res) => {
   try {
     const _fn = req.headers["filename"];
     const filename = (Array.isArray(_fn) ? _fn[0] : _fn) || "image.webp";
-    res.send(await upload(filename, req.body));
+    res.send(await upload(filename, req.body as Uint8Array<ArrayBufferLike>));
   } catch (e) {
     console.error(e);
     res.status(500).end();
@@ -281,15 +283,15 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const { name } = Jet.getParams(req);
-  if (!name) return res.status(400).end();
+  const { name } = req.query;
+  if (!name || typeof name !== "string") return res.status(400).end();
   res.send(await wk.createList(user, name));
 });
 
 router.put("/:gid", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const item = Jet.getParams(req);
+  const item = req.query;
   res.send(await wk.updateList(user, req.params.gid, item as any));
 });
 
@@ -308,8 +310,8 @@ router.get("/:gid", async (req, res) => {
 router.post("/:gid", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const { name } = Jet.getParams(req);
-  if (!name) return res.status(400).end();
+  const { name } = req.query;
+  if (!name || typeof name !== "string") return res.status(400).end();
   res.send(await wk.createPage(user, req.params.gid, name));
 });
 
@@ -334,7 +336,7 @@ router.post("/:gid/activate", async (req, res) => {
 router.put("/:gid/:cid", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const item = Jet.getParams(req);
+  const item = req.query;
   res.send(
     await wk.updatePage(user, req.params.gid, req.params.cid, item as any)
   );
@@ -355,13 +357,13 @@ router.get("/:gid/:cid", async (req, res) => {
 router.post("/:gid/:cid/images", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const { images } = Jet.getParams(req);
+  const { images } = req.query;
   res.send(await wk.pushImages(user, req.params.cid, images));
 });
 
 router.delete("/:gid/:cid/images", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
-  const { images } = Jet.getParams(req);
+  const { images } = req.query;
   res.send(await wk.pullImages(user, req.params.cid, images));
 });

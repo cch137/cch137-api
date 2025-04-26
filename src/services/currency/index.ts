@@ -2,6 +2,8 @@ import Jet from "@cch137/jet";
 
 const router = new Jet.Router();
 
+router.use(Jet.mergeQuery());
+
 let result = { timestamp: NaN, rates: {} as Record<string, number> };
 
 let itv: NodeJS.Timeout | null = null;
@@ -37,7 +39,7 @@ const getData = async (filterKeys: string[] | null, force = false) => {
 };
 
 router.use("/xe", async (req, res) => {
-  const { force, f: filterString } = Jet.getParams(req);
+  const { force, f: filterString } = req.query;
   const filterKeys =
     filterString && typeof filterString === "string"
       ? filterString.split(",")

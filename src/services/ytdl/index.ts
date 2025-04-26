@@ -261,6 +261,8 @@ export class YTDL {
 
 export const router = new Jet.Router();
 
+router.use(Jet.mergeQuery());
+
 function toSafeFilename(value: string) {
   return value.replace(/[\/:*?"<>|\\\x00-\x1F]/g, "_");
 }
@@ -275,7 +277,7 @@ router.get("/info", async (req, res) => {
   if (!(req.method === "GET" || req.method === "POST"))
     return res.status(200).end();
 
-  const { src: s1, source: s2, id: s3, full: s4 } = Jet.getParams(req);
+  const { src: s1, source: s2, id: s3, full: s4 } = req.query;
 
   const _source = s1 || s2;
   const id = s3;
@@ -296,20 +298,13 @@ router.use("/download", async (req, res) => {
   if (!(req.method === "GET" || req.method === "POST"))
     return res.status(200).end();
 
-  const {
-    src: s1,
-    source: s2,
-    id: s3,
-    d: s4,
-    f: s5,
-    filename: s6,
-  } = Jet.getParams(req);
+  const { src: s1, source: s2, id: s3, d: s4, f: s5, filename: s6 } = req.query;
 
   const _source = s1 || s2;
   const id = s3;
   const downloadId = s4;
   let format = s5 || "mp3";
-  let filename = s6;
+  let filename = String(s6);
 
   if (downloadId && typeof downloadId === "string") {
     const dirname = `caches/ytdl/${downloadId}/`;
