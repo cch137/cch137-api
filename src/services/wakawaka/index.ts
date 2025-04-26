@@ -264,10 +264,11 @@ router.post("/session", async (req, res) => {
 router.post("/image", async (req, res) => {
   const user = wk.Session.get(req.headers["authorization"])?.uid;
   if (!user) return res.status(401).end();
+  if (!(req.body instanceof Uint8Array)) return res.status(400).end();
   try {
     const _fn = req.headers["filename"];
     const filename = (Array.isArray(_fn) ? _fn[0] : _fn) || "image.webp";
-    res.send(await upload(filename, req.body as Uint8Array<ArrayBufferLike>));
+    res.send(await upload(filename, req.body));
   } catch (e) {
     console.error(e);
     res.status(500).end();

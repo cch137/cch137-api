@@ -93,8 +93,9 @@ apis.use("/images-to-pdf/create-task", async (req, res) => {
   res.json({ id: ImagesToPDF.createTask().id });
 });
 apis.use("/images-to-pdf/upload/:id/:index", async (req, res) => {
+  if (!(req.body instanceof Uint8Array)) return res.status(400).end();
   const { id, index } = req.params;
-  ImagesToPDF.upload(id, Number(index), req.body as Uint8Array<ArrayBuffer>);
+  ImagesToPDF.upload(id, Number(index), req.body);
   res.json({ ok: 1 });
 });
 apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
@@ -105,6 +106,7 @@ apis.use("/images-to-pdf/convert/:id/:filename", async (req, res) => {
   res.send(Buffer.from(await ImagesToPDF.convert(id)));
 });
 apis.use("/pdf-to-images/convert/:filename", async (req, res) => {
+  if (!(req.body instanceof Uint8Array)) return res.status(400).end();
   let { filename } = req.params;
   if (!filename.endsWith(".zip")) filename += ".zip";
   res.type("application/zip");
@@ -112,9 +114,7 @@ apis.use("/pdf-to-images/convert/:filename", async (req, res) => {
     "Content-Disposition",
     `attachment; filename="${encodeURIComponent(filename)}`
   );
-  res.send(
-    Buffer.from(await PDFToImages.convert(req.body as Uint8Array<ArrayBuffer>))
-  );
+  res.send(Buffer.from(await PDFToImages.convert(req.body)));
 });
 
 import downloadPPT from "../services/pine/download-ppt.js";
